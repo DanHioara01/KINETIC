@@ -44,7 +44,7 @@ fun AddFoodScreen(
     var fiber by remember { mutableStateOf(prefilledProduct?.fiberG?.let { String.format("%.1f", it) } ?: "") }
 
     var mealDropdownExpanded by remember { mutableStateOf(false) }
-    val mealTypes = listOf("breakfast" to strings.breakfast, "lunch" to strings.lunch, "dinner" to strings.dinner, "snack" to strings.snack)
+    val mealTypes = listOf("breakfast" to strings.breakfast, "lunch" to strings.lunch, "dinner" to strings.dinner, "snack" to strings.snack, "drinks" to strings.drinks)
 
     Scaffold(
         topBar = {

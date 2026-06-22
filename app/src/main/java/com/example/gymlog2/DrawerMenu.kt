@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.gymlog2.ui.theme.*
 
-enum class DrawerPage { RECOVERY, CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS }
+enum class DrawerPage { CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS, GPS_CARDIO, REST_DAYS }
 
 data class LanguageOption(
     val code: String,
@@ -59,6 +59,7 @@ fun DrawerMenu(
     currentLanguage: String,
     badgeCount: Int = 0,
     currentStreak: Int = 0,
+    pendingRequestsCount: Int = 0,
     onNavigate: (DrawerPage) -> Unit,
     onExportCsv: () -> Unit,
     onImportCsv: () -> Unit,
@@ -139,30 +140,17 @@ fun DrawerMenu(
                             color = textSecondary,
                             fontSize = 12.sp
                         )
-                        if (badgeCount > 0 || currentStreak > 0) {
+                        if (badgeCount > 0) {
                             Spacer(Modifier.height(6.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (currentStreak > 0) {
-                                    Text("\uD83D\uDD25", fontSize = 14.sp)
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        "$currentStreak",
-                                        color = accent,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                                if (badgeCount > 0) {
-                                    if (currentStreak > 0) Spacer(Modifier.width(12.dp))
-                                    Text("\uD83C\uDFC6", fontSize = 14.sp)
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        "$badgeCount",
-                                        color = accent,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                                Text("\uD83C\uDFC6", fontSize = 14.sp)
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    "$badgeCount",
+                                    color = accent,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }
@@ -173,17 +161,6 @@ fun DrawerMenu(
             Spacer(Modifier.height(8.dp))
 
             // Navigation Items
-            DrawerNavItem(
-                icon = Icons.Default.Healing,
-                label = strings.recovery,
-                selected = currentPage == DrawerPage.RECOVERY,
-                accent = accent,
-                selectedBg = selectedBg,
-                textPrimary = textPrimary,
-                textSecondary = textSecondary,
-                iconBg = iconBg,
-                onClick = { onNavigate(DrawerPage.RECOVERY); onClose() }
-            )
             DrawerNavItem(
                 icon = Icons.Default.CalendarMonth,
                 label = strings.calendarView,
@@ -226,7 +203,31 @@ fun DrawerMenu(
                 textPrimary = textPrimary,
                 textSecondary = textSecondary,
                 iconBg = iconBg,
+                badge = pendingRequestsCount,
                 onClick = { onNavigate(DrawerPage.FRIENDS); onClose() }
+            )
+            HorizontalDivider(color = divider, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+            DrawerNavItem(
+                icon = Icons.Default.MyLocation,
+                label = strings.gpsCardioMap,
+                selected = currentPage == DrawerPage.GPS_CARDIO,
+                accent = accent,
+                selectedBg = selectedBg,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                iconBg = iconBg,
+                onClick = { onNavigate(DrawerPage.GPS_CARDIO); onClose() }
+            )
+            DrawerNavItem(
+                icon = Icons.Default.Bedtime,
+                label = strings.restDaysTitle,
+                selected = currentPage == DrawerPage.REST_DAYS,
+                accent = accent,
+                selectedBg = selectedBg,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                iconBg = iconBg,
+                onClick = { onNavigate(DrawerPage.REST_DAYS); onClose() }
             )
             HorizontalDivider(color = divider, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
 
@@ -504,6 +505,7 @@ private fun DrawerNavItem(
     textPrimary: Color,
     textSecondary: Color,
     iconBg: Color,
+    badge: Int = 0,
     onClick: () -> Unit
 ) {
     val bgColor by animateColorAsState(
@@ -539,6 +541,22 @@ private fun DrawerNavItem(
             fontSize = 15.sp,
             modifier = Modifier.weight(1f)
         )
+        if (badge > 0) {
+            Box(
+                modifier = Modifier
+                    .background(Volcanico, RoundedCornerShape(10.dp))
+                    .padding(horizontal = 7.dp, vertical = 2.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "+$badge",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(Modifier.width(6.dp))
+        }
         if (selected) {
             Box(
                 modifier = Modifier

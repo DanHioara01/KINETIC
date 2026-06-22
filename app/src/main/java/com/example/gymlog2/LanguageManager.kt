@@ -80,6 +80,7 @@ object LanguageManager {
         val addExercise: String = m["addExercise"] ?: ""
         val saveWorkout: String = m["saveWorkout"] ?: ""
         val startWorkout: String = m["startWorkout"] ?: ""
+        val nextExercise: String = m["nextExercise"] ?: ""
         val notes: String = m["notes"] ?: ""
         val cancel: String = m["cancel"] ?: ""
         val confirm: String = m["confirm"] ?: ""
@@ -248,6 +249,7 @@ object LanguageManager {
         val volume: String = m["volume"] ?: ""
         val maxWeight: String = m["maxWeight"] ?: ""
         val maxReps: String = m["maxReps"] ?: ""
+        val maxSet: String = m["maxSet"] ?: ""
         val today: String = m["today"] ?: ""
         val thisWeek: String = m["thisWeek"] ?: ""
         val thisMonth: String = m["thisMonth"] ?: ""
@@ -390,6 +392,7 @@ object LanguageManager {
         val lunch: String = m["lunch"] ?: ""
         val dinner: String = m["dinner"] ?: ""
         val snack: String = m["snack"] ?: ""
+        val drinks: String = m["drinks"] ?: ""
         val selectMealType: String = m["selectMealType"] ?: ""
         val manualFoodEntry: String = m["manualFoodEntry"] ?: ""
         val foodName: String = m["foodName"] ?: ""
@@ -407,6 +410,72 @@ object LanguageManager {
         val aiSuggestion2: String = m["aiSuggestion2"] ?: ""
         val aiSuggestion3: String = m["aiSuggestion3"] ?: ""
         val aiSuggestion4: String = m["aiSuggestion4"] ?: ""
+        val mottoMessages: List<String> = listOf(
+            m["motto1"] ?: "", m["motto2"] ?: "", m["motto3"] ?: "", m["motto4"] ?: "",
+            m["motto5"] ?: "", m["motto6"] ?: "", m["motto7"] ?: "", m["motto8"] ?: ""
+        )
+        val goodMorning: String = m["goodMorning"] ?: ""
+        val goodAfternoon: String = m["goodAfternoon"] ?: ""
+        val goodEvening: String = m["goodEvening"] ?: ""
+        val daysConsecutive: String = m["daysConsecutive"] ?: ""
+        val todaysWorkout: String = m["todaysWorkout"] ?: ""
+        val howDoYouFeel: String = m["howDoYouFeel"] ?: ""
+        val tiredLabel: String = m["tiredLabel"] ?: ""
+        val normalLabel: String = m["normalLabel"] ?: ""
+        val energeticLabel: String = m["energeticLabel"] ?: ""
+        val plusToday: String = m["plusToday"] ?: ""
+        val technicalTip: String = m["technicalTip"] ?: ""
+        val tomorrowLabel: String = m["tomorrowLabel"] ?: ""
+        val setWorkoutTime: String = m["setWorkoutTime"] ?: ""
+        val daysSinceLastWorkout: String = m["daysSinceLastWorkout"] ?: ""
+        val groupsFullyRecovered: String = m["groupsFullyRecovered"] ?: ""
+        val recoveryOnGroups: String = m["recoveryOnGroups"] ?: ""
+        val weeklySummary: String = m["weeklySummary"] ?: "Weekly Summary"
+        val lastWeekLabel: String = m["lastWeekLabel"] ?: "last week"
+        val goalLabel: String = m["goalLabel"] ?: "Goal Tip"
+        val volumeLabel: String = m["volumeLabel"] ?: "Volume"
+        val topExerciseLabel: String = m["topExerciseLabel"] ?: "Top Exercise"
+        val workoutsLabel_: String = m["workoutsLabel"] ?: "Workouts"
+        val bestStreakLabel_: String = m["bestStreakLabel"] ?: "Best Streak"
+        val nutritionLabel: String = m["nutritionLabel"] ?: "Nutrition"
+        val motivationLabel: String = m["motivationLabel"] ?: "Motivation"
+        val gpsCardioMap: String = m["gpsCardioMap"] ?: ""
+        val startTracking: String = m["startTracking"] ?: ""
+        val stopTracking: String = m["stopTracking"] ?: ""
+        val distance: String = m["distance"] ?: ""
+        val pace: String = m["pace"] ?: ""
+        val speed: String = m["speed" ] ?: ""
+        val duration: String = m["duration"] ?: ""
+        val calories: String = m["calories"] ?: ""
+        val savedRoutes: String = m["savedRoutes"] ?: ""
+        val noSavedRoutes: String = m["noSavedRoutes"] ?: ""
+        val routeName: String = m["routeName"] ?: ""
+        val saveRoute: String = m["saveRoute"] ?: ""
+        val deleteRoute: String = m["deleteRoute"] ?: ""
+        val currentLocation: String = m["currentLocation"] ?: ""
+        val trackingActive: String = m["trackingActive"] ?: ""
+        val locationPermissionRequired: String = m["locationPermissionRequired"] ?: ""
+        val restDaysTitle: String = m["restDaysTitle"] ?: ""
+        val restDaysSubtitle: String = m["restDaysSubtitle"] ?: ""
+        val deloadWeek: String = m["deloadWeek"] ?: ""
+        val recoverySchedule: String = m["recoverySchedule"] ?: ""
+        val stretching: String = m["stretching"] ?: ""
+        val lightYoga: String = m["lightYoga"] ?: ""
+        val foamRolling: String = m["foamRolling"] ?: ""
+        val restDayRecommendation: String = m["restDayRecommendation"] ?: ""
+        val nextRestDay: String = m["nextRestDay"] ?: ""
+        val muscleNeedsRest: String = m["muscleNeedsRest"] ?: ""
+        val recoveryComplete: String = m["recoveryComplete"] ?: ""
+        val deloadInfo: String = m["deloadInfo"] ?: ""
+        val suggestedActivities: String = m["suggestedActivities"] ?: ""
+        val activeRecovery: String = m["activeRecovery"] ?: ""
+        val lightWalk: String = m["lightWalk"] ?: ""
+        val swimming: String = m["swimming"] ?: ""
+        val mobilityWork: String = m["mobilityWork"] ?: ""
+        val today: String = m["today"] ?: ""
+        val noRestDays: String = m["noRestDays"] ?: ""
+        val selectDay: String = m["selectDay"] ?: ""
+        val save: String = m["save"] ?: ""
     }
 
     private val strings = mapOf(
@@ -425,7 +494,7 @@ object LanguageManager {
             "saveProfile" to "Salvati profilul", "chest" to "Piept", "shoulders" to "Umeri", "arms" to "Brate", "biceps" to "Biceps", "triceps" to "Triceps",
             "legs" to "Picioare", "thighs" to "Coapse", "glutes" to "Fese", "calves" to "Gambe", "core" to "Abdomen", "cardio" to "Cardio", "sets" to "Serii", "reps" to "Repetai",
             "weight" to "Greutate", "addExercise" to "Adauga exercitiu", "saveWorkout" to "Salveaza antrenament",
-            "startWorkout" to "Incepe antrenamentul", "notes" to "Notite", "cancel" to "Anuleaza", "confirm" to "Confirma",
+            "startWorkout" to "Incepe antrenamentul", "nextExercise" to "Urmatorul exercitiu", "notes" to "Notite", "cancel" to "Anuleaza", "confirm" to "Confirma",
             "delete" to "Sterge", "edit" to "Editeaza", "search" to "Cauta", "noDataYet" to "Nu exista date inca",
             "friendRequests" to "Cereri de prietenie", "sendRequest" to "Trimite cerere", "accept" to "Accepta",
             "reject" to "Respinge", "removeFriend" to "Elimina prieten", "noFriends" to "Niciun prieten",
@@ -488,7 +557,7 @@ object LanguageManager {
             "monthlyProgress" to "Progres lunar", "completeWorkoutsToSee" to "Completeaza antrenamente pentru a vedea progresul", "jan" to "Ian", "feb" to "Feb", "mar" to "Mar", "apr" to "Apr", "may" to "Mai", "jun" to "Iun", "jul" to "Iul", "aug" to "Aug", "sep" to "Sep", "oct" to "Oct", "nov" to "Noi", "dec" to "Dec", "monthlyDetails" to "Detalii lunare", "month" to "Luna", "mon" to "Lu", "tue" to "Ma", "wed" to "Mi", "thu" to "Jo", "fri" to "Vi", "sat" to "Sa", "sun" to "Du", "noWorkouts" to "Niciun antrenament in aceasta zi", "workoutDistribution" to "Distributie antrenamente",
             "notNow" to "Mai tarziu", "subscribeNow" to "Aboneaza-te acum", "premiumFeature" to "Functie Premium", "subscribersOnly" to "\$feature este disponibil doar pentru abonati", "choosePlan" to "Alege un plan", "youAreSubscribed" to "Esti abonat!", "muscleRecovery" to "Recuperare musculara", "waterReminder" to "Reamintire apa", "waterReminderTitle" to "Timpul sa bei apa!", "waterReminderText" to "Hidrateaza-te! Este timpul sa bei un pahar cu apa.", "waterReminderEnabled" to "Activat", "waterReminderDisabled" to "Dezactivat", "selectTime" to "Selecteaza ora", "forearms" to "Antebrate", "neckAndTraps" to "Gat & Trapezi", "welcome" to "Bun venit", "athlete" to "Sportiv",
             "biometricTracking" to "Monitorizare biometrica", "biometricSubtitle" to "Greutate, circumferinte, grasime corporala", "addMeasurement" to "Adauga masuratoare", "bodyFat" to "Grasime corporala", "waistCirc" to "Talie", "hipsCirc" to "Solduri", "thighsCirc" to "Coapse", "chestCirc" to "Piept", "armsCirc" to "Brate", "lastMeasurement" to "Ultima masuratoare", "noMeasurements" to "Nicio masuratoare inca", "viewCharts" to "Vezi grafice", "saveMeasurement" to "Salveaza masuratoarea", "measurementSaved" to "Masuratoarea salvata", "weeksAgo" to "saptamani in urma", "cm" to "cm", "percent" to "%", "deleteMeasurement" to "Sterge masuratoarea", "biometricHistory" to "Istoric masuratori", "weightChart" to "Grafic greutate", "bodyFatChart" to "Grafic grasime corporala", "circumferenceChart" to "Grafic circumferinte", "date" to "Data", "biometricReminder" to "Reamintire biometrica", "biometricReminderTitle" to "Timpul pentru masuratori!", "biometricReminderText" to "Nu uita sa iti inregistrezi masuratorile corporale saptamanale.", "biometricReminderEnabled" to "Activat", "biometricReminderDisabled" to "Dezactivat",
-            "foodJournal" to "Jurnal alimentar", "scanBarcode" to "Scaneaza cod de bare", "scanBarcodeHint" to "Plaseaza codul de bare in cadru pentru a scana produsul", "cameraPermissionRequired" to "Permisiunea camerei este necesara pentru scanare", "scan" to "Scaneaza", "scanning" to "Se scaneaza...", "scanBarcodeHelp" to "Asigura-te ca Google Play Services este instalat si updatat", "noFoodEntries" to "Nicio intrare alimentara inca", "todaysMacros" to "Macronutrientii de azi", "caloriesLabel" to "Calorii", "proteinLabel" to "Proteine", "carbsLabel" to "Carbo", "fatLabel" to "Grasimi", "breakfast" to "Mic dejun", "lunch" to "Pranz", "dinner" to "Cina", "snack" to "Gustare", "selectMealType" to "Selecteaza tipul mesei", "manualFoodEntry" to "Intrare manuala", "foodName" to "Nume aliment", "brandLabel" to "Marca", "calories" to "Calorii", "protein" to "Proteine", "carbs" to "Carbohidrati", "fat" to "Grasimi", "fiber" to "Fibre",
+            "foodJournal" to "Jurnal alimentar", "scanBarcode" to "Scaneaza cod de bare", "scanBarcodeHint" to "Plaseaza codul de bare in cadru pentru a scana produsul", "cameraPermissionRequired" to "Permisiunea camerei este necesara pentru scanare", "scan" to "Scaneaza", "scanning" to "Se scaneaza...", "scanBarcodeHelp" to "Asigura-te ca Google Play Services este instalat si updatat", "noFoodEntries" to "Nicio intrare alimentara inca", "todaysMacros" to "Macronutrientii de azi", "caloriesLabel" to "Calorii", "proteinLabel" to "Proteine", "carbsLabel" to "Carbo", "fatLabel" to "Grasimi", "breakfast" to "Mic dejun", "lunch" to "Pranz", "dinner" to "Cina", "snack" to "Gustare", "drinks" to "Bauturi", "selectMealType" to "Selecteaza tipul mesei", "manualFoodEntry" to "Intrare manuala", "foodName" to "Nume aliment", "brandLabel" to "Marca", "calories" to "Calorii", "protein" to "Proteine", "carbs" to "Carbohidrati", "fat" to "Grasimi", "fiber" to "Fibre",
             "aiTrainer" to "Antrenor AI", "aiTrainerWelcome" to "Salut! Sunt antrenorul tau AI", "aiTrainerHint" to "Intreaba-ma orice despre antrenamente, nutritie sau progres", "askAiTrainer" to "Intreaba antrenorul...", "aiSuggestion1" to "Ce antrenament imi recomanzi azi?", "aiSuggestion2" to "Cum pot sa sporesc volumul?", "aiSuggestion3" to "Am nevoie de o zi de odihna?", "aiSuggestion4" to "Cum sa ies din platou?",
             "viewProfile" to "Vezi profilul",
             "accountSettings" to "Setari cont", "deleteAccount" to "Sterge contul",
@@ -500,7 +569,7 @@ object LanguageManager {
             "favorite" to "Favorit", "favorites" to "Favoriti", "usageCount" to "Folosit de",
             "addSet" to "Adauga serie", "exerciseNotes" to "Notite exercitiu", "workoutNotes" to "Notite antrenament",
             "saveNotes" to "Salveaza notitele", "editWorkout" to "Editeaza antrenament",
-            "volume" to "Volum", "maxWeight" to "Greutate max", "maxReps" to "Rep max",
+            "volume" to "Volum", "maxWeight" to "Greutate max", "maxReps" to "Rep max", "maxSet" to "Set max",
             "today" to "Astazi", "thisWeek" to "Aceasta saptamana", "thisMonth" to "Aceasta luna",
             "totalVolumeLabel" to "Volum total",
             "languageChanged" to "Limba a fost schimbata", "themeChanged" to "Tema a fost schimbata",
@@ -512,7 +581,37 @@ object LanguageManager {
             "muscleGroups" to "Grupe musculare", "startHere" to "Incepe aici", "back__" to "Inapoi",
             "englishUS" to "Engleza", "romana" to "Romana", "russkiy" to "Rusa", "ukrainska" to "Ucraineana",
             "francais" to "Franceza", "deutsch" to "Germana", "espanol" to "Spaniola",
-            "italiano" to "Italiana", "turkce" to "Turca", "portugues" to "Portugheza", "polski" to "Poloneza"
+            "italiano" to "Italiana", "turkce" to "Turca", "portugues" to "Portugheza", "polski" to "Poloneza",
+            "motto1" to "Fiecare repetitie conteaza.", "motto2" to "Mai puternic decat ieri.",
+            "motto3" to "Corpul tau, regulile tale.", "motto4" to "Impinge-ti limitele.",
+            "motto5" to "Constanta invinge talentul.", "motto6" to "Disciplina este libertate.",
+            "motto7" to "Fara scurtaturi.", "motto8" to "Cistigat, nu primit.",
+            "goodMorning" to "Buna dimineata", "goodAfternoon" to "Buna ziua", "goodEvening" to "Buna seara",
+            "daysConsecutive" to "zile consecutive", "todaysWorkout" to "Antrenamentul de azi",
+            "howDoYouFeel" to "Cum te simti azi?", "tiredLabel" to "Obosit", "normalLabel" to "Normal", "energeticLabel" to "Energic",
+            "plusToday" to "Azi in plus", "technicalTip" to "Sfat tehnic",
+            "tomorrowLabel" to "Maine", "setWorkoutTime" to "Seteaza ora de antrenament",
+            "daysSinceLastWorkout" to "Zile de la ultimul workout", "groupsFullyRecovered" to "Grupe complet recuperate",
+            "recoveryOnGroups" to "Recuperare pe grupe",
+            "weeklySummary" to "Rezumat saptamanal", "lastWeekLabel" to "sapt. trecuta",
+            "goalLabel" to "Sfat obiectiv", "volumeLabel" to "Volum", "topExerciseLabel" to "Top exercitiu",
+            "nutritionLabel" to "Nutriție", "motivationLabel" to "Motivație",
+            "gpsCardioMap" to "Cardio GPS", "startTracking" to "Porneste urmarirea", "stopTracking" to "Opreste urmarirea",
+            "distance" to "Distanta", "pace" to "Ritm", "speed" to "Viteza", "duration" to "Durata",
+            "calories" to "Calorii", "savedRoutes" to "Rute salvate", "noSavedRoutes" to "Nicio ruta salvata inca",
+            "routeName" to "Nume ruta", "saveRoute" to "Salveaza ruta", "deleteRoute" to "Sterge ruta",
+            "currentLocation" to "Locatia curenta", "trackingActive" to "Urmarire activa",
+            "locationPermissionRequired" to "Permisiunea de locatie este necesara",
+            "restDaysTitle" to "Zile de odihna & Deload", "restDaysSubtitle" to "Recuperare programata, intinderi, yoga usoara",
+            "deloadWeek" to "Saptamana de deload", "recoverySchedule" to "Program recuperare",
+            "stretching" to "Intinderi", "lightYoga" to "Yoga usoara", "foamRolling" to "Foam rolling",
+            "restDayRecommendation" to "Recomandare zi de odihna", "nextRestDay" to "Urmatoarea zi de odihna",
+            "muscleNeedsRest" to "Muschiul are nevoie de odihna", "recoveryComplete" to "Recuperare completa",
+            "deloadInfo" to "Informatii deload", "suggestedActivities" to "Activitati sugerate",
+            "activeRecovery" to "Recuperare activa", "lightWalk" to "Plimbare usoara",
+            "swimming" to "Inot", "mobilityWork" to "Lucru de mobilitate",
+            "noRestDays" to "Nicio zi de odihna programata", "selectDay" to "Selecteaza ziua",
+            "save" to "Salveaza"
         )),
         "en" to Strings(mapOf(
             "appName" to "Kinetic", "dashboard" to "Dashboard", "overview" to "Overview", "acasa" to "Home", "workouts" to "Workouts", "stats" to "Stats", "waterIntake" to "Water Intake", "waterGoal" to "Water Goal", "addWater" to "Add Water", "dailyWater" to "Daily Water", "height" to "Height", "personalInfo" to "Personal Info", "waterAutoCalc" to "Auto Water Calc", "ml" to "ml", "templates" to "Templates", "recovery" to "Recovery",
@@ -530,7 +629,7 @@ object LanguageManager {
             "shoulders" to "Shoulders", "arms" to "Arms", "biceps" to "Biceps", "triceps" to "Triceps",
             "legs" to "Legs", "thighs" to "Thighs", "glutes" to "Glutes", "calves" to "Calves", "core" to "Core", "cardio" to "Cardio",
             "sets" to "Sets", "reps" to "Reps", "weight" to "Weight", "addExercise" to "Add Exercise",
-            "saveWorkout" to "Save Workout", "startWorkout" to "Start Workout", "notes" to "Notes",
+            "saveWorkout" to "Save Workout", "startWorkout" to "Start Workout", "nextExercise" to "Next Exercise", "notes" to "Notes",
             "cancel" to "Cancel", "confirm" to "Confirm", "delete" to "Delete", "edit" to "Edit",
             "search" to "Search", "noDataYet" to "No data yet", "friendRequests" to "Friend Requests",
             "sendRequest" to "Send Request", "accept" to "Accept", "reject" to "Reject",
@@ -593,7 +692,7 @@ object LanguageManager {
             "monthlyProgress" to "Monthly progress", "completeWorkoutsToSee" to "Complete workouts to see progress", "jan" to "Jan", "feb" to "Feb", "mar" to "Mar", "apr" to "Apr", "may" to "May", "jun" to "Jun", "jul" to "Jul", "aug" to "Aug", "sep" to "Sep", "oct" to "Oct", "nov" to "Nov", "dec" to "Dec", "monthlyDetails" to "Monthly details", "month" to "Month", "mon" to "Mon", "tue" to "Tue", "wed" to "Wed", "thu" to "Thu", "fri" to "Fri", "sat" to "Sat", "sun" to "Sun", "noWorkouts" to "No workouts on this day", "workoutDistribution" to "Workout Distribution",
             "notNow" to "Not now", "subscribeNow" to "Subscribe Now", "premiumFeature" to "Premium Feature", "subscribersOnly" to "\$feature is available for subscribers only", "choosePlan" to "Choose a plan", "youAreSubscribed" to "You are subscribed!", "muscleRecovery" to "Muscle Recovery", "waterReminder" to "Water Reminder", "waterReminderTitle" to "Time to drink water!", "waterReminderText" to "Stay hydrated! It's time to drink a glass of water.", "waterReminderEnabled" to "Enabled", "waterReminderDisabled" to "Disabled", "selectTime" to "Select time", "forearms" to "Forearms", "neckAndTraps" to "Neck & Traps", "welcome" to "Welcome", "athlete" to "Athlete",
             "biometricTracking" to "Biometric Tracking", "biometricSubtitle" to "Weight, circumferences, body fat", "addMeasurement" to "Add measurement", "bodyFat" to "Body fat", "waistCirc" to "Waist", "hipsCirc" to "Hips", "thighsCirc" to "Thighs", "chestCirc" to "Chest", "armsCirc" to "Arms", "lastMeasurement" to "Last measurement", "noMeasurements" to "No measurements yet", "viewCharts" to "View charts", "saveMeasurement" to "Save measurement", "measurementSaved" to "Measurement saved", "weeksAgo" to "weeks ago", "cm" to "cm", "percent" to "%", "deleteMeasurement" to "Delete measurement", "biometricHistory" to "Measurement history", "weightChart" to "Weight chart", "bodyFatChart" to "Body fat chart", "circumferenceChart" to "Circumference chart", "date" to "Date", "biometricReminder" to "Biometric Reminder", "biometricReminderTitle" to "Time for measurements!", "biometricReminderText" to "Don't forget to log your weekly body measurements.", "biometricReminderEnabled" to "Enabled", "biometricReminderDisabled" to "Disabled",
-            "foodJournal" to "Food Journal", "scanBarcode" to "Scan Barcode", "scanBarcodeHint" to "Place the barcode in frame to scan the product", "cameraPermissionRequired" to "Camera permission is required for scanning", "scan" to "Scan", "scanning" to "Scanning...", "scanBarcodeHelp" to "Make sure Google Play Services is installed and updated", "noFoodEntries" to "No food entries yet", "todaysMacros" to "Today's Macros", "caloriesLabel" to "Calories", "proteinLabel" to "Protein", "carbsLabel" to "Carbs", "fatLabel" to "Fat", "breakfast" to "Breakfast", "lunch" to "Lunch", "dinner" to "Dinner", "snack" to "Snack", "selectMealType" to "Select meal type", "manualFoodEntry" to "Manual Entry", "foodName" to "Food name", "brandLabel" to "Brand", "calories" to "Calories", "protein" to "Protein", "carbs" to "Carbs", "fat" to "Fat", "fiber" to "Fiber",
+            "foodJournal" to "Food Journal", "scanBarcode" to "Scan Barcode", "scanBarcodeHint" to "Place the barcode in frame to scan the product", "cameraPermissionRequired" to "Camera permission is required for scanning", "scan" to "Scan", "scanning" to "Scanning...", "scanBarcodeHelp" to "Make sure Google Play Services is installed and updated", "noFoodEntries" to "No food entries yet", "todaysMacros" to "Today's Macros", "caloriesLabel" to "Calories", "proteinLabel" to "Protein", "carbsLabel" to "Carbs", "fatLabel" to "Fat", "breakfast" to "Breakfast", "lunch" to "Lunch", "dinner" to "Dinner", "snack" to "Snack", "drinks" to "Drinks", "selectMealType" to "Select meal type", "manualFoodEntry" to "Manual Entry", "foodName" to "Food name", "brandLabel" to "Brand", "calories" to "Calories", "protein" to "Protein", "carbs" to "Carbs", "fat" to "Fat", "fiber" to "Fiber",
             "aiTrainer" to "AI Trainer", "aiTrainerWelcome" to "Hi! I'm your AI trainer", "aiTrainerHint" to "Ask me anything about workouts, nutrition or progress", "askAiTrainer" to "Ask the trainer...", "aiSuggestion1" to "What workout do you recommend today?", "aiSuggestion2" to "How can I increase volume?", "aiSuggestion3" to "Do I need a rest day?", "aiSuggestion4" to "How do I break through a plateau?",
             "viewProfile" to "View Profile",
             "accountSettings" to "Account Settings", "deleteAccount" to "Delete Account",
@@ -605,7 +704,7 @@ object LanguageManager {
             "favorite" to "Favorite", "favorites" to "Favorites", "usageCount" to "Used",
             "addSet" to "Add Set", "exerciseNotes" to "Exercise Notes", "workoutNotes" to "Workout Notes",
             "saveNotes" to "Save Notes", "editWorkout" to "Edit Workout",
-            "volume" to "Volume", "maxWeight" to "Max Weight", "maxReps" to "Max Reps",
+            "volume" to "Volume", "maxWeight" to "Max Weight", "maxReps" to "Max Reps", "maxSet" to "Max Set",
             "today" to "Today", "thisWeek" to "This Week", "thisMonth" to "This Month",
             "totalVolumeLabel" to "Total Volume",
             "languageChanged" to "Language changed", "themeChanged" to "Theme changed",
@@ -617,7 +716,37 @@ object LanguageManager {
             "muscleGroups" to "Muscle Groups", "startHere" to "Start Here", "back__" to "Back",
             "englishUS" to "English", "romana" to "Romanian", "russkiy" to "Russian", "ukrainska" to "Ukrainian",
             "francais" to "French", "deutsch" to "German", "espanol" to "Spanish",
-            "italiano" to "Italian", "turkce" to "Turkish", "portugues" to "Portuguese", "polski" to "Polish"
+            "italiano" to "Italian", "turkce" to "Turkish", "portugues" to "Portuguese", "polski" to "Polish",
+            "motto1" to "Every rep counts.", "motto2" to "Stronger than yesterday.",
+            "motto3" to "Your body, your rules.", "motto4" to "Push your limits.",
+            "motto5" to "Consistency beats talent.", "motto6" to "Discipline is freedom.",
+            "motto7" to "No shortcuts.", "motto8" to "Earned, not given.",
+            "goodMorning" to "Good morning", "goodAfternoon" to "Good afternoon", "goodEvening" to "Good evening",
+            "daysConsecutive" to "days consecutive", "todaysWorkout" to "Today's Workout",
+            "howDoYouFeel" to "How do you feel?", "tiredLabel" to "Tired", "normalLabel" to "Normal", "energeticLabel" to "Energic",
+            "plusToday" to "Plus today", "technicalTip" to "Technical tip",
+            "tomorrowLabel" to "Tomorrow", "setWorkoutTime" to "Set workout time",
+            "daysSinceLastWorkout" to "Days since last workout", "groupsFullyRecovered" to "Groups fully recovered",
+            "recoveryOnGroups" to "Recovery on groups",
+            "weeklySummary" to "Weekly Summary", "lastWeekLabel" to "last week",
+            "goalLabel" to "Goal tip", "volumeLabel" to "Volume", "topExerciseLabel" to "Top exercise",
+            "nutritionLabel" to "Nutrition", "motivationLabel" to "Motivation",
+            "gpsCardioMap" to "GPS Cardio Map", "startTracking" to "Start Tracking", "stopTracking" to "Stop Tracking",
+            "distance" to "Distance", "pace" to "Pace", "speed" to "Speed", "duration" to "Duration",
+            "calories" to "Calories", "savedRoutes" to "Saved Routes", "noSavedRoutes" to "No saved routes yet",
+            "routeName" to "Route Name", "saveRoute" to "Save Route", "deleteRoute" to "Delete Route",
+            "currentLocation" to "Current Location", "trackingActive" to "Tracking Active",
+            "locationPermissionRequired" to "Location permission is required",
+            "restDaysTitle" to "Rest Days & Deload", "restDaysSubtitle" to "Auto-schedule recovery, stretching, light yoga",
+            "deloadWeek" to "Deload Week", "recoverySchedule" to "Recovery Schedule",
+            "stretching" to "Stretching", "lightYoga" to "Light Yoga", "foamRolling" to "Foam Rolling",
+            "restDayRecommendation" to "Rest Day Recommendation", "nextRestDay" to "Next Rest Day",
+            "muscleNeedsRest" to "Muscle needs rest", "recoveryComplete" to "Recovery Complete",
+            "deloadInfo" to "Deload Info", "suggestedActivities" to "Suggested Activities",
+            "activeRecovery" to "Active Recovery", "lightWalk" to "Light Walk",
+            "swimming" to "Swimming", "mobilityWork" to "Mobility Work",
+            "noRestDays" to "No rest days scheduled", "selectDay" to "Select day",
+            "save" to "Save"
         )),
         "ru" to Strings(mapOf(
             "appName" to "Kinetic", "dashboard" to "Панель", "overview" to "Обзор", "acasa" to "Главная", "workouts" to "Тренировки", "stats" to "Статистика", "waterIntake" to "Потребление воды", "waterGoal" to "Цель воды", "addWater" to "Добавить воду", "dailyWater" to "Вода за день", "height" to "Рост", "personalInfo" to "Личная информация", "waterAutoCalc" to "Авторасчет воды", "ml" to "мл", "templates" to "Шаблоны", "recovery" to "Восстановление",
@@ -635,7 +764,7 @@ object LanguageManager {
             "shoulders" to "Плечи", "arms" to "Руки", "biceps" to "Бицепс", "triceps" to "Трицепс",
             "legs" to "Ноги", "thighs" to "Бёдра", "glutes" to "Ягодичные", "calves" to "Икры", "core" to "Кор", "cardio" to "Кардио",
             "sets" to "Подходы", "reps" to "Повторы", "weight" to "Вес", "addExercise" to "Добавить упражнение",
-            "saveWorkout" to "Сохранить тренировку", "startWorkout" to "Начать тренировку",
+            "saveWorkout" to "Сохранить тренировку", "startWorkout" to "Начать тренировку", "nextExercise" to "Следующее упражнение",
             "notes" to "Заметки", "cancel" to "Отмена", "confirm" to "Подтвердить", "delete" to "Удалить",
             "edit" to "Редактировать", "search" to "Поиск", "noDataYet" to "Данных пока нет",
             "friendRequests" to "Заявки в друзья", "sendRequest" to "Отправить заявку",
@@ -703,7 +832,7 @@ object LanguageManager {
             "monthlyProgress" to "Прогресс за месяц", "completeWorkoutsToSee" to "Завершите тренировки чтобы увидеть прогресс", "jan" to "Янв", "feb" to "Фев", "mar" to "Мар", "apr" to "Апр", "may" to "Май", "jun" to "Июн", "jul" to "Июл", "aug" to "Авг", "sep" to "Сен", "oct" to "Окт", "nov" to "Ноя", "dec" to "Дек", "monthlyDetails" to "Детали месяца", "month" to "Месяц", "mon" to "Пн", "tue" to "Вт", "wed" to "Ср", "thu" to "Чт", "fri" to "Пт", "sat" to "Сб", "sun" to "Вс", "noWorkouts" to "Нет тренировок в этот день", "workoutDistribution" to "Распределение тренировок",
             "notNow" to "Не сейчас", "subscribeNow" to "Подписаться", "premiumFeature" to "Премиум функция", "subscribersOnly" to "\$feature доступно только для подписчиков", "choosePlan" to "Выберите план", "youAreSubscribed" to "Вы подписаны!", "muscleRecovery" to "Восстановление мышц", "waterReminder" to "Напоминание о воде", "waterReminderTitle" to "Время пить воду!", "waterReminderText" to "Пейте воду! Самое время выпить стакан воды.", "waterReminderEnabled" to "Включено", "waterReminderDisabled" to "Выключено", "selectTime" to "Выбрать время", "forearms" to "Предплечья", "neckAndTraps" to "Шея и Трапеции", "welcome" to "Добро пожаловать", "athlete" to "Спортсмен",
             "biometricTracking" to "Биометрический мониторинг", "biometricSubtitle" to "Вес, обхваты, жировая прослойка", "addMeasurement" to "Добавить измерение", "bodyFat" to "Жировая прослойка", "waistCirc" to "Талия", "hipsCirc" to "Бёдра", "thighsCirc" to "Бедра", "chestCirc" to "Грудь", "armsCirc" to "Руки", "lastMeasurement" to "Последнее измерение", "noMeasurements" to "Измерений пока нет", "viewCharts" to "Посмотреть графики", "saveMeasurement" to "Сохранить измерение", "measurementSaved" to "Измерение сохранено", "weeksAgo" to "недель назад", "cm" to "см", "percent" to "%", "deleteMeasurement" to "Удалить измерение", "biometricHistory" to "История измерений", "weightChart" to "График веса", "bodyFatChart" to "График жира", "circumferenceChart" to "График обхватов", "date" to "Дата", "biometricReminder" to "Биометрическое напоминание", "biometricReminderTitle" to "Время для измерений!", "biometricReminderText" to "Не забудьте записать еженедельные измерения тела.", "biometricReminderEnabled" to "Включено", "biometricReminderDisabled" to "Выключено",
-            "foodJournal" to "Дневник питания", "scanBarcode" to "Сканировать штрих-код", "scanBarcodeHint" to "Поместите штрих-код в кадр для сканирования продукта", "cameraPermissionRequired" to "Для сканирования необходим доступ к камере", "scan" to "Сканировать", "scanning" to "Сканирование...", "scanBarcodeHelp" to "Убедитесь, что Google Play Services установлен и обновлен", "noFoodEntries" to "Записей о еде пока нет", "todaysMacros" to "Макронутриенты сегодня", "caloriesLabel" to "Калории", "proteinLabel" to "Белки", "carbsLabel" to "Углеводы", "fatLabel" to "Жиры", "breakfast" to "Завтрак", "lunch" to "Обед", "dinner" to "Ужин", "snack" to "Перекус", "selectMealType" to "Выберите тип приема пищи", "manualFoodEntry" to "Ручной ввод", "foodName" to "Название продукта", "brandLabel" to "Бренд", "calories" to "Калории", "protein" to "Белки", "carbs" to "Углеводы", "fat" to "Жиры", "fiber" to "Клетчатка",
+            "foodJournal" to "Дневник питания", "scanBarcode" to "Сканировать штрих-код", "scanBarcodeHint" to "Поместите штрих-код в кадр для сканирования продукта", "cameraPermissionRequired" to "Для сканирования необходим доступ к камере", "scan" to "Сканировать", "scanning" to "Сканирование...", "scanBarcodeHelp" to "Убедитесь, что Google Play Services установлен и обновлен", "noFoodEntries" to "Записей о еде пока нет", "todaysMacros" to "Макронутриенты сегодня", "caloriesLabel" to "Калории", "proteinLabel" to "Белки", "carbsLabel" to "Углеводы", "fatLabel" to "Жиры", "breakfast" to "Завтрак", "lunch" to "Обед", "dinner" to "Ужин", "snack" to "Перекус", "drinks" to "Напитки", "selectMealType" to "Выберите тип приема пищи", "manualFoodEntry" to "Ручной ввод", "foodName" to "Название продукта", "brandLabel" to "Бренд", "calories" to "Калории", "protein" to "Белки", "carbs" to "Углеводы", "fat" to "Жиры", "fiber" to "Клетчатка",
             "aiTrainer" to "ИИ Тренер", "aiTrainerWelcome" to "Привет! Я ваш ИИ тренер", "aiTrainerHint" to "Спросите меня о тренировках, питании или прогрессе", "askAiTrainer" to "Спросите тренера...", "aiSuggestion1" to "Какую тренировку вы рекомендуете сегодня?", "aiSuggestion2" to "Как увеличить объём?", "aiSuggestion3" to "Нужен ли мне день отдыха?", "aiSuggestion4" to "Как выйти из плато?",
             "viewProfile" to "Посмотреть профиль",
             "accountSettings" to "Настройки аккаунта", "deleteAccount" to "Удалить аккаунт",
@@ -715,7 +844,7 @@ object LanguageManager {
             "favorite" to "Избранное", "favorites" to "Избранные", "usageCount" to "Использован",
             "addSet" to "Добавить подход", "exerciseNotes" to "Заметки", "workoutNotes" to "Заметки тренировки",
             "saveNotes" to "Сохранить", "editWorkout" to "Редактировать",
-            "volume" to "Объём", "maxWeight" to "Макс вес", "maxReps" to "Макс повторы",
+            "volume" to "Объём", "maxWeight" to "Макс вес", "maxReps" to "Макс повторы", "maxSet" to "Макс подход",
             "today" to "Сегодня", "thisWeek" to "Эта неделя", "thisMonth" to "Этот месяц",
             "totalVolumeLabel" to "Общий объём",
             "languageChanged" to "Язык изменён", "themeChanged" to "Тема изменена",
@@ -727,7 +856,21 @@ object LanguageManager {
             "muscleGroups" to "Мышечные группы", "startHere" to "Начать здесь", "back__" to "Назад",
             "englishUS" to "Английский", "romana" to "Румынский", "russkiy" to "Русский", "ukrainska" to "Украинский",
             "francais" to "Французский", "deutsch" to "Немецкий", "espanol" to "Испанский",
-            "italiano" to "Итальянский", "turkce" to "Турецкий", "portugues" to "Португальский", "polski" to "Польский"
+            "italiano" to "Итальянский", "turkce" to "Турецкий", "portugues" to "Португальский", "polski" to "Польский",
+            "motto1" to "Каждое повторение на счету.", "motto2" to "Сильнее, чем вчера.",
+            "motto3" to "Твоё тело, твои правила.", "motto4" to "Превзойди свои пределы.",
+            "motto5" to "Последовательность побеждает талант.", "motto6" to "Дисциплина — это свобода.",
+            "motto7" to "Без коротких путей.", "motto8" to "Заработано, а не дано.",
+            "goodMorning" to "Доброе утро", "goodAfternoon" to "Добрый день", "goodEvening" to "Добрый вечер",
+            "daysConsecutive" to "дней подряд", "todaysWorkout" to "Тренировка сегодня",
+            "howDoYouFeel" to "Как вы себя чувствуете?", "tiredLabel" to "Устал", "normalLabel" to "Нормально", "energeticLabel" to "Энергичен",
+            "plusToday" to "Ещё сегодня", "technicalTip" to "Технический совет",
+            "tomorrowLabel" to "Завтра", "setWorkoutTime" to "Установить время тренировки",
+            "daysSinceLastWorkout" to "Дней с последней тренировки", "groupsFullyRecovered" to "Группы полностью восстановлены",
+            "recoveryOnGroups" to "Восстановление групп",
+            "weeklySummary" to "Итоги недели", "lastWeekLabel" to "прошл. неделя",
+            "goalLabel" to "Совет по цели", "volumeLabel" to "Объём", "topExerciseLabel" to "Топ упражнение",
+            "nutritionLabel" to "Питание", "motivationLabel" to "Мотивация"
         )),
         "uk" to Strings(mapOf(
             "appName" to "Kinetic", "dashboard" to "Панель", "overview" to "Огляд", "acasa" to "Головна", "workouts" to "Тренування", "stats" to "Статистика", "waterIntake" to "Споживання води", "waterGoal" to "Мета води", "addWater" to "Додати воду", "dailyWater" to "Вода за день", "height" to "Зріст", "personalInfo" to "Особиста інформація", "waterAutoCalc" to "Авторозрахунок води", "ml" to "мл", "templates" to "Шаблони",
@@ -746,7 +889,7 @@ object LanguageManager {
             "shoulders" to "Плечі", "arms" to "Руки", "biceps" to "Біцепс", "triceps" to "Трицепс",
             "legs" to "Ноги", "thighs" to "Стегна", "glutes" to "Сідничні", "calves" to "Гомілки", "core" to "Кор", "cardio" to "Кардіо",
             "sets" to "Підходи", "reps" to "Повтори", "weight" to "Вага", "addExercise" to "Додати вправу",
-            "saveWorkout" to "Зберегти тренування", "startWorkout" to "Почати тренування",
+            "saveWorkout" to "Зберегти тренування", "startWorkout" to "Почати тренування", "nextExercise" to "Наступна вправа",
             "notes" to "Нотатки", "cancel" to "Скасувати", "confirm" to "Підтвердити", "delete" to "Видалити",
             "edit" to "Редагувати", "search" to "Пошук", "noDataYet" to "Даних поки немає",
             "friendRequests" to "Запити в друзі", "sendRequest" to "Надіслати запит",
@@ -812,7 +955,7 @@ object LanguageManager {
             "monthlyProgress" to "Прогрес за місяць", "completeWorkoutsToSee" to "Завершіть тренування щоб побачити прогрес", "jan" to "Січ", "feb" to "Лют", "mar" to "Бер", "apr" to "Кві", "may" to "Тра", "jun" to "Чер", "jul" to "Лип", "aug" to "Сер", "sep" to "Вер", "oct" to "Жов", "nov" to "Лис", "dec" to "Гру", "monthlyDetails" to "Деталі місяця", "month" to "Місяць", "mon" to "Пн", "tue" to "Вт", "wed" to "Ср", "thu" to "Чт", "fri" to "Пт", "sat" to "Сб", "sun" to "Нд", "noWorkouts" to "Немає тренувань в цей день", "workoutDistribution" to "Розподіл тренувань",
             "notNow" to "Не зараз", "subscribeNow" to "Підписатися", "premiumFeature" to "Преміум функція", "subscribersOnly" to "\$feature доступне лише для підписників", "choosePlan" to "Оберіть план", "youAreSubscribed" to "Ви підписані!", "muscleRecovery" to "Відновлення м'язів", "waterReminder" to "Нагадування про воду", "waterReminderTitle" to "Час пити воду!", "waterReminderText" to "Пийте воду! Настав час випити склянку води.", "waterReminderEnabled" to "Увімкнено", "waterReminderDisabled" to "Вимкнено", "selectTime" to "Обрати час", "forearms" to "Передпліччя", "neckAndTraps" to "Шия і Трапеція", "welcome" to "Ласкаво просимо", "athlete" to "Спортсмен",
             "biometricTracking" to "Біометричний моніторинг", "biometricSubtitle" to "Вага, обхвати, жирова прошарок", "addMeasurement" to "Додати вимірювання", "bodyFat" to "Жирова прошарок", "waistCirc" to "Талія", "hipsCirc" to "Стегна", "thighsCirc" to "Бедра", "chestCirc" to "Груди", "armsCirc" to "Руки", "lastMeasurement" to "Останнє вимірювання", "noMeasurements" to "Вимірювань поки немає", "viewCharts" to "Переглянути графіки", "saveMeasurement" to "Зберегти вимірювання", "measurementSaved" to "Вимірювання збережено", "weeksAgo" to "тижнів тому", "cm" to "см", "percent" to "%", "deleteMeasurement" to "Видалити вимірювання", "biometricHistory" to "Історія вимірювань", "weightChart" to "Графік ваги", "bodyFatChart" to "Графік жиру", "circumferenceChart" to "Графік обхватів", "date" to "Дата", "biometricReminder" to "Біометричне нагадування", "biometricReminderTitle" to "Час для вимірювань!", "biometricReminderText" to "Не забудьте записати тижневі вимірювання тіла.", "biometricReminderEnabled" to "Увімкнено", "biometricReminderDisabled" to "Вимкнено",
-            "foodJournal" to "Щоденник харчування", "scanBarcode" to "Сканувати штрих-код", "scanBarcodeHint" to "Помістіть штрих-код у кадр для сканування продукту", "cameraPermissionRequired" to "Для сканування потрібен доступ до камери", "scan" to "Сканувати", "scanning" to "Сканування...", "scanBarcodeHelp" to "Переконайтеся, що Google Play Services встановлено та оновлено", "noFoodEntries" to "Записів про їжу поки немає", "todaysMacros" to "Макронутрієнти сьогодні", "caloriesLabel" to "Калорії", "proteinLabel" to "Білки", "carbsLabel" to "Вуглеводи", "fatLabel" to "Жири", "breakfast" to "Сніданок", "lunch" to "Обід", "dinner" to "Вечеря", "snack" to "Перекус", "selectMealType" to "Оберіть тип прийому їжі", "manualFoodEntry" to "Ручний ввід", "foodName" to "Назва продукту", "brandLabel" to "Бренд", "calories" to "Калорії", "protein" to "Білки", "carbs" to "Вуглеводи", "fat" to "Жири", "fiber" to "Клітковина",
+            "foodJournal" to "Щоденник харчування", "scanBarcode" to "Сканувати штрих-код", "scanBarcodeHint" to "Помістіть штрих-код у кадр для сканування продукту", "cameraPermissionRequired" to "Для сканування потрібен доступ до камери", "scan" to "Сканувати", "scanning" to "Сканування...", "scanBarcodeHelp" to "Переконайтеся, що Google Play Services встановлено та оновлено", "noFoodEntries" to "Записів про їжу поки немає", "todaysMacros" to "Макронутрієнти сьогодні", "caloriesLabel" to "Калорії", "proteinLabel" to "Білки", "carbsLabel" to "Вуглеводи", "fatLabel" to "Жири", "breakfast" to "Сніданок", "lunch" to "Обід", "dinner" to "Вечеря", "snack" to "Перекус", "drinks" to "Напої", "selectMealType" to "Оберіть тип прийому їжі", "manualFoodEntry" to "Ручний ввід", "foodName" to "Назва продукту", "brandLabel" to "Бренд", "calories" to "Калорії", "protein" to "Білки", "carbs" to "Вуглеводи", "fat" to "Жири", "fiber" to "Клітковина",
             "aiTrainer" to "ШІ Тренер", "aiTrainerWelcome" to "Привіт! Я ваш ШІ тренер", "aiTrainerHint" to "Запитайте мене про тренування, харчування або прогрес", "askAiTrainer" to "Запитайте тренера...", "aiSuggestion1" to "Яке тренування ви рекомендуєте сьогодні?", "aiSuggestion2" to "Як збільшити обсяг?", "aiSuggestion3" to "Чи потрібен мені день відпочинку?", "aiSuggestion4" to "Як вийти з плато?",
             "viewProfile" to "Переглянути профіль",
             "accountSettings" to "Налаштування акаунту", "deleteAccount" to "Видалити акаунт",
@@ -824,7 +967,7 @@ object LanguageManager {
             "favorite" to "Обране", "favorites" to "Обрані", "usageCount" to "Використано",
             "addSet" to "Додати підхід", "exerciseNotes" to "Нотатки", "workoutNotes" to "Нотатки тренування",
             "saveNotes" to "Зберегти", "editWorkout" to "Редагувати",
-            "volume" to "Об'єм", "maxWeight" to "Макс вага", "maxReps" to "Макс повтори",
+            "volume" to "Об'єм", "maxWeight" to "Макс вага", "maxReps" to "Макс повтори", "maxSet" to "Макс підхід",
             "today" to "Сьогодні", "thisWeek" to "Цей тиждень", "thisMonth" to "Цей місяць",
             "totalVolumeLabel" to "Загальний об'єм",
             "languageChanged" to "Мову змінено", "themeChanged" to "Тему змінено",
@@ -836,7 +979,21 @@ object LanguageManager {
             "muscleGroups" to "М'язові групи", "startHere" to "Почати тут", "back__" to "Назад",
             "englishUS" to "Англійська", "romana" to "Румунська", "russkiy" to "Російська", "ukrainska" to "Українська",
             "francais" to "Французька", "deutsch" to "Німецька", "espanol" to "Іспанська",
-            "italiano" to "Італійська", "turkce" to "Турецька", "portugues" to "Португальська", "polski" to "Польська"
+            "italiano" to "Італійська", "turkce" to "Турецька", "portugues" to "Португальська", "polski" to "Польська",
+            "motto1" to "Кожен повтор має значення.", "motto2" to "Сильніший, ніж учора.",
+            "motto3" to "Твоє тіло, твої правила.", "motto4" to "Переверши свої межі.",
+            "motto5" to "Послідовність перемагає талант.", "motto6" to "Дисципліна — це свобода.",
+            "motto7" to "Без коротких шляхів.", "motto8" to "Зароблено, а не отримано.",
+            "goodMorning" to "Доброго ранку", "goodAfternoon" to "Доброго дня", "goodEvening" to "Доброго вечора",
+            "daysConsecutive" to "днів поспіль", "todaysWorkout" to "Тренування сьогодні",
+            "howDoYouFeel" to "Як ви почуваєтесь?", "tiredLabel" to "Втомлений", "normalLabel" to "Нормально", "energeticLabel" to "Енергійний",
+            "plusToday" to "Ще сьогодні", "technicalTip" to "Технічна порада",
+            "tomorrowLabel" to "Завтра", "setWorkoutTime" to "Встановити час тренування",
+            "daysSinceLastWorkout" to "Днів з останнього тренування", "groupsFullyRecovered" to "Групи повністю відновлені",
+            "recoveryOnGroups" to "Відновлення груп",
+            "weeklySummary" to "Підсумки тижня", "lastWeekLabel" to "минул. тиждень",
+            "goalLabel" to "Порада по цілі", "volumeLabel" to "Об'єм", "topExerciseLabel" to "Топ вправа",
+            "nutritionLabel" to "Харчування", "motivationLabel" to "Мотивація"
         )),
         "fr" to Strings(mapOf(
             "appName" to "Kinetic", "dashboard" to "Tableau de bord", "overview" to "Aperçu", "acasa" to "Accueil", "workouts" to "Entraînements", "stats" to "Stats", "waterIntake" to "Consommation d'eau", "waterGoal" to "Objectif eau", "addWater" to "Ajouter de l'eau", "dailyWater" to "Eau quotidienne", "height" to "Taille", "personalInfo" to "Informations personnelles", "waterAutoCalc" to "Calcul auto eau", "ml" to "ml", "templates" to "Modèles",
@@ -856,7 +1013,7 @@ object LanguageManager {
             "legs" to "Jambes", "thighs" to "Cuisses", "glutes" to "Fessiers", "calves" to "Mollets",
             "core" to "Abdominaux", "cardio" to "Cardio", "sets" to "Séries", "reps" to "Répétitions",
             "weight" to "Poids", "addExercise" to "Ajouter un exercice",
-            "saveWorkout" to "Sauvegarder l'entraînement", "startWorkout" to "Commencer l'entraînement",
+            "saveWorkout" to "Sauvegarder l'entraînement", "startWorkout" to "Commencer l'entraînement", "nextExercise" to "Exercice suivant",
             "notes" to "Notes", "cancel" to "Annuler", "confirm" to "Confirmer", "delete" to "Supprimer",
             "edit" to "Modifier", "search" to "Rechercher", "noDataYet" to "Pas encore de données",
             "friendRequests" to "Demandes d'amis", "sendRequest" to "Envoyer la demande",
@@ -927,7 +1084,7 @@ object LanguageManager {
             "monthlyProgress" to "Progrès mensuel", "completeWorkoutsToSee" to "Complétez des entraînements pour voir les progrès", "jan" to "Janv", "feb" to "Févr", "mar" to "Mars", "apr" to "Avr", "may" to "Mai", "jun" to "Juin", "jul" to "Juil", "aug" to "Août", "sep" to "Sept", "oct" to "Oct", "nov" to "Nov", "dec" to "Déc", "monthlyDetails" to "Détails mensuels", "month" to "Mois", "mon" to "Lu", "tue" to "Ma", "wed" to "Me", "thu" to "Je", "fri" to "Ve", "sat" to "Sa", "sun" to "Di", "noWorkouts" to "Aucun entraînement ce jour", "workoutDistribution" to "Distribution des entraînements",
             "notNow" to "Pas maintenant", "subscribeNow" to "S'abonner", "premiumFeature" to "Fonctionnalité Premium", "subscribersOnly" to "\$feature est disponible uniquement pour les abonnés", "choosePlan" to "Choisir un forfait", "youAreSubscribed" to "Vous êtes abonné!", "muscleRecovery" to "Récupération musculaire", "waterReminder" to "Rappel d'hydratation", "waterReminderTitle" to "Il est temps de boire de l'eau!", "waterReminderText" to "Restez hydraté! Il est temps de boire un verre d'eau.", "waterReminderEnabled" to "Activé", "waterReminderDisabled" to "Désactivé", "selectTime" to "Choisir l'heure", "forearms" to "Avant-bras", "neckAndTraps" to "Cou & Trapèzes", "welcome" to "Bienvenue", "athlete" to "Athlète",
             "biometricTracking" to "Suivi biométrique", "biometricSubtitle" to "Poids, circonférences, graisse corporelle", "addMeasurement" to "Ajouter une mesure", "bodyFat" to "Graisse corporelle", "waistCirc" to "Taille", "hipsCirc" to "Hanches", "thighsCirc" to "Cuisses", "chestCirc" to "Poitrine", "armsCirc" to "Bras", "lastMeasurement" to "Dernière mesure", "noMeasurements" to "Aucune mesure encore", "viewCharts" to "Voir les graphiques", "saveMeasurement" to "Enregistrer la mesure", "measurementSaved" to "Mesure enregistrée", "weeksAgo" to "semaines", "cm" to "cm", "percent" to "%", "deleteMeasurement" to "Supprimer la mesure", "biometricHistory" to "Historique des mesures", "weightChart" to "Graphique du poids", "bodyFatChart" to "Graphique de la graisse", "circumferenceChart" to "Graphique des circonférences", "date" to "Date", "biometricReminder" to "Rappel biométrique", "biometricReminderTitle" to "C'est l'heure des mesures!", "biometricReminderText" to "N'oubliez pas d'enregistrer vos mesures corporelles hebdomadaires.", "biometricReminderEnabled" to "Activé", "biometricReminderDisabled" to "Désactivé",
-            "foodJournal" to "Journal alimentaire", "scanBarcode" to "Scanner le code-barres", "scanBarcodeHint" to "Placez le code-barres dans le cadre pour scanner le produit", "cameraPermissionRequired" to "L'accès à la caméra est nécessaire pour scanner", "scan" to "Scanner", "scanning" to "Scan en cours...", "scanBarcodeHelp" to "Assurez-vous que Google Play Services est installé et mis à jour", "noFoodEntries" to "Aucune entrée alimentaire", "todaysMacros" to "Macronutriments du jour", "caloriesLabel" to "Calories", "proteinLabel" to "Protéines", "carbsLabel" to "Glucides", "fatLabel" to "Lipides", "breakfast" to "Petit-déjeuner", "lunch" to "Déjeuner", "dinner" to "Dîner", "snack" to "Collation", "selectMealType" to "Sélectionner le type de repas", "manualFoodEntry" to "Saisie manuelle", "foodName" to "Nom de l'aliment", "brandLabel" to "Marque", "calories" to "Calories", "protein" to "Protéines", "carbs" to "Glucides", "fat" to "Lipides", "fiber" to "Fibres",
+            "foodJournal" to "Journal alimentaire", "scanBarcode" to "Scanner le code-barres", "scanBarcodeHint" to "Placez le code-barres dans le cadre pour scanner le produit", "cameraPermissionRequired" to "L'accès à la caméra est nécessaire pour scanner", "scan" to "Scanner", "scanning" to "Scan en cours...", "scanBarcodeHelp" to "Assurez-vous que Google Play Services est installé et mis à jour", "noFoodEntries" to "Aucune entrée alimentaire", "todaysMacros" to "Macronutriments du jour", "caloriesLabel" to "Calories", "proteinLabel" to "Protéines", "carbsLabel" to "Glucides", "fatLabel" to "Lipides", "breakfast" to "Petit-déjeuner", "lunch" to "Déjeuner", "dinner" to "Dîner", "snack" to "Collation", "drinks" to "Boissons", "selectMealType" to "Sélectionner le type de repas", "manualFoodEntry" to "Saisie manuelle", "foodName" to "Nom de l'aliment", "brandLabel" to "Marque", "calories" to "Calories", "protein" to "Protéines", "carbs" to "Glucides", "fat" to "Lipides", "fiber" to "Fibres",
             "aiTrainer" to "Coach IA", "aiTrainerWelcome" to "Salut! Je suis votre coach IA", "aiTrainerHint" to "Demandez-moi tout sur l'entraînement, la nutrition ou les progrès", "askAiTrainer" to "Demander au coach...", "aiSuggestion1" to "Quel entraînement recommandez-vous?", "aiSuggestion2" to "Comment augmenter le volume?", "aiSuggestion3" to "Ai-je besoin d'un jour de repos?", "aiSuggestion4" to "Comment sortir d'un plateau?",
             "viewProfile" to "Voir le profil", "accountSettings" to "Paramètres du compte",
             "deleteAccount" to "Supprimer le compte", "privacyPolicy" to "Politique de confidentialité",
@@ -938,7 +1095,7 @@ object LanguageManager {
             "favorite" to "Favori", "favorites" to "Favoris", "usageCount" to "Utilisé",
             "addSet" to "Ajouter set", "exerciseNotes" to "Notes exercice", "workoutNotes" to "Notes séance",
             "saveNotes" to "Enregistrer", "editWorkout" to "Modifier",
-            "volume" to "Volume", "maxWeight" to "Poids max", "maxReps" to "Reps max",
+            "volume" to "Volume", "maxWeight" to "Poids max", "maxReps" to "Reps max", "maxSet" to "Série max",
             "today" to "Aujourd'hui", "thisWeek" to "Cette semaine", "thisMonth" to "Ce mois",
             "totalVolumeLabel" to "Volume total",
             "languageChanged" to "Langue modifiée", "themeChanged" to "Thème modifié",
@@ -950,7 +1107,21 @@ object LanguageManager {
             "muscleGroups" to "Groupes musculaires", "startHere" to "Commencer ici", "back__" to "Retour",
             "englishUS" to "Anglais", "romana" to "Roumain", "russkiy" to "Russe", "ukrainska" to "Ukrainien",
             "francais" to "Français", "deutsch" to "Allemand", "espanol" to "Espagnol",
-            "italiano" to "Italien", "turkce" to "Turc", "portugues" to "Portugais", "polski" to "Polonais"
+            "italiano" to "Italien", "turkce" to "Turc", "portugues" to "Portugais", "polski" to "Polonais",
+            "motto1" to "Chaque répétition compte.", "motto2" to "Plus fort qu'hier.",
+            "motto3" to "Ton corps, tes règles.", "motto4" to "Repousse tes limites.",
+            "motto5" to "La constance bat le talent.", "motto6" to "La discipline, c'est la liberté.",
+            "motto7" to "Pas de raccourcis.", "motto8" to "Gagné, pas donné.",
+            "goodMorning" to "Bonjour", "goodAfternoon" to "Bon après-midi", "goodEvening" to "Bonsoir",
+            "daysConsecutive" to "jours consécutifs", "todaysWorkout" to "Entraînement du jour",
+            "howDoYouFeel" to "Comment vous sentez-vous?", "tiredLabel" to "Fatigué", "normalLabel" to "Normal", "energeticLabel" to "Énergique",
+            "plusToday" to "Encore aujourd'hui", "technicalTip" to "Conseil technique",
+            "tomorrowLabel" to "Demain", "setWorkoutTime" to "Régler l'heure d'entraînement",
+            "daysSinceLastWorkout" to "Jours depuis le dernier entraînement", "groupsFullyRecovered" to "Groupes complètement récupérés",
+            "recoveryOnGroups" to "Récupération des groupes",
+            "weeklySummary" to "Résumé de la semaine", "lastWeekLabel" to "semaine dernière",
+            "goalLabel" to "Conseil objectif", "volumeLabel" to "Volume", "topExerciseLabel" to "Top exercice",
+            "nutritionLabel" to "Nutrition", "motivationLabel" to "Motivation"
         )),
         "de" to Strings(mapOf(
             "appName" to "Kinetic", "dashboard" to "Dashboard", "overview" to "Übersicht", "acasa" to "Startseite", "workouts" to "Trainings", "stats" to "Statistiken", "waterIntake" to "Wasseraufnahme", "waterGoal" to "Wasserziel", "addWater" to "Wasser hinzufügen", "dailyWater" to "Tägliches Wasser", "height" to "Größe", "personalInfo" to "Persönliche Infos", "waterAutoCalc" to "Auto Wasserberechnung", "ml" to "ml", "templates" to "Vorlagen",
@@ -971,7 +1142,7 @@ object LanguageManager {
             "core" to "Rumpf",
             "cardio" to "Cardio", "sets" to "Sätze", "reps" to "Wiederholungen", "weight" to "Gewicht",
             "addExercise" to "Übung hinzufügen", "saveWorkout" to "Training speichern",
-            "startWorkout" to "Training starten", "notes" to "Notizen", "cancel" to "Abbrechen",
+            "startWorkout" to "Training starten", "nextExercise" to "Nächste Übung", "notes" to "Notizen", "cancel" to "Abbrechen",
             "confirm" to "Bestätigen", "delete" to "Löschen", "edit" to "Bearbeiten", "search" to "Suchen",
             "noDataYet" to "Noch keine Daten", "friendRequests" to "Freundschaftsanfragen",
             "sendRequest" to "Anfrage senden", "accept" to "Akzeptieren", "reject" to "Ablehnen",
@@ -1039,7 +1210,7 @@ object LanguageManager {
             "monthlyProgress" to "Monatlicher Fortschritt", "completeWorkoutsToSee" to "Schließen Sie Trainings ab um Fortschritt zu sehen", "jan" to "Jan", "feb" to "Feb", "mar" to "Mär", "apr" to "Apr", "may" to "Mai", "jun" to "Jun", "jul" to "Jul", "aug" to "Aug", "sep" to "Sep", "oct" to "Okt", "nov" to "Nov", "dec" to "Dez", "monthlyDetails" to "Monatliche Details", "month" to "Monat", "mon" to "Mo", "tue" to "Di", "wed" to "Mi", "thu" to "Do", "fri" to "Fr", "sat" to "Sa", "sun" to "So", "noWorkouts" to "Kein Training an diesem Tag", "workoutDistribution" to "Trainingsverteilung",
             "notNow" to "Nicht jetzt", "subscribeNow" to "Jetzt abonnieren", "premiumFeature" to "Premium-Funktion", "subscribersOnly" to "\$feature ist nur für Abonnenten verfügbar", "choosePlan" to "Plan wählen", "youAreSubscribed" to "Sie sind abonniert!", "muscleRecovery" to "Muskelerholung", "waterReminder" to "Wasser-Erinnerung", "waterReminderTitle" to "Zeit, Wasser zu trinken!", "waterReminderText" to "Bleiben Sie hydriert! Es ist Zeit, ein Glas Wasser zu trinken.", "waterReminderEnabled" to "Aktiviert", "waterReminderDisabled" to "Deaktiviert", "selectTime" to "Uhrzeit wählen", "forearms" to "Unterarme", "neckAndTraps" to "Hals & Trapezmuskel", "welcome" to "Willkommen", "athlete" to "Athlet",
             "biometricTracking" to "Biometrisches Tracking", "biometricSubtitle" to "Gewicht, Umfänge, Körperfett", "addMeasurement" to "Messung hinzufügen", "bodyFat" to "Körperfett", "waistCirc" to "Taille", "hipsCirc" to "Hüfte", "thighsCirc" to "Oberschenkel", "chestCirc" to "Brust", "armsCirc" to "Arme", "lastMeasurement" to "Letzte Messung", "noMeasurements" to "Noch keine Messungen", "viewCharts" to "Diagramme anzeigen", "saveMeasurement" to "Messung speichern", "measurementSaved" to "Messung gespeichert", "weeksAgo" to "Wochen her", "cm" to "cm", "percent" to "%", "deleteMeasurement" to "Messung löschen", "biometricHistory" to "Messungsverlauf", "weightChart" to "Gewichtsdiagramm", "bodyFatChart" to "Körperfettdiagramm", "circumferenceChart" to "Umfangsdiagramm", "date" to "Datum", "biometricReminder" to "Biometrische Erinnerung", "biometricReminderTitle" to "Zeit für Messungen!", "biometricReminderText" to "Vergessen Sie nicht, Ihre wöchentlichen Körpermessungen zu protokollieren.", "biometricReminderEnabled" to "Aktiviert", "biometricReminderDisabled" to "Deaktiviert",
-            "foodJournal" to "Ernährungstagebuch", "scanBarcode" to "Barcode scannen", "scanBarcodeHint" to "Platzieren Sie den Barcode im Rahmen, um das Produkt zu scannen", "cameraPermissionRequired" to "Kamerazugang ist zum Scannen erforderlich", "scan" to "Scannen", "scanning" to "Scannen...", "scanBarcodeHelp" to "Stellen Sie sicher, dass Google Play Services installiert und aktuell ist", "noFoodEntries" to "Noch keine Einträge", "todaysMacros" to "Heutige Makros", "caloriesLabel" to "Kalorien", "proteinLabel" to "Eiweiß", "carbsLabel" to "Kohlenhydrate", "fatLabel" to "Fett", "breakfast" to "Frühstück", "lunch" to "Mittagessen", "dinner" to "Abendessen", "snack" to "Snack", "selectMealType" to "Mahlzeit auswählen", "manualFoodEntry" to "Manuelle Eingabe", "foodName" to "Produktname", "brandLabel" to "Marke", "calories" to "Kalorien", "protein" to "Eiweiß", "carbs" to "Kohlenhydrate", "fat" to "Fett", "fiber" to "Ballaststoffe",
+            "foodJournal" to "Ernährungstagebuch", "scanBarcode" to "Barcode scannen", "scanBarcodeHint" to "Platzieren Sie den Barcode im Rahmen, um das Produkt zu scannen", "cameraPermissionRequired" to "Kamerazugang ist zum Scannen erforderlich", "scan" to "Scannen", "scanning" to "Scannen...", "scanBarcodeHelp" to "Stellen Sie sicher, dass Google Play Services installiert und aktuell ist", "noFoodEntries" to "Noch keine Einträge", "todaysMacros" to "Heutige Makros", "caloriesLabel" to "Kalorien", "proteinLabel" to "Eiweiß", "carbsLabel" to "Kohlenhydrate", "fatLabel" to "Fett", "breakfast" to "Frühstück", "lunch" to "Mittagessen", "dinner" to "Abendessen", "snack" to "Snack", "drinks" to "Getränke", "selectMealType" to "Mahlzeit auswählen", "manualFoodEntry" to "Manuelle Eingabe", "foodName" to "Produktname", "brandLabel" to "Marke", "calories" to "Kalorien", "protein" to "Eiweiß", "carbs" to "Kohlenhydrate", "fat" to "Fett", "fiber" to "Ballaststoffe",
             "aiTrainer" to "KI Trainer", "aiTrainerWelcome" to "Hallo! Ich bin Ihr KI-Trainer", "aiTrainerHint" to "Fragen Sie mich zu Training, Ernährung oder Fortschritt", "askAiTrainer" to "Trainer fragen...", "aiSuggestion1" to "Welches Training empfehlen Sie heute?", "aiSuggestion2" to "Wie kann ich das Volumen steigern?", "aiSuggestion3" to "Brauche ich einen Ruhetag?", "aiSuggestion4" to "Wie komme ich aus dem Plateau?",
             "viewProfile" to "Profil anzeigen",
             "accountSettings" to "Kontoeinstellungen", "deleteAccount" to "Konto löschen",
@@ -1051,7 +1222,7 @@ object LanguageManager {
             "favorite" to "Favorit", "favorites" to "Favoriten", "usageCount" to "Benutzt",
             "addSet" to "Satz hinzufügen", "exerciseNotes" to "Übung Notizen", "workoutNotes" to "Training Notizen",
             "saveNotes" to "Speichern", "editWorkout" to "Bearbeiten",
-            "volume" to "Volumen", "maxWeight" to "Max Gewicht", "maxReps" to "Max Wdh",
+            "volume" to "Volumen", "maxWeight" to "Max Gewicht", "maxReps" to "Max Wdh", "maxSet" to "Max Satz",
             "today" to "Heute", "thisWeek" to "Diese Woche", "thisMonth" to "Diesen Monat",
             "totalVolumeLabel" to "Gesamtvolumen",
             "languageChanged" to "Sprache geändert", "themeChanged" to "Thema geändert",
@@ -1063,7 +1234,21 @@ object LanguageManager {
             "muscleGroups" to "Muskelgruppen", "startHere" to "Hier starten", "back__" to "Zurück",
             "englishUS" to "Englisch", "romana" to "Rumänisch", "russkiy" to "Russisch", "ukrainska" to "Ukrainisch",
             "francais" to "Französisch", "deutsch" to "Deutsch", "espanol" to "Spanisch",
-            "italiano" to "Italienisch", "turkce" to "Türkisch", "portugues" to "Portugiesisch", "polski" to "Polnisch"
+            "italiano" to "Italienisch", "turkce" to "Türkisch", "portugues" to "Portugiesisch", "polski" to "Polnisch",
+            "motto1" to "Jede Wiederholung zählt.", "motto2" to "Stärker als gestern.",
+            "motto3" to "Dein Körper, deine Regeln.", "motto4" to "Überwinde deine Grenzen.",
+            "motto5" to "Ausdauer schlägt Talent.", "motto6" to "Disziplin ist Freiheit.",
+            "motto7" to "Keine Abkürzungen.", "motto8" to "Verdient, nicht bekommen.",
+            "goodMorning" to "Guten Morgen", "goodAfternoon" to "Guten Tag", "goodEvening" to "Guten Abend",
+            "daysConsecutive" to "Tage in Folge", "todaysWorkout" to "Training heute",
+            "howDoYouFeel" to "Wie fühlst du dich?", "tiredLabel" to "Müde", "normalLabel" to "Normal", "energeticLabel" to "Energisch",
+            "plusToday" to "Noch heute", "technicalTip" to "Technischer Tipp",
+            "tomorrowLabel" to "Morgen", "setWorkoutTime" to "Trainingszeit einstellen",
+            "daysSinceLastWorkout" to "Tage seit dem letzten Training", "groupsFullyRecovered" to "Gruppen vollständig erholt",
+            "recoveryOnGroups" to "Erholung der Gruppen",
+            "weeklySummary" to "Wochenübersicht", "lastWeekLabel" to "letzte Woche",
+            "goalLabel" to "Zieltipp", "volumeLabel" to "Volumen", "topExerciseLabel" to "Top Übung",
+            "nutritionLabel" to "Ernährung", "motivationLabel" to "Motivation"
         )),
         "es" to Strings(mapOf(
             "appName" to "Kinetic", "dashboard" to "Panel", "overview" to "Resumen", "acasa" to "Inicio", "workouts" to "Entrenamientos", "stats" to "Estadísticas", "waterIntake" to "Consumo de agua", "waterGoal" to "Meta de agua", "addWater" to "Agregar agua", "dailyWater" to "Agua diaria", "height" to "Altura", "personalInfo" to "Información personal", "waterAutoCalc" to "Cálculo auto de agua", "ml" to "ml", "templates" to "Plantillas",
@@ -1085,7 +1270,7 @@ object LanguageManager {
             "core" to "Core", "cardio" to "Cardio",
             "sets" to "Series", "reps" to "Repeticiones", "weight" to "Peso",
             "addExercise" to "Agregar ejercicio", "saveWorkout" to "Guardar entrenamiento",
-            "startWorkout" to "Iniciar entrenamiento", "notes" to "Notas", "cancel" to "Cancelar",
+            "startWorkout" to "Iniciar entrenamiento", "nextExercise" to "Siguiente ejercicio", "notes" to "Notas", "cancel" to "Cancelar",
             "confirm" to "Confirmar", "delete" to "Eliminar", "edit" to "Editar", "search" to "Buscar",
             "noDataYet" to "Aún no hay datos", "friendRequests" to "Solicitudes de amistad",
             "sendRequest" to "Enviar solicitud", "accept" to "Aceptar", "reject" to "Rechazar",
@@ -1156,7 +1341,7 @@ object LanguageManager {
             "monthlyProgress" to "Progreso mensual", "completeWorkoutsToSee" to "Completa entrenamientos para ver el progreso", "jan" to "Ene", "feb" to "Feb", "mar" to "Mar", "apr" to "Abr", "may" to "May", "jun" to "Jun", "jul" to "Jul", "aug" to "Ago", "sep" to "Sep", "oct" to "Oct", "nov" to "Nov", "dec" to "Dic", "monthlyDetails" to "Detalles mensuales", "month" to "Mes", "mon" to "Lu", "tue" to "Ma", "wed" to "Mi", "thu" to "Ju", "fri" to "Vi", "sat" to "Sa", "sun" to "Do", "noWorkouts" to "Sin entrenamiento este día", "workoutDistribution" to "Distribución de entrenamientos",
             "notNow" to "Ahora no", "subscribeNow" to "Suscribirse", "premiumFeature" to "Función Premium", "subscribersOnly" to "\$feature solo está disponible para suscriptores", "choosePlan" to "Elegir plan", "youAreSubscribed" to "¡Estás suscrito!", "muscleRecovery" to "Recuperación muscular", "waterReminder" to "Recordatorio de agua", "waterReminderTitle" to "¡Es hora de beber agua!", "waterReminderText" to "¡Mantente hidratado! Es hora de beber un vaso de agua.", "waterReminderEnabled" to "Activado", "waterReminderDisabled" to "Desactivado", "selectTime" to "Seleccionar hora", "forearms" to "Antebrazos", "neckAndTraps" to "Cuello & Trapecios", "welcome" to "Bienvenido", "athlete" to "Atleta",
             "biometricTracking" to "Seguimiento biométrico", "biometricSubtitle" to "Peso, circunferencias, grasa corporal", "addMeasurement" to "Añadir medición", "bodyFat" to "Grasa corporal", "waistCirc" to "Cintura", "hipsCirc" to "Caderas", "thighsCirc" to "Muslos", "chestCirc" to "Pecho", "armsCirc" to "Brazos", "lastMeasurement" to "Última medición", "noMeasurements" to "Sin mediciones aún", "viewCharts" to "Ver gráficos", "saveMeasurement" to "Guardar medición", "measurementSaved" to "Medición guardada", "weeksAgo" to "semanas atrás", "cm" to "cm", "percent" to "%", "deleteMeasurement" to "Eliminar medición", "biometricHistory" to "Historial de mediciones", "weightChart" to "Gráfico de peso", "bodyFatChart" to "Gráfico de grasa", "circumferenceChart" to "Gráfico de circunferencias", "date" to "Fecha", "biometricReminder" to "Recordatorio biométrico", "biometricReminderTitle" to "¡Es hora de las mediciones!", "biometricReminderText" to "No olvides registrar tus mediciones corporales semanales.", "biometricReminderEnabled" to "Activado", "biometricReminderDisabled" to "Desactivado",
-            "foodJournal" to "Diario de alimentos", "scanBarcode" to "Escanear código de barras", "scanBarcodeHint" to "Coloca el código de barras en el marco para escanear el producto", "cameraPermissionRequired" to "Se requiere acceso a la cámara para escanear", "scan" to "Escanear", "scanning" to "Escaneando...", "scanBarcodeHelp" to "Asegúrate de que Google Play Services esté instalado y actualizado", "noFoodEntries" to "Sin entradas de alimentos aún", "todaysMacros" to "Macros de hoy", "caloriesLabel" to "Calorías", "proteinLabel" to "Proteínas", "carbsLabel" to "Carbos", "fatLabel" to "Grasas", "breakfast" to "Desayuno", "lunch" to "Almuerzo", "dinner" to "Cena", "snack" to "Snack", "selectMealType" to "Seleccionar tipo de comida", "manualFoodEntry" to "Entrada manual", "foodName" to "Nombre del alimento", "brandLabel" to "Marca", "calories" to "Calorías", "protein" to "Proteínas", "carbs" to "Carbohidratos", "fat" to "Grasas", "fiber" to "Fibra",
+            "foodJournal" to "Diario de alimentos", "scanBarcode" to "Escanear código de barras", "scanBarcodeHint" to "Coloca el código de barras en el marco para escanear el producto", "cameraPermissionRequired" to "Se requiere acceso a la cámara para escanear", "scan" to "Escanear", "scanning" to "Escaneando...", "scanBarcodeHelp" to "Asegúrate de que Google Play Services esté instalado y actualizado", "noFoodEntries" to "Sin entradas de alimentos aún", "todaysMacros" to "Macros de hoy", "caloriesLabel" to "Calorías", "proteinLabel" to "Proteínas", "carbsLabel" to "Carbos", "fatLabel" to "Grasas", "breakfast" to "Desayuno", "lunch" to "Almuerzo", "dinner" to "Cena", "snack" to "Snack", "drinks" to "Bebidas", "selectMealType" to "Seleccionar tipo de comida", "manualFoodEntry" to "Entrada manual", "foodName" to "Nombre del alimento", "brandLabel" to "Marca", "calories" to "Calorías", "protein" to "Proteínas", "carbs" to "Carbohidratos", "fat" to "Grasas", "fiber" to "Fibra",
             "aiTrainer" to "Entrenador IA", "aiTrainerWelcome" to "¡Hola! Soy tu entrenador IA", "aiTrainerHint" to "Pregúntame sobre entrenamiento, nutrición o progreso", "askAiTrainer" to "Preguntar al entrenador...", "aiSuggestion1" to "¿Qué entrenamiento me recomiendas hoy?", "aiSuggestion2" to "¿Cómo puedo aumentar el volumen?", "aiSuggestion3" to "¿Necesito un día de descanso?", "aiSuggestion4" to "¿Cómo salgo de un estancamiento?",
             "viewProfile" to "Ver perfil",
             "accountSettings" to "Configuración de cuenta", "deleteAccount" to "Eliminar cuenta",
@@ -1168,7 +1353,7 @@ object LanguageManager {
             "favorite" to "Favorito", "favorites" to "Favoritos", "usageCount" to "Usado",
             "addSet" to "Agregar serie", "exerciseNotes" to "Notas ejercicio", "workoutNotes" to "Notas sesión",
             "saveNotes" to "Guardar", "editWorkout" to "Editar",
-            "volume" to "Volumen", "maxWeight" to "Peso máx", "maxReps" to "Reps máx",
+            "volume" to "Volumen", "maxWeight" to "Peso máx", "maxReps" to "Reps máx", "maxSet" to "Serie máx",
             "today" to "Hoy", "thisWeek" to "Esta semana", "thisMonth" to "Este mes",
             "totalVolumeLabel" to "Volumen total",
             "languageChanged" to "Idioma cambiado", "themeChanged" to "Tema cambiado",
@@ -1180,7 +1365,21 @@ object LanguageManager {
             "muscleGroups" to "Grupos musculares", "startHere" to "Empezar aquí", "back__" to "Volver",
             "englishUS" to "Inglés", "romana" to "Rumano", "russkiy" to "Ruso", "ukrainska" to "Ucraniano",
             "francais" to "Francés", "deutsch" to "Alemán", "espanol" to "Español",
-            "italiano" to "Italiano", "turkce" to "Turco", "portugues" to "Portugués", "polski" to "Polaco"
+            "italiano" to "Italiano", "turkce" to "Turco", "portugues" to "Portugués", "polski" to "Polaco",
+            "motto1" to "Cada repetición cuenta.", "motto2" to "Más fuerte que ayer.",
+            "motto3" to "Tu cuerpo, tus reglas.", "motto4" to "Supera tus límites.",
+            "motto5" to "La constancia vence al talento.", "motto6" to "La disciplina es libertad.",
+            "motto7" to "Sin atajos.", "motto8" to "Ganado, no dado.",
+            "goodMorning" to "Buenos días", "goodAfternoon" to "Buenas tardes", "goodEvening" to "Buenas noches",
+            "daysConsecutive" to "días consecutivos", "todaysWorkout" to "Entrenamiento de hoy",
+            "howDoYouFeel" to "Cómo te sientes?", "tiredLabel" to "Cansado", "normalLabel" to "Normal", "energeticLabel" to "Energético",
+            "plusToday" to "Aún hoy", "technicalTip" to "Consejo técnico",
+            "tomorrowLabel" to "Mañana", "setWorkoutTime" to "Establecer hora de entrenamiento",
+            "daysSinceLastWorkout" to "Días desde el último entrenamiento", "groupsFullyRecovered" to "Grupos completamente recuperados",
+            "recoveryOnGroups" to "Recuperación de grupos",
+            "weeklySummary" to "Resumen semanal", "lastWeekLabel" to "semana pasada",
+            "goalLabel" to "Consejo de objetivo", "volumeLabel" to "Volumen", "topExerciseLabel" to "Top ejercicio",
+            "nutritionLabel" to "Nutrición", "motivationLabel" to "Motivación"
         )),
         "it" to Strings(mapOf(
             "appName" to "Kinetic", "dashboard" to "Pannello", "overview" to "Panoramica", "acasa" to "Home", "workouts" to "Allenamenti", "stats" to "Statistiche", "waterIntake" to "Assunzione di acqua", "waterGoal" to "Obiettivo acqua", "addWater" to "Aggiungi acqua", "dailyWater" to "Acqua giornaliera", "height" to "Altezza", "personalInfo" to "Info personali", "waterAutoCalc" to "Calcolo auto acqua", "ml" to "ml", "templates" to "Modelli",
@@ -1201,7 +1400,7 @@ object LanguageManager {
             "core" to "Core",
             "cardio" to "Cardio", "sets" to "Serie", "reps" to "Ripetizioni", "weight" to "Peso",
             "addExercise" to "Aggiungi esercizio", "saveWorkout" to "Salva allenamento",
-            "startWorkout" to "Inizia allenamento", "notes" to "Note", "cancel" to "Annulla",
+            "startWorkout" to "Inizia allenamento", "nextExercise" to "Esercizio successivo", "notes" to "Note", "cancel" to "Annulla",
             "confirm" to "Conferma", "delete" to "Elimina", "edit" to "Modifica", "search" to "Cerca",
             "noDataYet" to "Nessun dato ancora", "friendRequests" to "Richieste di amicizia",
             "sendRequest" to "Invia richiesta", "accept" to "Accetta", "reject" to "Rifiuta",
@@ -1270,7 +1469,7 @@ object LanguageManager {
             "monthlyProgress" to "Progresso mensile", "completeWorkoutsToSee" to "Completa gli allenamenti per vedere i progressi", "jan" to "Gen", "feb" to "Feb", "mar" to "Mar", "apr" to "Apr", "may" to "Mag", "jun" to "Giu", "jul" to "Lug", "aug" to "Ago", "sep" to "Set", "oct" to "Ott", "nov" to "Nov", "dec" to "Dic", "monthlyDetails" to "Dettagli mensili", "month" to "Mese", "mon" to "Lu", "tue" to "Ma", "wed" to "Me", "thu" to "Gi", "fri" to "Ve", "sat" to "Sa", "sun" to "Do", "noWorkouts" to "Nessun allenamento in questo giorno", "workoutDistribution" to "Distribuzione allenamenti",
             "notNow" to "Non ora", "subscribeNow" to "Abbonati ora", "premiumFeature" to "Funzionalità Premium", "subscribersOnly" to "\$feature è disponibile solo per gli abbonati", "choosePlan" to "Scegli un piano", "youAreSubscribed" to "Sei abbonato!", "muscleRecovery" to "Recupero muscolare", "waterReminder" to "Promemoria acqua", "waterReminderTitle" to "È ora di bere acqua!", "waterReminderText" to "Resta idratato! È ora di bere un bicchiere d'acqua.", "waterReminderEnabled" to "Attivato", "waterReminderDisabled" to "Disattivato", "selectTime" to "Seleziona ora", "forearms" to "Avambracci", "neckAndTraps" to "Collo & Trapezi", "welcome" to "Benvenuto", "athlete" to "Atleta",
             "biometricTracking" to "Monitoraggio biometrico", "biometricSubtitle" to "Peso, circonferenze, grasso corporeo", "addMeasurement" to "Aggiungi misurazione", "bodyFat" to "Grasso corporeo", "waistCirc" to "Vita", "hipsCirc" to "Fianchi", "thighsCirc" to "Cosce", "chestCirc" to "Petto", "armsCirc" to "Braccia", "lastMeasurement" to "Ultima misurazione", "noMeasurements" to "Nessuna misurazione ancora", "viewCharts" to "Vedi grafici", "saveMeasurement" to "Salva misurazione", "measurementSaved" to "Misurazione salvata", "weeksAgo" to "settimane fa", "cm" to "cm", "percent" to "%", "deleteMeasurement" to "Elimina misurazione", "biometricHistory" to "Cronologia misurazioni", "weightChart" to "Grafico del peso", "bodyFatChart" to "Grafico del grasso", "circumferenceChart" to "Grafico delle circonferenze", "date" to "Data", "biometricReminder" to "Promemoria biometrico", "biometricReminderTitle" to "È ora delle misurazioni!", "biometricReminderText" to "Non dimenticare di registrare le tue misurazioni corporee settimanali.", "biometricReminderEnabled" to "Attivato", "biometricReminderDisabled" to "Disattivato",
-            "foodJournal" to "Diario alimentare", "scanBarcode" to "Scansiona codice a barre", "scanBarcodeHint" to "Posiziona il codice a barre nell'inquadramento per scansionare il prodotto", "cameraPermissionRequired" to "L'accesso alla fotocamera è necessario per la scansione", "scan" to "Scansiona", "scanning" to "Scansione in corso...", "scanBarcodeHelp" to "Assicurati che Google Play Services sia installato e aggiornato", "noFoodEntries" to "Nessuna voce alimentare ancora", "todaysMacros" to "Macronutrienti di oggi", "caloriesLabel" to "Calorie", "proteinLabel" to "Proteine", "carbsLabel" to "Carboidrati", "fatLabel" to "Grassi", "breakfast" to "Colazione", "lunch" to "Pranzo", "dinner" to "Cena", "snack" to "Spuntino", "selectMealType" to "Seleziona tipo di pasto", "manualFoodEntry" to "Inserimento manuale", "foodName" to "Nome alimento", "brandLabel" to "Marca", "calories" to "Calorie", "protein" to "Proteine", "carbs" to "Carboidrati", "fat" to "Grassi", "fiber" to "Fibre",
+            "foodJournal" to "Diario alimentare", "scanBarcode" to "Scansiona codice a barre", "scanBarcodeHint" to "Posiziona il codice a barre nell'inquadramento per scansionare il prodotto", "cameraPermissionRequired" to "L'accesso alla fotocamera è necessario per la scansione", "scan" to "Scansiona", "scanning" to "Scansione in corso...", "scanBarcodeHelp" to "Assicurati che Google Play Services sia installato e aggiornato", "noFoodEntries" to "Nessuna voce alimentare ancora", "todaysMacros" to "Macronutrienti di oggi", "caloriesLabel" to "Calorie", "proteinLabel" to "Proteine", "carbsLabel" to "Carboidrati", "fatLabel" to "Grassi", "breakfast" to "Colazione", "lunch" to "Pranzo", "dinner" to "Cena", "snack" to "Spuntino", "drinks" to "Bevande", "selectMealType" to "Seleziona tipo di pasto", "manualFoodEntry" to "Inserimento manuale", "foodName" to "Nome alimento", "brandLabel" to "Marca", "calories" to "Calorie", "protein" to "Proteine", "carbs" to "Carboidrati", "fat" to "Grassi", "fiber" to "Fibre",
             "aiTrainer" to "Allenatore IA", "aiTrainerWelcome" to "Ciao! Sono il tuo allenatore IA", "aiTrainerHint" to "Chiedimi di allenamento, nutrizione o progressi", "askAiTrainer" to "Chiedi all'allenatore...", "aiSuggestion1" to "Che allenamento mi consigli oggi?", "aiSuggestion2" to "Come posso aumentare il volume?", "aiSuggestion3" to "Ho bisogno di un giorno di riposo?", "aiSuggestion4" to "Come supero un plateau?",
             "viewProfile" to "Vedi profilo",
             "accountSettings" to "Impostazioni account", "deleteAccount" to "Elimina account",
@@ -1282,7 +1481,7 @@ object LanguageManager {
             "favorite" to "Preferito", "favorites" to "Preferiti", "usageCount" to "Usato",
             "addSet" to "Aggiungi serie", "exerciseNotes" to "Note esercizio", "workoutNotes" to "Note allenamento",
             "saveNotes" to "Salva", "editWorkout" to "Modifica",
-            "volume" to "Volume", "maxWeight" to "Peso máx", "maxReps" to "Rep máx",
+            "volume" to "Volume", "maxWeight" to "Peso máx", "maxReps" to "Rep máx", "maxSet" to "Serie máx",
             "today" to "Oggi", "thisWeek" to "Questa settimana", "thisMonth" to "Questo mese",
             "totalVolumeLabel" to "Volume totale",
             "languageChanged" to "Lingua cambiata", "themeChanged" to "Tema cambiato",
@@ -1294,7 +1493,21 @@ object LanguageManager {
             "muscleGroups" to "Gruppi muscolari", "startHere" to "Inizia qui", "back__" to "Indietro",
             "englishUS" to "Inglese", "romana" to "Rumeno", "russkiy" to "Russo", "ukrainska" to "Ucraino",
             "francais" to "Francese", "deutsch" to "Tedesco", "espanol" to "Spagnolo",
-            "italiano" to "Italiano", "turkce" to "Turco", "portugues" to "Portoghese", "polski" to "Polacco"
+            "italiano" to "Italiano", "turkce" to "Turco", "portugues" to "Portoghese", "polski" to "Polacco",
+            "motto1" to "Ogni ripetizione conta.", "motto2" to "Più forte di ieri.",
+            "motto3" to "Il tuo corpo, le tue regole.", "motto4" to "Supera i tuoi limiti.",
+            "motto5" to "La costanza batte il talento.", "motto6" to "La disciplina è libertà.",
+            "motto7" to "Nessuna scorciatoia.", "motto8" to "Guadagnato, non dato.",
+            "goodMorning" to "Buongiorno", "goodAfternoon" to "Buon pomeriggio", "goodEvening" to "Buonasera",
+            "daysConsecutive" to "giorni consecutivi", "todaysWorkout" to "Allenamento di oggi",
+            "howDoYouFeel" to "Come ti senti?", "tiredLabel" to "Stanco", "normalLabel" to "Normale", "energeticLabel" to "Energico",
+            "plusToday" to "Ancora oggi", "technicalTip" to "Consiglio tecnico",
+            "tomorrowLabel" to "Domani", "setWorkoutTime" to "Impostare l'orario di allenamento",
+            "daysSinceLastWorkout" to "Giorni dall'ultimo allenamento", "groupsFullyRecovered" to "Gruppi completamente recuperati",
+            "recoveryOnGroups" to "Recupero dei gruppi",
+            "weeklySummary" to "Riepilogo settimanale", "lastWeekLabel" to "scorsa settimana",
+            "goalLabel" to "Consiglio obiettivo", "volumeLabel" to "Volume", "topExerciseLabel" to "Top esercizio",
+            "nutritionLabel" to "Nutrizione", "motivationLabel" to "Motivazione"
         )),
         "tr" to Strings(mapOf(
             "appName" to "Kinetic", "dashboard" to "Gösterge Paneli", "overview" to "Genel Bakış", "acasa" to "Ana Sayfa", "workouts" to "Egzersizler", "stats" to "İstatistikler", "waterIntake" to "Su Tüketimi", "waterGoal" to "Su Hedefi", "addWater" to "Su Ekle", "dailyWater" to "Günlük Su", "height" to "Boy", "personalInfo" to "Kişisel Bilgi", "waterAutoCalc" to "Otomatik Su Hesabı", "ml" to "ml", "templates" to "Şablonlar",
@@ -1313,7 +1526,7 @@ object LanguageManager {
             "legs" to "Bacaklar", "thighs" to "Uyluk", "glutes" to "Kalça", "calves" to "Baldırlar",
             "core" to "Core", "cardio" to "Kardio", "sets" to "Set", "reps" to "Tekrarlar", "weight" to "Ağırlık",
             "addExercise" to "Egzersiz Ekle", "saveWorkout" to "Antrenmanı Kaydet",
-            "startWorkout" to "Antrenmanı Başlat", "notes" to "Notlar", "cancel" to "İptal",
+            "startWorkout" to "Antrenmanı Başlat", "nextExercise" to "Sonraki egzersiz", "notes" to "Notlar", "cancel" to "İptal",
             "confirm" to "Onayla", "delete" to "Sil", "edit" to "Düzenle", "search" to "Ara",
             "noDataYet" to "Henüz veri yok", "friendRequests" to "Arkadaşlık İstekleri",
             "sendRequest" to "İstek Gönder", "accept" to "Kabul Et", "reject" to "Reddet",
@@ -1382,7 +1595,7 @@ object LanguageManager {
             "monthlyProgress" to "Aylık ilerleme", "completeWorkoutsToSee" to "İlerlemeyi görmek için antrenmanları tamamlayın", "jan" to "Oca", "feb" to "Şub", "mar" to "Mar", "apr" to "Nis", "may" to "May", "jun" to "Haz", "jul" to "Tem", "aug" to "Ağu", "sep" to "Eyl", "oct" to "Eki", "nov" to "Kas", "dec" to "Ara", "monthlyDetails" to "Aylık detaylar", "month" to "Ay", "mon" to "Pzt", "tue" to "Sal", "wed" to "Çar", "thu" to "Per", "fri" to "Cum", "sat" to "Cmt", "sun" to "Paz", "noWorkouts" to "Bu gün antrenman yok", "workoutDistribution" to "Antrenman dağılımı",
             "notNow" to "Şimdi değil", "subscribeNow" to "Şimdi abone ol", "premiumFeature" to "Premium Özellik", "subscribersOnly" to "\$feature sadece aboneler için mevcut", "choosePlan" to "Bir plan seçin", "youAreSubscribed" to "Abone oldunuz!", "muscleRecovery" to "Kas İyileşmesi", "waterReminder" to "Su Hatırlatıcı", "waterReminderTitle" to "Su içme zamanı!", "waterReminderText" to "Su için! Bir bardak su içme zamanı.", "waterReminderEnabled" to "Aktif", "waterReminderDisabled" to "Pasif", "selectTime" to "Saat seç", "forearms" to "Ön kollar", "neckAndTraps" to "Boyun & Trapez kasları", "welcome" to "Hoş geldin", "athlete" to "Sporcu",
             "biometricTracking" to "Biyometrik Takip", "biometricSubtitle" to "Ağırlık, çevre ölçümü, vücut yağı", "addMeasurement" to "Ölçüm ekle", "bodyFat" to "Vücut yağı", "waistCirc" to "Bel", "hipsCirc" to "Kalça", "thighsCirc" to "Uyluk", "chestCirc" to "Göğüs", "armsCirc" to "Kollar", "lastMeasurement" to "Son ölçüm", "noMeasurements" to "Henüz ölçüm yok", "viewCharts" to "Grafikleri gör", "saveMeasurement" to "Ölçümü kaydet", "measurementSaved" to "Ölçüm kaydedildi", "weeksAgo" to "hafta önce", "cm" to "cm", "percent" to "%", "deleteMeasurement" to "Ölçümü sil", "biometricHistory" to "Ölçüm geçmişi", "weightChart" to "Ağırlık grafiği", "bodyFatChart" to "Yağ grafiği", "circumferenceChart" to "Çevre grafiği", "date" to "Tarih", "biometricReminder" to "Biyometrik Hatırlatıcı", "biometricReminderTitle" to "Ölçüm zamanı!", "biometricReminderText" to "Haftalık vücut ölçümlerinizi kaydetmeyi unutmayın.", "biometricReminderEnabled" to "Aktif", "biometricReminderDisabled" to "Pasif",
-            "foodJournal" to "Besin Günlüğü", "scanBarcode" to "Barkod Tara", "scanBarcodeHint" to "Ürünü taramak için barkodu çerçeveye yerleştirin", "cameraPermissionRequired" to "Tarama için kamera izni gereklidir", "scan" to "Tara", "scanning" to "Taranıyor...", "scanBarcodeHelp" to "Google Play Services'in yüklü ve güncel olduğundan emin olun", "noFoodEntries" to "Henüz besin girişi yok", "todaysMacros" to "Bugünün Makroları", "caloriesLabel" to "Kalori", "proteinLabel" to "Protein", "carbsLabel" to "Karb", "fatLabel" to "Yağ", "breakfast" to "Kahvaltı", "lunch" to "Öğle yemeği", "dinner" to "Akşam yemeği", "snack" to "Atıştırmalık", "selectMealType" to "Öğün türü seçin", "manualFoodEntry" to "Manuel Giriş", "foodName" to "Besin adı", "brandLabel" to "Marka", "calories" to "Kalori", "protein" to "Protein", "carbs" to "Karbonhidrat", "fat" to "Yağ", "fiber" to "Lif",
+            "foodJournal" to "Besin Günlüğü", "scanBarcode" to "Barkod Tara", "scanBarcodeHint" to "Ürünü taramak için barkodu çerçeveye yerleştirin", "cameraPermissionRequired" to "Tarama için kamera izni gereklidir", "scan" to "Tara", "scanning" to "Taranıyor...", "scanBarcodeHelp" to "Google Play Services'in yüklü ve güncel olduğundan emin olun", "noFoodEntries" to "Henüz besin girişi yok", "todaysMacros" to "Bugünün Makroları", "caloriesLabel" to "Kalori", "proteinLabel" to "Protein", "carbsLabel" to "Karb", "fatLabel" to "Yağ", "breakfast" to "Kahvaltı", "lunch" to "Öğle yemeği", "dinner" to "Akşam yemeği", "snack" to "Atıştırmalık", "drinks" to "İçecekler", "selectMealType" to "Öğün türü seçin", "manualFoodEntry" to "Manuel Giriş", "foodName" to "Besin adı", "brandLabel" to "Marka", "calories" to "Kalori", "protein" to "Protein", "carbs" to "Karbonhidrat", "fat" to "Yağ", "fiber" to "Lif",
             "aiTrainer" to "AI Antrenör", "aiTrainerWelcome" to "Merhaba! Ben yapay zeka antrenörünüz", "aiTrainerHint" to "Antrenman, beslenme veya ilerleme hakkında sorun", "askAiTrainer" to "Antrenöre sor...", "aiSuggestion1" to "Bugun ne onerirsiniz?", "aiSuggestion2" to "Hacmi nasil artirabilirim?", "aiSuggestion3" to "Dinlenme gunune ihtiyacim var mi?", "aiSuggestion4" to "Platodan nasil cikarim?",
             "viewProfile" to "Profili Gör",
             "accountSettings" to "Hesap Ayarları", "deleteAccount" to "Hesabı Sil",
@@ -1394,7 +1607,7 @@ object LanguageManager {
             "favorite" to "Favori", "favorites" to "Favoriler", "usageCount" to "Kullanıldı",
             "addSet" to "Set ekle", "exerciseNotes" to "Notlar", "workoutNotes" to "Antrenman notları",
             "saveNotes" to "Kaydet", "editWorkout" to "Düzenle",
-            "volume" to "Hacim", "maxWeight" to "Max ağırlık", "maxReps" to "Max tekrar",
+            "volume" to "Hacim", "maxWeight" to "Max ağırlık", "maxReps" to "Max tekrar", "maxSet" to "Max set",
             "today" to "Bugün", "thisWeek" to "Bu hafta", "thisMonth" to "Bu ay",
             "totalVolumeLabel" to "Toplam hacim",
             "languageChanged" to "Dil değiştirildi", "themeChanged" to "Tema değiştirildi",
@@ -1406,7 +1619,21 @@ object LanguageManager {
             "muscleGroups" to "Kas grupları", "startHere" to "Buradan başla", "back__" to "Geri",
             "englishUS" to "İngilizce", "romana" to "Rumence", "russkiy" to "Rusça", "ukrainska" to "Ukraynaca",
             "francais" to "Fransızca", "deutsch" to "Almanca", "espanol" to "İspanyolca",
-            "italiano" to "İtalyanca", "turkce" to "Türkçe", "portugues" to "Portekizce", "polski" to "Lehçe"
+            "italiano" to "İtalyanca", "turkce" to "Türkçe", "portugues" to "Portekizce", "polski" to "Lehçe",
+            "motto1" to "Her tekrar sayılır.", "motto2" to "Dünden daha güçlü.",
+            "motto3" to "Senin bedenin, senin kuralların.", "motto4" to "Limitlerini zorla.",
+            "motto5" to "Tutarlılık yeteneği yener.", "motto6" to "Disiplin özgürlüktür.",
+            "motto7" to "Kısa yol yok.", "motto8" to "Kazanılmış, verilmiş değil.",
+            "goodMorning" to "Günaydın", "goodAfternoon" to "İyi günler", "goodEvening" to "İyi akşamlar",
+            "daysConsecutive" to "art arda gün", "todaysWorkout" to "Bugünkü antrenman",
+            "howDoYouFeel" to "Nasıl hissediyorsun?", "tiredLabel" to "Yorgun", "normalLabel" to "Normal", "energeticLabel" to "Enerjik",
+            "plusToday" to "Bugün de devam", "technicalTip" to "Teknik ipucu",
+            "tomorrowLabel" to "Yarın", "setWorkoutTime" to "Antrenman saatini ayarla",
+            "daysSinceLastWorkout" to "Son antrenmandan bu yana", "groupsFullyRecovered" to "Gruplar tamamen iyileşti",
+            "recoveryOnGroups" to "Grupların iyileşmesi",
+            "weeklySummary" to "Haftalık özet", "lastWeekLabel" to "geçen hafta",
+            "goalLabel" to "Hedef ipucu", "volumeLabel" to "Hacim", "topExerciseLabel" to "En iyi egzersiz",
+            "nutritionLabel" to "Beslenme", "motivationLabel" to "Motivasyon"
         )),
         "pt" to Strings(mapOf(
             "appName" to "Kinetic", "dashboard" to "Painel", "overview" to "Visão Geral", "acasa" to "Início", "workouts" to "Treinos", "stats" to "Estatísticas", "waterIntake" to "Consumo de água", "waterGoal" to "Meta de água", "addWater" to "Adicionar água", "dailyWater" to "Água diária", "height" to "Altura", "personalInfo" to "Informações pessoais", "waterAutoCalc" to "Cálculo auto de água", "ml" to "ml", "templates" to "Modelos",
@@ -1427,7 +1654,7 @@ object LanguageManager {
             "core" to "Core",
             "cardio" to "Cardio", "sets" to "Séries", "reps" to "Repetições", "weight" to "Peso",
             "addExercise" to "Adicionar Exercício", "saveWorkout" to "Salvar Treino",
-            "startWorkout" to "Iniciar Treino", "notes" to "Notas", "cancel" to "Cancelar",
+            "startWorkout" to "Iniciar Treino", "nextExercise" to "Próximo exercício", "notes" to "Notas", "cancel" to "Cancelar",
             "confirm" to "Confirmar", "delete" to "Excluir", "edit" to "Editar", "search" to "Pesquisar",
             "noDataYet" to "Ainda sem dados", "friendRequests" to "Solicitações de Amizade",
             "sendRequest" to "Enviar Solicitação", "accept" to "Aceitar", "reject" to "Rejeitar",
@@ -1500,7 +1727,7 @@ object LanguageManager {
             "monthlyProgress" to "Progresso mensal", "completeWorkoutsToSee" to "Complete treinos para ver o progresso", "jan" to "Jan", "feb" to "Fev", "mar" to "Mar", "apr" to "Abr", "may" to "Mai", "jun" to "Jun", "jul" to "Jul", "aug" to "Ago", "sep" to "Set", "oct" to "Out", "nov" to "Nov", "dec" to "Dez", "monthlyDetails" to "Detalhes mensais", "month" to "Mês", "mon" to "Seg", "tue" to "Ter", "wed" to "Qua", "thu" to "Qui", "fri" to "Sex", "sat" to "Sáb", "sun" to "Dom", "noWorkouts" to "Nenhum treino neste dia", "workoutDistribution" to "Distribuição de treinos",
             "notNow" to "Agora não", "subscribeNow" to "Assinar agora", "premiumFeature" to "Recurso Premium", "subscribersOnly" to "\$feature está disponível apenas para assinantes", "choosePlan" to "Escolher plano", "youAreSubscribed" to "Você está assinado!", "muscleRecovery" to "Recuperação muscular", "waterReminder" to "Lembrete de água", "waterReminderTitle" to "Hora de beber água!", "waterReminderText" to "Mantenha-se hidratado! É hora de beber um copo de água.", "waterReminderEnabled" to "Ativado", "waterReminderDisabled" to "Desativado", "selectTime" to "Selecionar hora", "forearms" to "Antebraços", "neckAndTraps" to "Pescoço & Trapézios", "welcome" to "Bem-vindo", "athlete" to "Atleta",
             "biometricTracking" to "Rastreamento Biométrico", "biometricSubtitle" to "Peso, circunferências, gordura corporal", "addMeasurement" to "Adicionar medição", "bodyFat" to "Gordura corporal", "waistCirc" to "Cintura", "hipsCirc" to "Quadril", "thighsCirc" to "Coxas", "chestCirc" to "Peito", "armsCirc" to "Braços", "lastMeasurement" to "Última medição", "noMeasurements" to "Sem medições ainda", "viewCharts" to "Ver gráficos", "saveMeasurement" to "Salvar medição", "measurementSaved" to "Medição salva", "weeksAgo" to "semanas atrás", "cm" to "cm", "percent" to "%", "deleteMeasurement" to "Excluir medição", "biometricHistory" to "Histórico de medições", "weightChart" to "Gráfico de peso", "bodyFatChart" to "Gráfico de gordura", "circumferenceChart" to "Gráfico de circunferências", "date" to "Data", "biometricReminder" to "Lembrete biométrico", "biometricReminderTitle" to "Hora das medições!", "biometricReminderText" to "Não esqueça de registrar suas medições corporais semanais.", "biometricReminderEnabled" to "Ativado", "biometricReminderDisabled" to "Desativado",
-            "foodJournal" to "Diário Alimentar", "scanBarcode" to "Escanear Código de Barras", "scanBarcodeHint" to "Coloque o código de barras no quadro para escanear o produto", "cameraPermissionRequired" to "Acesso à câmera é necessário para escanear", "scan" to "Escanear", "scanning" to "Escaneando...", "scanBarcodeHelp" to "Certifique-se de que o Google Play Services está instalado e atualizado", "noFoodEntries" to "Nenhuma entrada de alimentos ainda", "todaysMacros" to "Macros de Hoje", "caloriesLabel" to "Calorias", "proteinLabel" to "Proteínas", "carbsLabel" to "Carbos", "fatLabel" to "Gorduras", "breakfast" to "Café da manhã", "lunch" to "Almoço", "dinner" to "Jantar", "snack" to "Lanche", "selectMealType" to "Selecionar tipo de refeição", "manualFoodEntry" to "Entrada Manual", "foodName" to "Nome do alimento", "brandLabel" to "Marca", "calories" to "Calorias", "protein" to "Proteínas", "carbs" to "Carboidratos", "fat" to "Gorduras", "fiber" to "Fibras",
+            "foodJournal" to "Diário Alimentar", "scanBarcode" to "Escanear Código de Barras", "scanBarcodeHint" to "Coloque o código de barras no quadro para escanear o produto", "cameraPermissionRequired" to "Acesso à câmera é necessário para escanear", "scan" to "Escanear", "scanning" to "Escaneando...", "scanBarcodeHelp" to "Certifique-se de que o Google Play Services está instalado e atualizado", "noFoodEntries" to "Nenhuma entrada de alimentos ainda", "todaysMacros" to "Macros de Hoje", "caloriesLabel" to "Calorias", "proteinLabel" to "Proteínas", "carbsLabel" to "Carbos", "fatLabel" to "Gorduras", "breakfast" to "Café da manhã", "lunch" to "Almoço", "dinner" to "Jantar", "snack" to "Lanche", "drinks" to "Bebidas", "selectMealType" to "Selecionar tipo de refeição", "manualFoodEntry" to "Entrada Manual", "foodName" to "Nome do alimento", "brandLabel" to "Marca", "calories" to "Calorias", "protein" to "Proteínas", "carbs" to "Carboidratos", "fat" to "Gorduras", "fiber" to "Fibras",
             "aiTrainer" to "Treinador IA", "aiTrainerWelcome" to "Olá! Sou seu treinador IA", "aiTrainerHint" to "Pergunte sobre treino, nutrição ou progresso", "askAiTrainer" to "Perguntar ao treinador...", "aiSuggestion1" to "Que treino você recomenda hoje?", "aiSuggestion2" to "Como posso aumentar o volume?", "aiSuggestion3" to "Preciso de um dia de descanso?", "aiSuggestion4" to "Como sair de um platô?",
             "viewProfile" to "Ver Perfil",
             "accountSettings" to "Configurações da Conta", "deleteAccount" to "Excluir Conta",
@@ -1512,7 +1739,7 @@ object LanguageManager {
             "favorite" to "Favorito", "favorites" to "Favoritos", "usageCount" to "Usado",
             "addSet" to "Adicionar série", "exerciseNotes" to "Notas", "workoutNotes" to "Notas treino",
             "saveNotes" to "Salvar", "editWorkout" to "Editar",
-            "volume" to "Volume", "maxWeight" to "Peso máx", "maxReps" to "Reps máx",
+            "volume" to "Volume", "maxWeight" to "Peso máx", "maxReps" to "Reps máx", "maxSet" to "Série máx",
             "today" to "Hoje", "thisWeek" to "Esta semana", "thisMonth" to "Este mês",
             "totalVolumeLabel" to "Volume total",
             "languageChanged" to "Idioma alterado", "themeChanged" to "Tema alterado",
@@ -1524,7 +1751,21 @@ object LanguageManager {
             "muscleGroups" to "Grupos musculares", "startHere" to "Comece aqui", "back__" to "Voltar",
             "englishUS" to "Inglês", "romana" to "Romeno", "russkiy" to "Russo", "ukrainska" to "Ucraniano",
             "francais" to "Francês", "deutsch" to "Alemão", "espanol" to "Espanhol",
-            "italiano" to "Italiano", "turkce" to "Turco", "portugues" to "Português", "polski" to "Polonês"
+            "italiano" to "Italiano", "turkce" to "Turco", "portugues" to "Português", "polski" to "Polonês",
+            "motto1" to "Cada repetição conta.", "motto2" to "Mais forte que ontem.",
+            "motto3" to "Seu corpo, suas regras.", "motto4" to "Supere seus limites.",
+            "motto5" to "Consistência supera talento.", "motto6" to "Disciplina é liberdade.",
+            "motto7" to "Sem atalhos.", "motto8" to "Ganho, não dado.",
+            "goodMorning" to "Bom dia", "goodAfternoon" to "Boa tarde", "goodEvening" to "Boa noite",
+            "daysConsecutive" to "dias consecutivos", "todaysWorkout" to "Treino de hoje",
+            "howDoYouFeel" to "Como se sente?", "tiredLabel" to "Cansado", "normalLabel" to "Normal", "energeticLabel" to "Energético",
+            "plusToday" to "Ainda hoje", "technicalTip" to "Dica técnica",
+            "tomorrowLabel" to "Amanhã", "setWorkoutTime" to "Definir hora do treino",
+            "daysSinceLastWorkout" to "Dias desde o último treino", "groupsFullyRecovered" to "Grupos totalmente recuperados",
+            "recoveryOnGroups" to "Recuperação dos grupos",
+            "weeklySummary" to "Resumo semanal", "lastWeekLabel" to "semana passada",
+            "goalLabel" to "Dica de objetivo", "volumeLabel" to "Volume", "topExerciseLabel" to "Top exercício",
+            "nutritionLabel" to "Nutrição", "motivationLabel" to "Motivação"
         )),
         "pl" to Strings(mapOf(
             "appName" to "Kinetic", "dashboard" to "Panel", "overview" to "Przegląd", "acasa" to "Strona Główna", "workouts" to "Treningi", "stats" to "Statystyki", "waterIntake" to "Spożycie wody", "waterGoal" to "Cel wody", "addWater" to "Dodaj wodę", "dailyWater" to "Woda dzienna", "height" to "Wzrost", "personalInfo" to "Informacje osobiste", "waterAutoCalc" to "Auto kalkulator wody", "ml" to "ml", "templates" to "Szablony",
@@ -1545,7 +1786,7 @@ object LanguageManager {
             "core" to "Core",
             "cardio" to "Cardio", "sets" to "Serie", "reps" to "Powtórzenia", "weight" to "Ciężar",
             "addExercise" to "Dodaj ćwiczenie", "saveWorkout" to "Zapisz trening",
-            "startWorkout" to "Rozpocznij trening", "notes" to "Notatki", "cancel" to "Anuluj",
+            "startWorkout" to "Rozpocznij trening", "nextExercise" to "Następne ćwiczenie", "notes" to "Notatki", "cancel" to "Anuluj",
             "confirm" to "Potwierdź", "delete" to "Usuń", "edit" to "Edytuj", "search" to "Szukaj",
             "noDataYet" to "Brak danych", "friendRequests" to "Zaproszenia do znajomych",
             "sendRequest" to "Wyślij zaproszenie", "accept" to "Akceptuj", "reject" to "Odrzuć",
@@ -1618,7 +1859,7 @@ object LanguageManager {
             "monthlyProgress" to "Postęp miesięczny", "completeWorkoutsToSee" to "Ukończ treningi aby zobaczyć postępy", "jan" to "Sty", "feb" to "Lut", "mar" to "Mar", "apr" to "Kwi", "may" to "Maj", "jun" to "Cze", "jul" to "Lip", "aug" to "Sie", "sep" to "Wrz", "oct" to "Paź", "nov" to "Lis", "dec" to "Gru", "monthlyDetails" to "Szczegóły miesięczne", "month" to "Miesiąc", "mon" to "Pon", "tue" to "Wt", "wed" to "Śr", "thu" to "Czw", "fri" to "Pt", "sat" to "Sob", "sun" to "Nd", "noWorkouts" to "Brak treningów w tym dniu", "workoutDistribution" to "Rozkład treningów",
             "notNow" to "Nie teraz", "subscribeNow" to "Subskrybuj teraz", "premiumFeature" to "Funkcja Premium", "subscribersOnly" to "\$feature jest dostępne tylko dla subskrybentów", "choosePlan" to "Wybierz plan", "youAreSubscribed" to "Jesteś subskrybentem!", "muscleRecovery" to "Regeneracja mięśni", "waterReminder" to "Przypomnienie o wodzie", "waterReminderTitle" to "Czas pić wodę!", "waterReminderText" to "Pij wodę! Czas napić się szklanki wody.", "waterReminderEnabled" to "Włączone", "waterReminderDisabled" to "Wyłączone", "selectTime" to "Wybierz godzinę", "forearms" to "Przedramiona", "neckAndTraps" to "Szyja & Czworoboczny", "welcome" to "Witaj", "athlete" to "Sportowiec",
             "biometricTracking" to "Monitorowanie biometryczne", "biometricSubtitle" to "Waga, obwody, tkanka tłuszczowa", "addMeasurement" to "Dodaj pomiary", "bodyFat" to "Tkanka tłuszczowa", "waistCirc" to "Talia", "hipsCirc" to "Biodra", "thighsCirc" to "Uda", "chestCirc" to "Klatka piersiowa", "armsCirc" to "Ramiona", "lastMeasurement" to "Ostatni pomiar", "noMeasurements" to "Brak pomiarów", "viewCharts" to "Zobacz wykresy", "saveMeasurement" to "Zapisz pomiary", "measurementSaved" to "Pomiary zapisane", "weeksAgo" to "tygodnie temu", "cm" to "cm", "percent" to "%", "deleteMeasurement" to "Usuń pomiary", "biometricHistory" to "Historia pomiarów", "weightChart" to "Wykres wagi", "bodyFatChart" to "Wykres tłuszczu", "circumferenceChart" to "Wykres obwodów", "date" to "Data", "biometricReminder" to "Przypomnienie biometryczne", "biometricReminderTitle" to "Czas na pomiary!", "biometricReminderText" to "Nie zapomnij zapisać tygodniowych pomiarów ciała.", "biometricReminderEnabled" to "Włączone", "biometricReminderDisabled" to "Wyłączone",
-            "foodJournal" to "Dziennik żywieniowy", "scanBarcode" to "Skanuj kod kreskowy", "scanBarcodeHint" to "Umieść kod kreskowy w kadrze, aby zeskanować produkt", "cameraPermissionRequired" to "Dostęp do kamery jest wymagany do skanowania", "scan" to "Skanuj", "scanning" to "Skanowanie...", "scanBarcodeHelp" to "Upewnij się, że Google Play Services jest zainstalowany i zaktualizowany", "noFoodEntries" to "Brak wpisów żywieniowych", "todaysMacros" to "Makro na dziś", "caloriesLabel" to "Kalorie", "proteinLabel" to "Białko", "carbsLabel" to "Węgle", "fatLabel" to "Tłuszcze", "breakfast" to "Śniadanie", "lunch" to "Obiad", "dinner" to "Kolacja", "snack" to "Przekąska", "selectMealType" to "Wybierz typ posiłku", "manualFoodEntry" to "Wpis ręczny", "foodName" to "Nazwa produktu", "brandLabel" to "Marka", "calories" to "Kalorie", "protein" to "Białko", "carbs" to "Węglowodany", "fat" to "Tłuszcze", "fiber" to "Błonnik",
+            "foodJournal" to "Dziennik żywieniowy", "scanBarcode" to "Skanuj kod kreskowy", "scanBarcodeHint" to "Umieść kod kreskowy w kadrze, aby zeskanować produkt", "cameraPermissionRequired" to "Dostęp do kamery jest wymagany do skanowania", "scan" to "Skanuj", "scanning" to "Skanowanie...", "scanBarcodeHelp" to "Upewnij się, że Google Play Services jest zainstalowany i zaktualizowany", "noFoodEntries" to "Brak wpisów żywieniowych", "todaysMacros" to "Makro na dziś", "caloriesLabel" to "Kalorie", "proteinLabel" to "Białko", "carbsLabel" to "Węgle", "fatLabel" to "Tłuszcze", "breakfast" to "Śniadanie", "lunch" to "Obiad", "dinner" to "Kolacja", "snack" to "Przekąska", "drinks" to "Napoje", "selectMealType" to "Wybierz typ posiłku", "manualFoodEntry" to "Wpis ręczny", "foodName" to "Nazwa produktu", "brandLabel" to "Marka", "calories" to "Kalorie", "protein" to "Białko", "carbs" to "Węglowodany", "fat" to "Tłuszcze", "fiber" to "Błonnik",
             "aiTrainer" to "Trener AI", "aiTrainerWelcome" to "Cześć! Jestem twoim trenerem AI", "aiTrainerHint" to "Zapytaj o trening, dietę lub postępy", "askAiTrainer" to "Zapytaj trenera...", "aiSuggestion1" to "Jaki trening polecasz dzisiaj?", "aiSuggestion2" to "Jak zwiększyć objętość?", "aiSuggestion3" to "Czy potrzebuję dnia odpoczynku?", "aiSuggestion4" to "Jak wyjść z plateau?",
             "viewProfile" to "Zobacz profil",
             "accountSettings" to "Ustawienia konta", "deleteAccount" to "Usuń konto",
@@ -1630,7 +1871,7 @@ object LanguageManager {
             "favorite" to "Ulubione", "favorites" to "Ulubione", "usageCount" to "Użyto",
             "addSet" to "Dodaj serię", "exerciseNotes" to "Notatki", "workoutNotes" to "Notatki treningu",
             "saveNotes" to "Zapisz", "editWorkout" to "Edytuj",
-            "volume" to "Objętość", "maxWeight" to "Maks waga", "maxReps" to "Maks powtórzenia",
+            "volume" to "Objętość", "maxWeight" to "Maks waga", "maxReps" to "Maks powtórzenia", "maxSet" to "Maks seria",
             "today" to "Dziś", "thisWeek" to "Ten tydzień", "thisMonth" to "Ten miesiąc",
             "totalVolumeLabel" to "Łączna objętość",
             "languageChanged" to "Język zmieniony", "themeChanged" to "Motyw zmieniony",
@@ -1642,7 +1883,21 @@ object LanguageManager {
             "muscleGroups" to "Grupy mięśniowe", "startHere" to "Zacznij tutaj", "back__" to "Wstecz",
             "englishUS" to "Angielski", "romana" to "Rumuński", "russkiy" to "Rosyjski", "ukrainska" to "Ukraiński",
             "francais" to "Francuski", "deutsch" to "Niemiecki", "espanol" to "Hiszpański",
-            "italiano" to "Włoski", "turkce" to "Turecki", "portugues" to "Portugalski", "polski" to "Polski"
+            "italiano" to "Włoski", "turkce" to "Turecki", "portugues" to "Portugalski", "polski" to "Polski",
+            "motto1" to "Każde powtórzenie się liczy.", "motto2" to "Silniejszy niż wczoraj.",
+            "motto3" to "Twoje ciało, twoje zasady.", "motto4" to "Przekrocz swoje granice.",
+            "motto5" to "Wytrwałość pokonuje talent.", "motto6" to "Dyscyplina to wolność.",
+            "motto7" to "Bez skrótów.", "motto8" to "Zarobione, nie dane.",
+            "goodMorning" to "Dzień dobry", "goodAfternoon" to "Dzień dobry", "goodEvening" to "Dobry wieczór",
+            "daysConsecutive" to "dni z rzędu", "todaysWorkout" to "Dzisiejszy trening",
+            "howDoYouFeel" to "Jak się czujesz?", "tiredLabel" to "Zmęczony", "normalLabel" to "Normalnie", "energeticLabel" to "Energetyczny",
+            "plusToday" to "Jeszcze dzisiaj", "technicalTip" to "Wskazówka techniczna",
+            "tomorrowLabel" to "Jutro", "setWorkoutTime" to "Ustaw czas treningu",
+            "daysSinceLastWorkout" to "Dni od ostatniego treningu", "groupsFullyRecovered" to "Grupy w pełni odzyskane",
+            "recoveryOnGroups" to "Regeneracja grup",
+            "weeklySummary" to "Podsumowanie tygodnia", "lastWeekLabel" to "poprz. tydzień",
+            "goalLabel" to "Wskazówka celu", "volumeLabel" to "Objętość", "topExerciseLabel" to "Top ćwiczenie",
+            "nutritionLabel" to "Odżywianie", "motivationLabel" to "Motywacja"
         ))
     )
 

@@ -201,7 +201,7 @@ fun FriendListScreen(onBackClick: () -> Unit) {
 
             Text(strings.yourFriends, color = textColor(), fontWeight = FontWeight.Bold, fontSize = 14.sp)
             Spacer(Modifier.height(6.dp))
-            val acceptedFriends = friends.filter { it.status == "accepted" }
+            val acceptedFriends = friends.filter { it.status == "accepted" && it.friendId != currentUserId }
             if (acceptedFriends.isEmpty()) {
                 Text(strings.noFriends, color = secondaryTextColor(), style = MaterialTheme.typography.bodyMedium)
             } else {

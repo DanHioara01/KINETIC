@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,7 +32,7 @@ import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarWorkoutScreen(onBackClick: () -> Unit) {
+fun CalendarWorkoutScreen(onBackClick: () -> Unit, onWorkoutDeleted: () -> Unit = {}) {
     val context = LocalContext.current
     val db = AppDatabase.getDatabase(context)
     val strings = LanguageManager.getStrings(context)
@@ -42,13 +43,14 @@ fun CalendarWorkoutScreen(onBackClick: () -> Unit) {
     var workoutDays by remember { mutableStateOf(setOf<Int>()) }
     var selectedDayWorkouts by remember { mutableStateOf<List<AntrenamentEntity>>(emptyList()) }
     var workoutGroupMap by remember { mutableStateOf<Map<Int, Set<String>>>(emptyMap()) }
+    var deleteTrigger by remember { mutableIntStateOf(0) }
 
     val monthNames = listOf(
         strings.jan, strings.feb, strings.mar, strings.apr, strings.may, strings.jun,
         strings.jul, strings.aug, strings.sep, strings.oct, strings.nov, strings.dec
     )
 
-    LaunchedEffect(currentMonth, currentYear) {
+    LaunchedEffect(currentMonth, currentYear, deleteTrigger) {
         withContext(Dispatchers.IO) {
             val cal = Calendar.getInstance()
             cal.set(currentYear, currentMonth, 1, 0, 0, 0)
@@ -75,7 +77,7 @@ fun CalendarWorkoutScreen(onBackClick: () -> Unit) {
         }
     }
 
-    LaunchedEffect(selectedDay, currentMonth, currentYear) {
+    LaunchedEffect(selectedDay, currentMonth, currentYear, deleteTrigger) {
         withContext(Dispatchers.IO) {
             val cal = Calendar.getInstance()
             cal.set(currentYear, currentMonth, selectedDay, 0, 0, 0)
@@ -253,6 +255,37 @@ fun CalendarWorkoutScreen(onBackClick: () -> Unit) {
                 }
             } else {
                 items(selectedDayWorkouts) { workout ->
+                    var showDeleteDialog by remember { mutableStateOf(false) }
+
+                    if (showDeleteDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showDeleteDialog = false },
+                            containerColor = cardColor(),
+                            title = { Text(strings.delete ?: "Delete", color = textColor(), fontWeight = FontWeight.Bold) },
+                            text = { Text(strings.confirm ?: "Are you sure?", color = secondaryTextColor()) },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    showDeleteDialog = false
+                                    kotlinx.coroutines.runBlocking {
+                                        withContext(Dispatchers.IO) {
+                                            db.exercitiuDao().deleteForAntrenament(workout.id)
+                                            db.antrenamentDao().delete(workout)
+                                        }
+                                    }
+                                    deleteTrigger++
+                                    onWorkoutDeleted()
+                                }) {
+                                    Text(strings.delete ?: "Delete", color = AccentRed, fontWeight = FontWeight.Bold)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDeleteDialog = false }) {
+                                    Text(strings.cancel ?: "Cancel", color = secondaryTextColor())
+                                }
+                            }
+                        )
+                    }
+
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = cardColor()),
@@ -289,6 +322,14 @@ fun CalendarWorkoutScreen(onBackClick: () -> Unit) {
                                         text = "${String.format("%.0f", workout.totalWeight)} kg total",
                                         color = secondaryTextColor(),
                                         fontSize = 13.sp
+                                    )
+                                }
+                                IconButton(onClick = { showDeleteDialog = true }) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = AccentRed.copy(alpha = 0.7f),
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }

@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.tasks.await
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -16,6 +17,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -165,8 +167,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
     }
     var showProfileSetup by remember { mutableStateOf(false) }
     var selectedGroup: String? by remember { mutableStateOf(null) }
+    var selectedDirectExercise: ExerciseDefinition? by remember { mutableStateOf(null) }
+    var selectedDirectGroup: String? by remember { mutableStateOf(null) }
     var showCalendar by remember { mutableStateOf(false) }
-    var showRecovery by remember { mutableStateOf(false) }
     var showTemplates by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showUnitsDialog by remember { mutableStateOf(false) }
@@ -174,6 +177,8 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
     val scope = rememberCoroutineScope()
     var currentPage by remember { mutableStateOf<DrawerPage?>(null) }
     var currentDashboardTab by remember { mutableIntStateOf(0) }
+    var muscleGroupsSubTab by remember { mutableIntStateOf(0) }
+    var selectedTemplate by remember { mutableStateOf<WorkoutTemplate?>(null) }
     var isLbs by remember { mutableStateOf(preferencesManager.isLbs()) }
     var currentLanguage by remember { mutableStateOf(LanguageManager.getLanguage()) }
     var currentThemeMode by remember { mutableStateOf(preferencesManager.getThemeMode()) }
@@ -234,6 +239,11 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
     var badgeCount by remember { mutableIntStateOf(0) }
     var recentBadges by remember { mutableStateOf<List<BadgeEntity>>(emptyList()) }
 
+    var weekWorkoutCount by remember { mutableIntStateOf(0) }
+    var lastWeekWorkoutCount by remember { mutableIntStateOf(0) }
+    var weekVolume by remember { mutableDoubleStateOf(0.0) }
+    var lastWeekVolume by remember { mutableDoubleStateOf(0.0) }
+
     var showBiometricInput by remember { mutableStateOf(false) }
     var showBiometricCharts by remember { mutableStateOf(false) }
     var lastBiometric by remember { mutableStateOf<BiometricEntity?>(null) }
@@ -247,10 +257,26 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
     var pendingFoodProduct by remember { mutableStateOf<FoodProduct?>(null) }
     var showAiTrainer by remember { mutableStateOf(false) }
     var showFriends by remember { mutableStateOf(false) }
+    var pendingRequestsCount by remember { mutableIntStateOf(0) }
     var showLeaderboard by remember { mutableStateOf(false) }
     var showServerDialog by remember { mutableStateOf(false) }
 
-    val onDashboard = selectedGroup == null && !showCalendar && !showRecovery && !showTemplates && !showBiometricInput && !showBiometricCharts && !showFoodJournal && !showBarcodeScanner && !showAddFood && !showAiTrainer
+    val onDashboard = selectedGroup == null && !showCalendar && !showTemplates && !showBiometricInput && !showBiometricCharts && !showFoodJournal && !showBarcodeScanner && !showAddFood && !showAiTrainer && currentPage != DrawerPage.GPS_CARDIO && currentPage != DrawerPage.REST_DAYS
+
+    LaunchedEffect(isLoggedIn, userId) {
+        if (isLoggedIn && userId != "local_user") {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                while (true) {
+                    try {
+                        val db = AppDatabase.getDatabase(context)
+                        val requests = SocialRepository(db).getIncomingRequests(userId)
+                        pendingRequestsCount = requests.size
+                    } catch (_: Exception) {}
+                    kotlinx.coroutines.delay(30000)
+                }
+            }
+        }
+    }
 
     LaunchedEffect(badgeCheckTrigger) {
         if (badgeCheckTrigger > 0 && userId != "local_user") {
@@ -317,6 +343,17 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                 val mostFrequent = db.exercitiuDao().getMostFrequentExercise("simple", weekStart, weekEnd)
                 weeklyTopExercise = mostFrequent?.numeExercitiu
 
+                val weekWorkouts = db.antrenamentDao().getWorkoutsInPeriod("simple", weekStart, weekEnd)
+                weekWorkoutCount = weekWorkouts.size
+                weekVolume = weekWorkouts.sumOf { it.totalWeight }
+
+                // Last week
+                val lastWeekStart = weekStart - 7L * 24 * 60 * 60 * 1000
+                val lastWeekEnd = weekStart
+                val lastWeekWorkouts = db.antrenamentDao().getWorkoutsInPeriod("simple", lastWeekStart, lastWeekEnd)
+                lastWeekWorkoutCount = lastWeekWorkouts.size
+                lastWeekVolume = lastWeekWorkouts.sumOf { it.totalWeight }
+
                 val todayWorkouts = db.antrenamentDao().getWorkoutsInPeriod("simple", dayStart, dayEnd)
                 todayVolume = todayWorkouts.sumOf { it.totalWeight }
                 val exerciseNames = mutableListOf<String>()
@@ -341,6 +378,28 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                 val allBadges = db.badgeDao().getAll()
                 val badgeMap = allBadges.associateBy { it.key }
                 recentBadges = userBadges.mapNotNull { badgeMap[it.badgeKey] }
+            }
+        }
+    }
+
+    val notificationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
+    val cameraPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            showBarcodeScanner = true
+        }
+    }
+
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            val notifPerm = android.Manifest.permission.POST_NOTIFICATIONS
+            val cameraPerm = android.Manifest.permission.CAMERA
+            if (androidx.core.content.ContextCompat.checkSelfPermission(context, notifPerm) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(notifPerm)
             }
         }
     }
@@ -634,9 +693,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
 
     BackHandler {
         when {
+            selectedDirectExercise != null -> { selectedDirectExercise = null; selectedDirectGroup = null }
             selectedGroup != null -> selectedGroup = null
             showCalendar -> { showCalendar = false; currentPage = null }
-            showRecovery -> { showRecovery = false; currentPage = null }
             showTemplates -> { showTemplates = false; currentPage = null }
             currentPage != null -> currentPage = null
             currentDashboardTab != 0 -> currentDashboardTab = 0
@@ -657,15 +716,17 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                     currentLanguage = currentLanguage,
                     badgeCount = badgeCount,
                     currentStreak = currentStreak,
+                    pendingRequestsCount = pendingRequestsCount,
                     onNavigate = { page ->
                         currentPage = page
                         when (page) {
-                            null -> { showCalendar = false; showRecovery = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
-                            DrawerPage.RECOVERY -> { showCalendar = false; showRecovery = true; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
-                            DrawerPage.CALENDAR -> { showCalendar = true; showRecovery = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
-                            DrawerPage.FOOD_JOURNAL -> { showCalendar = false; showRecovery = false; showTemplates = false; showFoodJournal = true; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
-                            DrawerPage.AI_TRAINER -> { showCalendar = false; showRecovery = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = true; showFriends = false; showLeaderboard = false; selectedGroup = null }
-                            DrawerPage.FRIENDS -> { showCalendar = false; showRecovery = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = true; showLeaderboard = false; selectedGroup = null }
+                            null -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
+                            DrawerPage.CALENDAR -> { showCalendar = true; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
+                            DrawerPage.FOOD_JOURNAL -> { showCalendar = false; showTemplates = false; showFoodJournal = true; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
+                            DrawerPage.AI_TRAINER -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = true; showFriends = false; showLeaderboard = false; selectedGroup = null }
+                            DrawerPage.FRIENDS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = true; showLeaderboard = false; selectedGroup = null }
+                            DrawerPage.GPS_CARDIO -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
+                            DrawerPage.REST_DAYS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
                         }
                     },
                     onExportCsv = {
@@ -711,7 +772,6 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                             if (currentDashboardTab == 0) {
                                 when {
                                     selectedGroup != null -> selectedGroup = null
-                                    showRecovery -> { showRecovery = false; currentPage = null }
                                     showTemplates -> { showTemplates = false; currentPage = null }
                                     showCalendar -> { showCalendar = false; currentPage = null }
                                     showFoodJournal -> { showFoodJournal = false; currentPage = null }
@@ -728,7 +788,6 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 currentDashboardTab = 0
                                 selectedGroup = null
                                 showCalendar = false
-                                showRecovery = false
                                 showTemplates = false
                                 showFoodJournal = false
                                 showAiTrainer = false
@@ -768,7 +827,6 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 currentDashboardTab = 1
                                 selectedGroup = null
                                 showCalendar = false
-                                showRecovery = false
                                 showTemplates = false
                                 showFoodJournal = false
                                 showAiTrainer = false
@@ -807,7 +865,6 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 currentDashboardTab = 2
                                 selectedGroup = null
                                 showCalendar = false
-                                showRecovery = false
                                 showTemplates = false
                                 showFoodJournal = false
                                 showAiTrainer = false
@@ -846,7 +903,6 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 currentDashboardTab = 3
                                 selectedGroup = null
                                 showCalendar = false
-                                showRecovery = false
                                 showTemplates = false
                                 showFoodJournal = false
                                 showAiTrainer = false
@@ -887,7 +943,6 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 currentDashboardTab = 4
                                 selectedGroup = null
                                 showCalendar = false
-                                showRecovery = false
                                 showTemplates = false
                                 showFoodJournal = false
                                 showAiTrainer = false
@@ -923,12 +978,13 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                if (showRecovery) {
-                    MuscleRecoveryScreen(onBackClick = { showRecovery = false; currentPage = null })
-                } else if (showTemplates) {
+                if (showTemplates) {
                     TemplateScreen(onBackClick = { showTemplates = false; currentPage = null })
                 } else if (showCalendar) {
-                    CalendarWorkoutScreen(onBackClick = { showCalendar = false; currentPage = null })
+                    CalendarWorkoutScreen(
+                        onBackClick = { showCalendar = false; currentPage = null },
+                        onWorkoutDeleted = { reloadToken++ }
+                    )
                 } else if (showBiometricInput) {
                     BiometricInputScreen(
                         isDark = isDark,
@@ -984,7 +1040,15 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 }
                             }
                         },
-                        onScanBarcode = { showFoodJournal = false; showBarcodeScanner = true },
+                        onScanBarcode = {
+                            showFoodJournal = false
+                            val cameraPerm = android.Manifest.permission.CAMERA
+                            if (androidx.core.content.ContextCompat.checkSelfPermission(context, cameraPerm) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                showBarcodeScanner = true
+                            } else {
+                                cameraPermissionLauncher.launch(cameraPerm)
+                            }
+                        },
                         onAddManual = { showFoodJournal = false; showAddFood = true },
                         onBack = { showFoodJournal = false; currentPage = null }
                     )
@@ -998,10 +1062,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 val product = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                     OpenFoodFactsApi.getProduct(barcode)
                                 }
-                                // Mergem mereu la AddFoodScreen — dacă produsul nu e găsit,
-                                // câmpurile sunt goale dar barcode-ul e pre-completat
                                 pendingFoodProduct = product
                                 showAddFood = true
+                                android.util.Log.d("BarcodeScan", "barcode=$barcode, found=${product.found}, name=${product.name}, cal=${product.calories}")
                             }
                         },
                         onBack = { showBarcodeScanner = false; showFoodJournal = true }
@@ -1064,6 +1127,31 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                         onBackClick = { showFriends = false; currentPage = null },
                         onOpenLeaderboard = { showFriends = false; showLeaderboard = true }
                     )
+                } else if (currentPage == DrawerPage.GPS_CARDIO) {
+                    GpsCardioScreen(
+                        isDark = isDark,
+                        strings = strings,
+                        userId = userId,
+                        onBack = { currentPage = null }
+                    )
+                } else if (currentPage == DrawerPage.REST_DAYS) {
+                    RestDayScreen(
+                        isDark = isDark,
+                        strings = strings,
+                        userId = userId,
+                        recoveryMap = recoveryMap,
+                        onBack = { currentPage = null }
+                    )
+                } else if (selectedDirectExercise != null) {
+                    ExerciseInputScreen(
+                        exercise = selectedDirectExercise!!,
+                        grupaMusculara = selectedDirectGroup ?: "",
+                        isLbs = isLbs,
+                        onBackClick = { selectedDirectExercise = null; selectedDirectGroup = null },
+                        onOpenProgress = { name -> selectedDirectExercise = null; selectedDirectGroup = null },
+                        onWorkoutSaved = { reloadToken++; badgeCheckTrigger++ },
+                        strings = strings
+                    )
                 } else if (selectedGroup != null) {
                     ExerciseListScreen(
                         grupaMusculara = selectedGroup!!,
@@ -1073,7 +1161,10 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                         onWorkoutSaved = { reloadToken++; badgeCheckTrigger++ }
                     )
                 } else if (currentPage == DrawerPage.CALENDAR) {
-                    CalendarWorkoutScreen(onBackClick = { currentPage = null })
+                    CalendarWorkoutScreen(
+                        onBackClick = { currentPage = null },
+                        onWorkoutDeleted = { reloadToken++ }
+                    )
                 } else {
                     Scaffold(
                         containerColor = surfaceBg,
@@ -1126,67 +1217,124 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                         }
                     ) { innerPadding ->
                         if (currentDashboardTab == 0) {
-                            LazyVerticalGrid(
-                                columns = GridCells.Fixed(2),
-                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = paddingValues.calculateBottomPadding() + 80.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            var selectedMood by remember { mutableIntStateOf(1) }
+                            val onboardingProfile = remember { preferencesManager.getOnboardingProfile() }
+                            val generatedWorkout = remember(onboardingProfile, selectedMood) {
+                                if (onboardingProfile.goal.isNotEmpty() && onboardingProfile.selectedGroups.isNotEmpty()) {
+                                    FitnessAssistant.generateWorkout(onboardingProfile, selectedMood)
+                                } else emptyList()
+                            }
+                            val generatedTips = remember(onboardingProfile, selectedMood) {
+                                FitnessAssistant.generateTips(onboardingProfile, selectedMood)
+                            }
+
+                            val dayOfYear = remember { java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_YEAR) }
+                            var activeTipIndex by remember(generatedTips) {
+                                mutableIntStateOf(if (generatedTips.isNotEmpty()) dayOfYear % generatedTips.size else 0)
+                            }
+
+                            val greeting = remember {
+                                val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                                when {
+                                    hour < 12 -> strings.goodMorning
+                                    hour < 18 -> strings.goodAfternoon
+                                    else -> strings.goodEvening
+                                }
+                            }
+
+                            LazyColumn(
+                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = paddingValues.calculateBottomPadding()),
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
                                 modifier = Modifier.padding(innerPadding)
                             ) {
-                                item(span = { GridItemSpan(2) }) {
-                                    val onboardingProfile = remember { preferencesManager.getOnboardingProfile() }
-                                    val generatedWorkout = remember(onboardingProfile) {
-                                        if (onboardingProfile.goal.isNotEmpty() && onboardingProfile.selectedGroups.isNotEmpty()) {
-                                            FitnessAssistant.generateWorkout(onboardingProfile)
-                                        } else emptyList()
+                                item {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            greeting.uppercase(),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = textSecondary,
+                                            letterSpacing = 2.sp,
+                                            fontSize = 12.sp
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            profileName.uppercase(),
+                                            fontFamily = BebasNeue,
+                                            fontSize = 32.sp,
+                                            color = textPrimary,
+                                            letterSpacing = 4.sp
+                                        )
+                                        if (currentStreak > 0) {
+                                            Spacer(Modifier.height(6.dp))
+                                            Surface(
+                                                shape = RoundedCornerShape(20.dp),
+                                                color = accent.copy(alpha = 0.12f),
+                                                border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.3f))
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                                ) {
+                                                    Text("\uD83D\uDD25", fontSize = 14.sp)
+                                                    Text(
+                                                        "$currentStreak ${strings.daysConsecutive}",
+                                                        color = accent,
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
-                                    val generatedTips = remember(onboardingProfile) {
-                                        if (onboardingProfile.goal.isNotEmpty()) {
-                                            FitnessAssistant.generateTips(onboardingProfile)
-                                        } else emptyList()
-                                    }
+                                }
 
+                                item {
                                     if (generatedWorkout.isNotEmpty()) {
+                                        val goalLabel = when (onboardingProfile.goal) {
+                                            "strength" -> strings.goalStrength.uppercase()
+                                            "mass" -> strings.goalMass.uppercase()
+                                            "weight_loss" -> strings.goalWeightLoss.uppercase()
+                                            "maintenance" -> strings.goalMaintenance.uppercase()
+                                            else -> ""
+                                        }
+                                        val groupedByGroup = generatedWorkout.groupBy { it.group }
+                                        val totalExercises = generatedWorkout.size
+                                        val estimatedMinutes = totalExercises * 3
+                                        val totalSets = generatedWorkout.sumOf { it.sets }
+
                                         Card(
                                             modifier = Modifier.fillMaxWidth(),
                                             shape = RoundedCornerShape(18.dp),
                                             colors = CardDefaults.cardColors(containerColor = cardBg)
                                         ) {
                                             Column(modifier = Modifier.padding(18.dp)) {
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Text(
-                                                        "TODAY'S WORKOUT",
-                                                        style = MaterialTheme.typography.headlineSmall,
-                                                        color = accent,
-                                                        letterSpacing = 2.sp
-                                                    )
-                                                    val goalLabel = when (onboardingProfile.goal) {
-                                                        "strength" -> "STRENGTH"
-                                                        "mass" -> "MASS"
-                                                        "weight_loss" -> "WEIGHT LOSS"
-                                                        "maintenance" -> "MAINTENANCE"
-                                                        else -> ""
-                                                    }
-                                                    if (goalLabel.isNotEmpty()) {
-                                                        Text(
-                                                            goalLabel,
-                                                            fontSize = 10.sp,
-                                                            letterSpacing = 1.sp,
-                                                            color = AccentPurple,
-                                                            modifier = Modifier
-                                                                .clip(RoundedCornerShape(8.dp))
-                                                                .background(AccentPurple.copy(alpha = 0.12f))
-                                                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                                                        )
-                                                    }
-                                                }
+                                                Text(
+                                                    strings.todaysWorkout.uppercase(),
+                                                    fontSize = 11.sp,
+                                                    letterSpacing = 2.sp,
+                                                    color = accent,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Spacer(Modifier.height(8.dp))
+                                                val templateName = goalLabel.ifEmpty { "PUSH" }
+                                                Text(
+                                                    "$templateName \u2014 ziua ${currentStreak.coerceAtLeast(1)}",
+                                                    fontSize = 22.sp,
+                                                    color = textPrimary,
+                                                    fontWeight = FontWeight.Black
+                                                )
+                                                Spacer(Modifier.height(4.dp))
+                                                Text(
+                                                    "$totalExercises ${strings.exercises} \u00B7 ~$estimatedMinutes min \u00B7 $totalSets ${strings.sets}",
+                                                    fontSize = 13.sp,
+                                                    color = textSecondary
+                                                )
                                                 Spacer(Modifier.height(14.dp))
 
-                                                val groupedByGroup = generatedWorkout.groupBy { it.group }
                                                 groupedByGroup.forEach { (group, exercises) ->
                                                     Text(
                                                         group.uppercase(),
@@ -1195,7 +1343,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                                         color = textSecondary,
                                                         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                                                     )
-                                                    exercises.forEach { ex ->
+                                                    exercises.take(3).forEach { ex ->
                                                         Row(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
@@ -1215,39 +1363,241 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                                                 fontWeight = FontWeight.Bold
                                                             )
                                                         }
-                                                        if (ex.note.isNotBlank()) {
+                                                    }
+                                                }
+
+                                                Spacer(Modifier.height(16.dp))
+                                                Button(
+                                                    onClick = {
+                                                        if (generatedWorkout.isNotEmpty()) {
+                                                            currentDashboardTab = 1
+                                                        }
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = accent),
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(48.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.PlayArrow,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                    Spacer(Modifier.width(8.dp))
+                                                    Text(
+                                                        strings.startWorkout.uppercase(),
+                                                        color = Color.White,
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        letterSpacing = 2.sp,
+                                                        fontSize = 14.sp
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                item {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(18.dp),
+                                        colors = CardDefaults.cardColors(containerColor = cardBg)
+                                    ) {
+                                        Column(modifier = Modifier.padding(18.dp)) {
+                                            Text(
+                                                strings.howDoYouFeel.uppercase(),
+                                                fontSize = 12.sp,
+                                                letterSpacing = 2.sp,
+                                                color = textSecondary,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Spacer(Modifier.height(12.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            ) {
+                                                val moods = listOf(
+                                                    Triple(0, Icons.Default.Battery1Bar, strings.tiredLabel),
+                                                    Triple(1, Icons.Default.Battery3Bar, strings.normalLabel),
+                                                    Triple(2, Icons.Default.BatteryFull, strings.energeticLabel)
+                                                )
+                                                moods.forEach { (index, icon, label) ->
+                                                    val isSelected = selectedMood == index
+                                                    Card(
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .clip(RoundedCornerShape(14.dp))
+                                                            .clickable { selectedMood = index }
+                                                            .then(
+                                                                if (isSelected) Modifier.border(
+                                                                    1.5.dp,
+                                                                    accent,
+                                                                    RoundedCornerShape(14.dp)
+                                                                ) else Modifier,
+                                                            ),
+                                                        shape = RoundedCornerShape(14.dp),
+                                                        colors = CardDefaults.cardColors(
+                                                            containerColor = if (isSelected) accent.copy(alpha = 0.1f) else Color.Transparent
+                                                        )
+                                                    ) {
+                                                        Column(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(vertical = 14.dp),
+                                                            horizontalAlignment = Alignment.CenterHorizontally
+                                                        ) {
+                                                            Icon(
+                                                                icon,
+                                                                contentDescription = label,
+                                                                tint = if (isSelected) accent else textSecondary,
+                                                                modifier = Modifier.size(22.dp)
+                                                            )
+                                                            Spacer(Modifier.height(6.dp))
                                                             Text(
-                                                                ex.note,
-                                                                fontSize = 11.sp,
-                                                                color = textSecondary,
-                                                                modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+                                                                label,
+                                                                fontSize = 12.sp,
+                                                                color = if (isSelected) accent else textSecondary,
+                                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                                             )
                                                         }
                                                     }
                                                 }
+                                            }
+                                        }
+                                    }
+                                }
+                                item {
+                                    // Daily Tips — single active tip with dots and auto-rotation
+                                    if (generatedTips.isNotEmpty()) {
+                                        val currentTip = generatedTips.getOrNull(activeTipIndex)
+                                        if (currentTip != null) {
+                                            val (tipLabel, tipIcon) = when (selectedMood) {
+                                                0 -> when (activeTipIndex) {
+                                                    0 -> Pair(strings.recovery, Icons.Default.FitnessCenter)
+                                                    1 -> Pair(strings.nutritionLabel, Icons.Default.Restaurant)
+                                                    else -> Pair(strings.technicalTip, Icons.Default.Lightbulb)
+                                                }
+                                                1 -> when (activeTipIndex) {
+                                                    0 -> Pair(strings.technicalTip, Icons.Default.Lightbulb)
+                                                    1 -> Pair(strings.nutritionLabel, Icons.Default.Restaurant)
+                                                    else -> Pair(strings.goalLabel, Icons.Default.EmojiEvents)
+                                                }
+                                                else -> when (activeTipIndex) {
+                                                    0 -> Pair(strings.motivationLabel, Icons.Default.EmojiEvents)
+                                                    1 -> Pair(strings.goalLabel, Icons.Default.EmojiEvents)
+                                                    else -> Pair(strings.technicalTip, Icons.Default.Lightbulb)
+                                                }
+                                            }
 
-                                                if (generatedTips.isNotEmpty()) {
-                                                    Spacer(Modifier.height(14.dp))
-                                                    HorizontalDivider(color = dividerColor())
-                                                    Spacer(Modifier.height(10.dp))
-                                                    Text(
-                                                        "TIPS",
-                                                        fontSize = 11.sp,
-                                                        letterSpacing = 2.sp,
-                                                        color = AccentPurple,
-                                                        modifier = Modifier.padding(bottom = 6.dp)
-                                                    )
-                                                    generatedTips.forEach { tip ->
+                                            LaunchedEffect(activeTipIndex) {
+                                                kotlinx.coroutines.delay(10000)
+                                                activeTipIndex = (activeTipIndex + 1) % generatedTips.size
+                                            }
+
+                                            Card(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                shape = RoundedCornerShape(20.dp),
+                                                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+                                            ) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .background(
+                                                            Brush.linearGradient(
+                                                                colors = listOf(
+                                                                    accent.copy(alpha = 0.20f),
+                                                                    accent.copy(alpha = 0.08f),
+                                                                    cardBg
+                                                                )
+                                                            )
+                                                        )
+                                                ) {
+                                                    Column(modifier = Modifier.padding(20.dp)) {
                                                         Row(
-                                                            modifier = Modifier.padding(vertical = 3.dp),
-                                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                            verticalAlignment = Alignment.CenterVertically
                                                         ) {
-                                                            Text("•", color = accent, fontSize = 12.sp)
                                                             Text(
-                                                                tip.text,
-                                                                fontSize = 12.sp,
-                                                                color = textSecondary,
-                                                                modifier = Modifier.weight(1f)
+                                                                strings.plusToday.uppercase(),
+                                                                fontSize = 13.sp,
+                                                                letterSpacing = 2.sp,
+                                                                color = accent,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                            // Dots Indicator
+                                                            Row(
+                                                                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                generatedTips.indices.forEach { idx ->
+                                                                    val isSelected = idx == activeTipIndex
+                                                                    Box(
+                                                                        modifier = Modifier
+                                                                            .size(if (isSelected) 9.dp else 6.dp)
+                                                                            .clip(CircleShape)
+                                                                            .background(if (isSelected) accent else textSecondary.copy(alpha = 0.3f))
+                                                                            .clickable { activeTipIndex = idx }
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                        Spacer(Modifier.height(14.dp))
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .clip(RoundedCornerShape(14.dp))
+                                                                .background(accent.copy(alpha = 0.10f))
+                                                                .border(1.dp, accent.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
+                                                                .clickable {
+                                                                    activeTipIndex = (activeTipIndex + 1) % generatedTips.size
+                                                                }
+                                                                .padding(16.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(44.dp)
+                                                                    .clip(RoundedCornerShape(12.dp))
+                                                                    .background(accent.copy(alpha = 0.20f)),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                Icon(
+                                                                    tipIcon,
+                                                                    contentDescription = null,
+                                                                    tint = accent,
+                                                                    modifier = Modifier.size(22.dp)
+                                                                )
+                                                            }
+                                                            Spacer(Modifier.width(14.dp))
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Text(
+                                                                    tipLabel,
+                                                                    fontSize = 14.sp,
+                                                                    color = accent,
+                                                                    fontWeight = FontWeight.Bold
+                                                                )
+                                                                Spacer(Modifier.height(4.dp))
+                                                                AnimatedContent(
+                                                                    targetState = TipsTranslator.translateTip(currentTip.text, LanguageManager.getLanguage()),
+                                                                    transitionSpec = { fadeIn(tween(400)) togetherWith fadeOut(tween(200)) },
+                                                                    label = "tipTransition"
+                                                                ) { tipText ->
+                                                                    Text(
+                                                                        tipText,
+                                                                        fontSize = 13.sp,
+                                                                        color = textPrimary,
+                                                                        lineHeight = 18.sp
+                                                                    )
+                                                                }
+                                                            }
+                                                            Icon(
+                                                                Icons.Default.ChevronRight,
+                                                                contentDescription = "Next tip",
+                                                                tint = accent.copy(alpha = 0.7f),
+                                                                modifier = Modifier.size(20.dp)
                                                             )
                                                         }
                                                     }
@@ -1257,79 +1607,699 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                     }
                                 }
 
-                                item(span = { GridItemSpan(2) }) {
-                                    PageTitle(strings.muscleGroups, modifier = Modifier.padding(top = 0.dp, bottom = 0.dp))
-                                }
-
-                                items(DataProvider.grupeMusculare.size) { idx ->
-                                    val group = DataProvider.grupeMusculare[idx]
-                                    val iconRes = when (group) {
-                                        "Piept" -> R.drawable.ic_piept
-                                        "Spate" -> R.drawable.ic_spate
-                                        "Umeri" -> R.drawable.ic_umeri
-                                        "Biceps" -> R.drawable.ic_biceps
-                                        "Triceps" -> R.drawable.ic_triceps
-                                        "Abdomen" -> R.drawable.ic_abdomen
-                                        "Picioare" -> R.drawable.ic_picioare
-                                        "Fese" -> R.drawable.ic_fese
-                                        "Gambe" -> R.drawable.ic_gambe
-                                        "Antebrate" -> R.drawable.ic_antebrat
-                                        "Gat & Trapezi" -> R.drawable.ic_gat
-                                        else -> R.drawable.ic_piept
-                                    }
-
-                                    val recLevel = recoveryMap[group] ?: 0.0
-
+                                // Weekly Summary card
+                                item {
                                     Card(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(16.dp))
-                                            .clickable { selectedGroup = group },
-                                        colors = CardDefaults.cardColors(containerColor = cardBg),
-                                        shape = RoundedCornerShape(16.dp)
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(18.dp),
+                                        colors = CardDefaults.cardColors(containerColor = cardBg)
                                     ) {
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(56.dp)
-                                                    .clip(CircleShape)
-                                                    .background(iconBg),
-                                                contentAlignment = Alignment.Center
+                                        Column(modifier = Modifier.padding(18.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Image(
-                                                    painter = painterResource(iconRes),
-                                                    contentDescription = group,
-                                                    modifier = Modifier.size(42.dp)
+                                                Text(
+                                                    strings.weeklySummary.uppercase(),
+                                                    fontSize = 12.sp,
+                                                    letterSpacing = 2.sp,
+                                                    color = textSecondary,
+                                                    fontWeight = FontWeight.SemiBold
                                                 )
+                                                if (currentStreak > 0) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                    ) {
+                                                        Text("🔥", fontSize = 13.sp)
+                                                        Text(
+                                                            "$currentStreak ${strings.daysConsecutive}",
+                                                            fontSize = 12.sp,
+                                                            color = accent,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                    }
+                                                }
                                             }
-                                            Spacer(modifier = Modifier.height(10.dp))
-                                            Text(
-                                                text = LanguageManager.translateMuscleGroup(group, strings),
-                                                fontSize = 14.sp,
-                                                color = textPrimary,
-                                                fontWeight = FontWeight.Bold,
-                                                textAlign = TextAlign.Center,
-                                                maxLines = 1
-                                            )
-                                            if (recLevel > 0.0) {
-                                                Spacer(modifier = Modifier.height(6.dp))
-                                                Box(
+                                            Spacer(Modifier.height(14.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            ) {
+                                                // Workouts this week
+                                                Card(
+                                                    modifier = Modifier.weight(1f),
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    colors = CardDefaults.cardColors(containerColor = iconBg)
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(14.dp),
+                                                        horizontalAlignment = Alignment.CenterHorizontally
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Default.FitnessCenter,
+                                                            contentDescription = null,
+                                                            tint = accent,
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                        Spacer(Modifier.height(6.dp))
+                                                        Text(
+                                                            "$weekWorkoutCount",
+                                                            fontSize = 26.sp,
+                                                            fontWeight = FontWeight.Black,
+                                                            color = textPrimary
+                                                        )
+                                                        Text(
+                                                            strings.workoutsLabel,
+                                                            fontSize = 11.sp,
+                                                            color = textSecondary,
+                                                            textAlign = TextAlign.Center
+                                                        )
+                                                        if (lastWeekWorkoutCount > 0) {
+                                                            val diff = weekWorkoutCount - lastWeekWorkoutCount
+                                                            val diffText = if (diff >= 0) "+$diff" else "$diff"
+                                                            Text(
+                                                                "$diffText vs ${strings.lastWeekLabel}",
+                                                                fontSize = 10.sp,
+                                                                color = if (diff >= 0) accent else textSecondary,
+                                                                fontWeight = FontWeight.SemiBold
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                // Volume this week
+                                                Card(
+                                                    modifier = Modifier.weight(1f),
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    colors = CardDefaults.cardColors(containerColor = iconBg)
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(14.dp),
+                                                        horizontalAlignment = Alignment.CenterHorizontally
+                                                    ) {
+                                                        Icon(
+                                                            Icons.Default.TrendingUp,
+                                                            contentDescription = null,
+                                                            tint = accent,
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                        Spacer(Modifier.height(6.dp))
+                                                        Text(
+                                                            weightLabel(weekVolume, isLbs),
+                                                            fontSize = 22.sp,
+                                                            fontWeight = FontWeight.Black,
+                                                            color = textPrimary,
+                                                            textAlign = TextAlign.Center
+                                                        )
+                                                        Text(
+                                                            strings.volumeLabel,
+                                                            fontSize = 11.sp,
+                                                            color = textSecondary,
+                                                            textAlign = TextAlign.Center
+                                                        )
+                                                        if (lastWeekVolume > 0) {
+                                                            val diffPct = ((weekVolume - lastWeekVolume) / lastWeekVolume * 100).toInt()
+                                                            val diffText = if (diffPct >= 0) "+${diffPct}%" else "${diffPct}%"
+                                                            Text(
+                                                                "$diffText vs ${strings.lastWeekLabel}",
+                                                                fontSize = 10.sp,
+                                                                color = if (diffPct >= 0) accent else textSecondary,
+                                                                fontWeight = FontWeight.SemiBold
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                // Best streak
+                                                Card(
+                                                    modifier = Modifier.weight(1f),
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    colors = CardDefaults.cardColors(containerColor = iconBg)
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(14.dp),
+                                                        horizontalAlignment = Alignment.CenterHorizontally
+                                                    ) {
+                                                        Text("🏆", fontSize = 18.sp)
+                                                        Spacer(Modifier.height(6.dp))
+                                                        Text(
+                                                            "$bestStreak",
+                                                            fontSize = 26.sp,
+                                                            fontWeight = FontWeight.Black,
+                                                            color = textPrimary
+                                                        )
+                                                        Text(
+                                                            strings.bestStreakLabel,
+                                                            fontSize = 11.sp,
+                                                            color = textSecondary,
+                                                            textAlign = TextAlign.Center
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            if (weeklyTopExercise != null) {
+                                                Spacer(Modifier.height(12.dp))
+                                                Row(
                                                     modifier = Modifier
-                                                        .size(8.dp)
-                                                        .clip(CircleShape)
-                                                        .background(getRecoveryColor(recLevel))
-                                                )
+                                                        .fillMaxWidth()
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .background(iconBg)
+                                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                                ) {
+                                                    Text("⭐", fontSize = 16.sp)
+                                                    Column {
+                                                        Text(
+                                                            strings.topExerciseLabel,
+                                                            fontSize = 11.sp,
+                                                            color = textSecondary
+                                                        )
+                                                        Text(
+                                                            weeklyTopExercise ?: "",
+                                                            fontSize = 14.sp,
+                                                            color = textPrimary,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
                         } else if (currentDashboardTab == 1) {
-                            TemplateScreen(onBackClick = { currentDashboardTab = 0 })
+
+                            if (selectedTemplate != null) {
+                                TemplateDetailScreen(
+                                    template = selectedTemplate!!,
+                                    onBackClick = { selectedTemplate = null },
+                                    onBackToMain = { currentDashboardTab = 0 }
+                                )
+                            } else {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(innerPadding)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        val tabLabels = listOf(strings.templates, strings.muscleGroups)
+                                        tabLabels.forEachIndexed { index, label ->
+                                            val isActive = muscleGroupsSubTab == index
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .then(
+                                                        if (isActive) Modifier.border(1.5.dp, accent, RoundedCornerShape(12.dp))
+                                                        else Modifier.border(1.dp, textSecondary.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                                                    )
+                                                    .background(if (isActive) accent.copy(alpha = 0.08f) else Color.Transparent)
+                                                    .clickable { muscleGroupsSubTab = index }
+                                                    .padding(vertical = 12.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    label,
+                                                    color = if (isActive) accent else textSecondary,
+                                                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                                                    fontSize = 14.sp,
+                                                    letterSpacing = 1.sp
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    if (muscleGroupsSubTab == 0) {
+                                        LazyColumn(
+                                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = paddingValues.calculateBottomPadding()),
+                                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                                        ) {
+                                            items(DataProvider.templateuri) { template ->
+                                                val gradientColors = templateGradient(template.nume)
+                                                val estimatedDuration = template.exercitii.size * 3
+                                                val totalSets = template.exercitii.size * 4
+                                                val muscleGroups = templateMuscleGroups(template)
+
+                                                Card(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(200.dp)
+                                                        .clip(RoundedCornerShape(24.dp))
+                                                        .clickable { selectedTemplate = template },
+                                                    shape = RoundedCornerShape(24.dp),
+                                                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                                                ) {
+                                                    Box(modifier = Modifier.fillMaxSize()) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .fillMaxSize()
+                                                                .background(
+                                                                    Brush.linearGradient(
+                                                                        colors = gradientColors,
+                                                                        start = Offset(0f, 0f),
+                                                                        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                                                                    )
+                                                                )
+                                                        )
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .fillMaxSize()
+                                                                .background(
+                                                                    Brush.horizontalGradient(
+                                                                        colors = listOf(
+                                                                            Color.Black.copy(alpha = 0.45f),
+                                                                            Color.Transparent,
+                                                                            Color.Transparent
+                                                                        ),
+                                                                        startX = 0f,
+                                                                        endX = 600f
+                                                                    )
+                                                                )
+                                                        )
+                                                        Image(
+                                                            painter = painterResource(id = templateIcon(template.nume)),
+                                                            contentDescription = null,
+                                                            modifier = Modifier
+                                                                .fillMaxHeight()
+                                                                .width(180.dp)
+                                                                .align(Alignment.CenterEnd)
+                                                                .alpha(0.55f),
+                                                            contentScale = ContentScale.Crop
+                                                        )
+                                                        Column(
+                                                            modifier = Modifier
+                                                                .fillMaxSize()
+                                                                .padding(22.dp),
+                                                            verticalArrangement = Arrangement.SpaceBetween
+                                                        ) {
+                                                            Column {
+                                                                Text(
+                                                                    template.nume.uppercase(),
+                                                                    color = Color.White,
+                                                                    fontWeight = FontWeight.Black,
+                                                                    fontSize = 26.sp,
+                                                                    letterSpacing = 4.sp
+                                                                )
+                                                                Spacer(modifier = Modifier.height(6.dp))
+                                                                Text(
+                                                                    "${template.exercitii.size} ${strings.exercises}  \u00B7  ~${estimatedDuration}min  \u00B7  ${totalSets} sets",
+                                                                    color = Color.White.copy(alpha = 0.8f),
+                                                                    fontSize = 13.sp,
+                                                                    fontWeight = FontWeight.Medium
+                                                                )
+                                                            }
+                                                            Row(
+                                                                modifier = Modifier.fillMaxWidth(),
+                                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                LazyRow(
+                                                                    modifier = Modifier.weight(1f),
+                                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                                ) {
+                                                                    items(muscleGroups) { mg ->
+                                                                        Surface(
+                                                                            shape = RoundedCornerShape(20.dp),
+                                                                            color = Color.White.copy(alpha = 0.2f)
+                                                                        ) {
+                                                                            Text(
+                                                                                LanguageManager.translateMuscleGroup(mg, strings),
+                                                                                color = Color.White,
+                                                                                fontSize = 11.sp,
+                                                                                fontWeight = FontWeight.SemiBold,
+                                                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                }
+                                                                Spacer(modifier = Modifier.width(8.dp))
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .size(36.dp)
+                                                                        .clip(CircleShape)
+                                                                        .background(Color.White.copy(alpha = 0.2f)),
+                                                                    contentAlignment = Alignment.Center
+                                                                ) {
+                                                                    Icon(
+                                                                        Icons.Default.ChevronRight,
+                                                                        contentDescription = null,
+                                                                        tint = Color.White,
+                                                                        modifier = Modifier.size(22.dp)
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        var selectedMuscleGroup by remember { mutableStateOf<String?>(null) }
+                                        var selectedEquipment by remember { mutableStateOf<String?>(null) }
+
+                                        LazyColumn(
+                                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = paddingValues.calculateBottomPadding()),
+                                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            item {
+                                                LazyRow(
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    contentPadding = PaddingValues(vertical = 4.dp)
+                                                ) {
+                                                    items(DataProvider.grupeMusculare) { group ->
+                                                        val isActive = selectedMuscleGroup == group
+                                                        val groupRecovery = recoveryMap[group]
+                                                        val pillColor = groupRecovery?.let { getRecoveryPillColor(it) } ?: textSecondary
+                                                        val iconRes = muscleGroupIcon(group)
+
+                                                        Surface(
+                                                            shape = RoundedCornerShape(20.dp),
+                                                            color = if (isActive) accent else cardBg,
+                                                            modifier = Modifier
+                                                                .clip(RoundedCornerShape(20.dp))
+                                                                .then(
+                                                                    if (!isActive) Modifier.border(1.dp, textSecondary.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
+                                                                    else Modifier
+                                                                )
+                                                                .clickable {
+                                                                    selectedMuscleGroup = if (selectedMuscleGroup == group) null else group
+                                                                }
+                                                        ) {
+                                                            Row(
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                                                            ) {
+                                                                Image(
+                                                                    painter = painterResource(id = iconRes),
+                                                                    contentDescription = null,
+                                                                    modifier = Modifier.size(22.dp)
+                                                                )
+                                                                Spacer(Modifier.width(8.dp))
+                                                                Text(
+                                                                    LanguageManager.translateMuscleGroup(group, strings),
+                                                                    color = if (isActive) Color.White else textPrimary,
+                                                                    fontSize = 13.sp,
+                                                                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            item {
+                                                BodyAnatomyMapSimple(
+                                                    recoveryMap = recoveryMap,
+                                                    onGroupClick = { group -> selectedMuscleGroup = group },
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .height(360.dp)
+                                                )
+                                            }
+
+                                            item {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.Center,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    val legendItems = listOf(
+                                                        RecoveryGreen to strings.recovered,
+                                                        RecoveryYellow to strings.almostRecovered,
+                                                        RecoveryRed to strings.tired
+                                                    )
+                                                    legendItems.forEachIndexed { index, pair ->
+                                                        val color = pair.first
+                                                        val label = pair.second
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            modifier = Modifier.padding(horizontal = 8.dp)
+                                                        ) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(8.dp)
+                                                                    .clip(CircleShape)
+                                                                    .background(color)
+                                                            )
+                                                            Spacer(Modifier.width(4.dp))
+                                                            Text(
+                                                                label,
+                                                                fontSize = 12.sp,
+                                                                color = textSecondary
+                                                            )
+                                                        }
+                                                        if (index < legendItems.lastIndex) {
+                                                            Spacer(Modifier.width(12.dp))
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            if (selectedMuscleGroup != null) {
+                                                val group = selectedMuscleGroup!!
+                                                val allExercises = DataProvider.exercitiiPeGrupa[group] ?: listOf()
+                                                val equipmentTypes = allExercises.map { it.equipment }.distinct()
+                                                val filteredExercises = if (selectedEquipment != null) {
+                                                    allExercises.filter { it.equipment == selectedEquipment }
+                                                } else allExercises
+
+                                                item {
+                                                    val groupLevel = recoveryMap[group] ?: 0.0
+                                                    val recoveryPct = ((1.0 - groupLevel) * 100).toInt().coerceIn(0, 100)
+                                                    val barColor = getRecoveryColor(groupLevel)
+                                                    var animBar by remember { mutableFloatStateOf(0f) }
+                                                    LaunchedEffect(group) { animBar = 1f }
+                                                    val barProgress by animateFloatAsState(
+                                                        targetValue = animBar * recoveryPct / 100f,
+                                                        animationSpec = tween(durationMillis = 800)
+                                                    )
+
+                                                    Card(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        shape = RoundedCornerShape(16.dp),
+                                                        colors = CardDefaults.cardColors(containerColor = cardBg)
+                                                    ) {
+                                                        Column(modifier = Modifier.padding(16.dp)) {
+                                                            Row(
+                                                                modifier = Modifier.fillMaxWidth(),
+                                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                Text(
+                                                                    LanguageManager.translateMuscleGroup(group, strings).uppercase(),
+                                                                    fontSize = 16.sp,
+                                                                    fontWeight = FontWeight.Black,
+                                                                    letterSpacing = 2.sp,
+                                                                    color = textPrimary
+                                                                )
+                                                                Text(
+                                                                    "${allExercises.size} ${strings.exercises}",
+                                                                    fontSize = 12.sp,
+                                                                    color = textSecondary,
+                                                                    fontWeight = FontWeight.Medium
+                                                                )
+                                                            }
+                                                            Spacer(Modifier.height(8.dp))
+                                                            Row(
+                                                                modifier = Modifier.fillMaxWidth(),
+                                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                                verticalAlignment = Alignment.CenterVertically
+                                                            ) {
+                                                                Text(
+                                                                    strings.muscleRecovery,
+                                                                    color = secondaryTextColor(),
+                                                                    fontSize = 12.sp,
+                                                                    fontWeight = FontWeight.Medium
+                                                                )
+                                                                Text(
+                                                                    "$recoveryPct%",
+                                                                    color = barColor,
+                                                                    fontSize = 12.sp,
+                                                                    fontWeight = FontWeight.Bold
+                                                                )
+                                                            }
+                                                            Spacer(Modifier.height(4.dp))
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth()
+                                                                    .height(8.dp)
+                                                                    .clip(RoundedCornerShape(4.dp))
+                                                                    .background(RecoveryTrack)
+                                                            ) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .fillMaxHeight()
+                                                                        .fillMaxWidth(fraction = barProgress.coerceIn(0f, 1f))
+                                                                        .clip(RoundedCornerShape(4.dp))
+                                                                        .background(barColor)
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                item {
+                                                    LazyRow(
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                        contentPadding = PaddingValues(vertical = 2.dp)
+                                                    ) {
+                                                        item {
+                                                            Surface(
+                                                                shape = RoundedCornerShape(16.dp),
+                                                                color = if (selectedEquipment == null) accent else cardBg,
+                                                                modifier = Modifier
+                                                                    .clip(RoundedCornerShape(16.dp))
+                                                                    .then(
+                                                                        if (selectedEquipment != null) Modifier.border(1.dp, textSecondary.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                                                                        else Modifier
+                                                                    )
+                                                                    .clickable { selectedEquipment = null }
+                                                            ) {
+                                                                Text(
+                                                                    "All",
+                                                                    color = if (selectedEquipment == null) Color.White else textPrimary,
+                                                                    fontSize = 12.sp,
+                                                                    fontWeight = if (selectedEquipment == null) FontWeight.Bold else FontWeight.Medium,
+                                                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                                                )
+                                                            }
+                                                        }
+                                                        items(equipmentTypes) { equip ->
+                                                            val isActive = selectedEquipment == equip
+                                                            Surface(
+                                                                shape = RoundedCornerShape(16.dp),
+                                                                color = if (isActive) accent else cardBg,
+                                                                modifier = Modifier
+                                                                    .clip(RoundedCornerShape(16.dp))
+                                                                    .then(
+                                                                        if (!isActive) Modifier.border(1.dp, textSecondary.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                                                                        else Modifier
+                                                                    )
+                                                                    .clickable { selectedEquipment = if (isActive) null else equip }
+                                                            ) {
+                                                                Text(
+                                                                    equip,
+                                                                    color = if (isActive) Color.White else textPrimary,
+                                                                    fontSize = 12.sp,
+                                                                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                                                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                items(filteredExercises) { exercise ->
+                                                    val gifUrl = ExerciseGifs.getGif(exercise.name)
+                                                    Card(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .height(90.dp)
+                                                            .clickable {
+                                                                selectedDirectExercise = exercise
+                                                                selectedDirectGroup = group
+                                                            },
+                                                        shape = RoundedCornerShape(14.dp),
+                                                        colors = CardDefaults.cardColors(containerColor = cardBg)
+                                                    ) {
+                                                        Row(
+                                                            modifier = Modifier.fillMaxSize(),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(90.dp)
+                                                                    .background(Color.Black)
+                                                                    .clip(RoundedCornerShape(topStart = 14.dp, bottomStart = 14.dp)),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                if (gifUrl != null) {
+                                                                    AsyncImage(
+                                                                        model = gifUrl,
+                                                                        contentDescription = exercise.name,
+                                                                        modifier = Modifier.fillMaxSize(),
+                                                                        contentScale = ContentScale.Crop
+                                                                    )
+                                                                } else {
+                                                                    Image(
+                                                                        painter = painterResource(id = muscleGroupIcon(group)),
+                                                                        contentDescription = null,
+                                                                        modifier = Modifier.size(40.dp),
+                                                                        alpha = 0.3f
+                                                                    )
+                                                                }
+                                                            }
+                                                            Spacer(Modifier.width(12.dp))
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Text(
+                                                                    exercise.name.uppercase(),
+                                                                    fontSize = 14.sp,
+                                                                    fontWeight = FontWeight.Black,
+                                                                    letterSpacing = 1.sp,
+                                                                    color = textPrimary
+                                                                )
+                                                                Spacer(Modifier.height(2.dp))
+                                                                Text(
+                                                                    exercise.equipment,
+                                                                    fontSize = 11.sp,
+                                                                    color = textSecondary,
+                                                                    fontWeight = FontWeight.Medium
+                                                                )
+                                                            }
+                                                            Icon(
+                                                                Icons.Default.ChevronRight,
+                                                                contentDescription = null,
+                                                                tint = textSecondary,
+                                                                modifier = Modifier
+                                                                    .size(18.dp)
+                                                                    .padding(end = 12.dp)
+                                                            )
+                                                            Spacer(Modifier.width(8.dp))
+                                                        }
+                                                    }
+                                                }
+                                            } else {
+                                                item {
+                                                    Card(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        shape = RoundedCornerShape(16.dp),
+                                                        colors = CardDefaults.cardColors(containerColor = cardBg)
+                                                    ) {
+                                                        Column(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(24.dp),
+                                                            horizontalAlignment = Alignment.CenterHorizontally
+                                                        ) {
+                                                            Icon(
+                                                                Icons.Default.FitnessCenter,
+                                                                contentDescription = null,
+                                                                tint = textSecondary.copy(alpha = 0.4f),
+                                                                modifier = Modifier.size(40.dp)
+                                                            )
+                                                            Spacer(Modifier.height(8.dp))
+                                                            Text(
+                                                                strings.chooseMuscleGroup.uppercase(),
+                                                                fontSize = 12.sp,
+                                                                color = textSecondary,
+                                                                letterSpacing = 1.sp,
+                                                                textAlign = TextAlign.Center,
+                                                                fontWeight = FontWeight.Medium
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         } else if (currentDashboardTab == 2) {
                             StatsScreen(
                                 isDark = isDark,
@@ -1723,6 +2693,7 @@ fun ExerciseInputScreen(
     grupaMusculara: String,
     isLbs: Boolean = false,
     onBackClick: () -> Unit,
+    onNextExercise: (() -> Unit)? = null,
     onOpenProgress: (String) -> Unit = {},
     onWorkoutSaved: () -> Unit = {},
     strings: LanguageManager.Strings
@@ -1922,7 +2893,7 @@ fun ExerciseInputScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(vertical = 12.dp)
+            contentPadding = PaddingValues(top = 12.dp, bottom = 100.dp)
         ) {
             item { RecoveryBarForGroup(grupaMusculara = grupaMusculara) }
             item {
@@ -2047,6 +3018,25 @@ fun ExerciseInputScreen(
                 )
             }
             item { ExerciseStatsCard(stats = stats, volumeSummary = volumeSummary, isLbs = isLbs) }
+            if (onNextExercise != null) {
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { onNextExercise() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = accentColor()),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                            Text(
+                            strings.nextExercise.uppercase(),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 2.sp,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -2066,15 +3056,15 @@ fun ExerciseStatsCard(stats: ExerciseStats, volumeSummary: VolumeSummary, isLbs:
             Text(strings.prAndVolume, color = textColor(), fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatPill("Max", weightLabel(stats.maxGreutate, isLbs), Modifier.weight(1f))
-                StatPill("Max reps", "${stats.maxRepetari}", Modifier.weight(1f))
-                StatPill("Max set", weightLabel(stats.maxVolumSet, isLbs), Modifier.weight(1f))
+                StatPill(strings.maxWeight, weightLabel(stats.maxGreutate, isLbs), Modifier.weight(1f))
+                StatPill(strings.maxReps, "${stats.maxRepetari}", Modifier.weight(1f))
+                StatPill(strings.maxSet, weightLabel(stats.maxVolumSet, isLbs), Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatPill("Today", weightLabel(volumeSummary.azi, isLbs), Modifier.weight(1f))
-                StatPill("Week", weightLabel(volumeSummary.saptamana, isLbs), Modifier.weight(1f))
-                StatPill("Month", weightLabel(volumeSummary.luna, isLbs), Modifier.weight(1f))
+                StatPill(strings.today, weightLabel(volumeSummary.azi, isLbs), Modifier.weight(1f))
+                StatPill(strings.thisWeek, weightLabel(volumeSummary.saptamana, isLbs), Modifier.weight(1f))
+                StatPill(strings.thisMonth, weightLabel(volumeSummary.luna, isLbs), Modifier.weight(1f))
             }
         }
     }
@@ -2161,10 +3151,10 @@ fun RestTimerCard(
                     colors = ButtonDefaults.buttonColors(containerColor = DarkRed),
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Start")
+                    Text(strings.start)
                 }
                 OutlinedButton(onClick = onStop, modifier = Modifier.weight(1f)) {
-                    Text("Stop", color = accentColor())
+                    Text(strings.stop, color = accentColor())
                 }
             }
         }
@@ -2432,12 +3422,12 @@ fun PageTitle(title: String, modifier: Modifier = Modifier) {
 // ============================================
 private fun templateGradient(templateName: String): List<Color> {
     return when (templateName.lowercase()) {
-        "push" -> listOf(DarkRed.copy(alpha = 0.85f), Color(0xFFFF1744).copy(alpha = 0.85f))
+        "push" -> listOf(Volcanico.copy(alpha = 0.85f), VolcanicoLight.copy(alpha = 0.85f))
         "pull" -> listOf(Color(0xFF1565C0).copy(alpha = 0.85f), Color(0xFF42A5F5).copy(alpha = 0.85f))
         "legs" -> listOf(Color(0xFF2E7D32).copy(alpha = 0.85f), Color(0xFF66BB6A).copy(alpha = 0.85f))
-        "upper" -> listOf(Color(0xFF6A1B9A).copy(alpha = 0.85f), Color(0xFFAB47BC).copy(alpha = 0.85f))
-        "full body" -> listOf(Color(0xFFE65100).copy(alpha = 0.85f), Color(0xFFFF9800).copy(alpha = 0.85f))
-        else -> listOf(DarkRed.copy(alpha = 0.85f), Red.copy(alpha = 0.85f))
+        "upper" -> listOf(AccentPurple.copy(alpha = 0.85f), NoturnoMedium.copy(alpha = 0.85f))
+        "full body" -> listOf(VolcanicoDark.copy(alpha = 0.85f), Color(0xFFFF9800).copy(alpha = 0.85f))
+        else -> listOf(Volcanico.copy(alpha = 0.85f), VolcanicoLight.copy(alpha = 0.85f))
     }
 }
 
@@ -2449,6 +3439,23 @@ private fun templateIcon(templateName: String): Int {
         "upper" -> R.drawable.template_upper
         "full body" -> R.drawable.template_fullbody
         else -> R.drawable.template_push
+    }
+}
+
+private fun muscleGroupIcon(group: String): Int {
+    return when (group) {
+        "Piept" -> R.drawable.ic_piept
+        "Spate" -> R.drawable.ic_spate
+        "Umeri" -> R.drawable.ic_umeri
+        "Biceps" -> R.drawable.ic_biceps
+        "Triceps" -> R.drawable.ic_triceps
+        "Abdomen" -> R.drawable.ic_abdomen
+        "Picioare" -> R.drawable.ic_picioare
+        "Fese" -> R.drawable.ic_fese
+        "Gambe" -> R.drawable.ic_gambe
+        "Antebrate" -> R.drawable.ic_antebrat
+        "Gat & Trapezi" -> R.drawable.ic_gat
+        else -> R.drawable.ic_chest
     }
 }
 
@@ -2671,6 +3678,7 @@ fun TemplateDetailScreen(
     }
 
     if (selectedExercise != null) {
+        val hasNextExercise = workoutStarted && currentExerciseIndex < exercises.size - 1
         ExerciseInputScreen(
             exercise = selectedExercise!!,
             grupaMusculara = selectedGrupa,
@@ -2685,6 +3693,14 @@ fun TemplateDetailScreen(
                     currentExerciseIndex = 0
                 }
             },
+            onNextExercise = if (hasNextExercise) {
+                {
+                    selectedExercise = null
+                    currentExerciseIndex++
+                    selectedExercise = exercises[currentExerciseIndex].exercise
+                    selectedGrupa = exercises[currentExerciseIndex].grupaMusculara
+                }
+            } else null,
             strings = strings
         )
     } else {
@@ -2798,7 +3814,7 @@ fun TemplateDetailScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        "START WORKOUT",
+                                        strings.startWorkout.uppercase(),
                                         color = gradientColors[0],
                                         fontWeight = FontWeight.ExtraBold,
                                         letterSpacing = 2.sp,
@@ -3565,9 +4581,9 @@ fun CalendarScreen(isLbs: Boolean = false, initialExercise: String? = null, onBa
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StatPill("Max", weightLabel(stats.maxGreutate, isLbs), Modifier.weight(1f))
-                    StatPill("Max reps", "${stats.maxRepetari}", Modifier.weight(1f))
-                    StatPill("Max set", weightLabel(stats.maxVolumSet, isLbs), Modifier.weight(1f))
+                    StatPill(strings.maxWeight, weightLabel(stats.maxGreutate, isLbs), Modifier.weight(1f))
+                    StatPill(strings.maxReps, "${stats.maxRepetari}", Modifier.weight(1f))
+                    StatPill(strings.maxSet, weightLabel(stats.maxVolumSet, isLbs), Modifier.weight(1f))
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

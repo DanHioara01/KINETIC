@@ -35,6 +35,7 @@ object OpenFoodFactsApi {
                 .build()
 
             val response = client.newCall(request).execute()
+            android.util.Log.d("OpenFoodFacts", "barcode=$barcode, responseCode=${response.code}")
             val body = response.body?.string() ?: return@withContext FoodProduct(barcode = barcode)
             val json = JSONObject(body)
 

@@ -124,6 +124,33 @@ data class FoodEntity(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+@Entity(tableName = "cardio_routes")
+data class CardioRouteEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val userId: String,
+    val name: String,
+    val routePoints: String = "",
+    val distanceKm: Double = 0.0,
+    val durationMs: Long = 0,
+    val avgSpeedKmh: Double = 0.0,
+    val avgPaceMinKm: Double = 0.0,
+    val caloriesBurned: Double = 0.0,
+    val startTime: Long = System.currentTimeMillis(),
+    val endTime: Long = 0,
+    val activityType: String = "running"
+)
+
+@Entity(tableName = "rest_days")
+data class RestDayEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val userId: String,
+    val date: Long = System.currentTimeMillis(),
+    val type: String = "rest",
+    val notes: String = "",
+    val activities: String = "",
+    val completed: Boolean = false
+)
+
 data class MostFrequentExercise(
     val numeExercitiu: String,
     val cnt: Int
@@ -345,6 +372,63 @@ interface FoodDao {
 }
 
 @Dao
+interface CardioRouteDao {
+    @Insert
+    suspend fun insert(route: CardioRouteEntity): Long
+
+    @Update
+    suspend fun update(route: CardioRouteEntity)
+
+    @Delete
+    suspend fun delete(route: CardioRouteEntity)
+
+    @Query("DELETE FROM cardio_routes WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM cardio_routes WHERE userId = :userId ORDER BY startTime DESC")
+    suspend fun getAllForUser(userId: String): List<CardioRouteEntity>
+
+    @Query("SELECT * FROM cardio_routes WHERE id = :id")
+    suspend fun getById(id: Long): CardioRouteEntity?
+
+    @Query("SELECT SUM(distanceKm) FROM cardio_routes WHERE userId = :userId")
+    suspend fun getTotalDistance(userId: String): Double?
+
+    @Query("SELECT SUM(durationMs) FROM cardio_routes WHERE userId = :userId")
+    suspend fun getTotalDuration(userId: String): Long?
+
+    @Query("SELECT SUM(caloriesBurned) FROM cardio_routes WHERE userId = :userId")
+    suspend fun getTotalCalories(userId: String): Double?
+}
+
+@Dao
+interface RestDayDao {
+    @Insert
+    suspend fun insert(restDay: RestDayEntity): Long
+
+    @Update
+    suspend fun update(restDay: RestDayEntity)
+
+    @Delete
+    suspend fun delete(restDay: RestDayEntity)
+
+    @Query("DELETE FROM rest_days WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM rest_days WHERE userId = :userId ORDER BY date DESC")
+    suspend fun getAllForUser(userId: String): List<RestDayEntity>
+
+    @Query("SELECT * FROM rest_days WHERE userId = :userId AND date BETWEEN :start AND :end ORDER BY date")
+    suspend fun getForPeriod(userId: String, start: Long, end: Long): List<RestDayEntity>
+
+    @Query("SELECT * FROM rest_days WHERE userId = :userId AND date >= :today ORDER BY date ASC LIMIT 1")
+    suspend fun getNextRestDay(userId: String, today: Long): RestDayEntity?
+
+    @Query("UPDATE rest_days SET completed = 1 WHERE id = :id")
+    suspend fun markCompleted(id: Long)
+}
+
+@Dao
 interface ExerciseMetadataDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(metadata: ExerciseMetadataEntity)
@@ -384,9 +468,11 @@ interface ExerciseMetadataDao {
         FeatureFlagEntity::class,
         UserProfileEntity::class,
         BiometricEntity::class,
-        FoodEntity::class
+        FoodEntity::class,
+        CardioRouteEntity::class,
+        RestDayEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -411,6 +497,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userProfileDao(): UserProfileDao
     abstract fun biometricDao(): BiometricDao
     abstract fun foodDao(): FoodDao
+    abstract fun cardioRouteDao(): CardioRouteDao
+    abstract fun restDayDao(): RestDayDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -521,6 +609,38 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS cardio_routes (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        userId TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        routePoints TEXT NOT NULL DEFAULT '',
+                        distanceKm REAL NOT NULL DEFAULT 0,
+                        durationMs INTEGER NOT NULL DEFAULT 0,
+                        avgSpeedKmh REAL NOT NULL DEFAULT 0,
+                        avgPaceMinKm REAL NOT NULL DEFAULT 0,
+                        caloriesBurned REAL NOT NULL DEFAULT 0,
+                        startTime INTEGER NOT NULL DEFAULT 0,
+                        endTime INTEGER NOT NULL DEFAULT 0,
+                        activityType TEXT NOT NULL DEFAULT 'running'
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS rest_days (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        userId TEXT NOT NULL,
+                        date INTEGER NOT NULL DEFAULT 0,
+                        type TEXT NOT NULL DEFAULT 'rest',
+                        notes TEXT NOT NULL DEFAULT '',
+                        activities TEXT NOT NULL DEFAULT '',
+                        completed INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -528,7 +648,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "kinetic.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import com.example.gymlog2.ThemeMode
 
 private val DarkColorScheme = darkColorScheme(
-    primary = AccentRed,
+    primary = Volcanico,
     secondary = AccentPurple,
     tertiary = AccentPurple,
     background = DarkBackground,
@@ -16,13 +16,13 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = TextWarmWhite,
     onSurfaceVariant = TextGrayRed,
     outline = DarkDivider,
-    error = AccentRed
+    error = Volcanico
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = AccentRed,
-    secondary = AccentPurple,
-    tertiary = AccentPurple,
+    primary = Volcanico,
+    secondary = Noturno,
+    tertiary = Noturno,
     background = LightBackground,
     surface = LightSurface,
     surfaceVariant = LightCard,
@@ -30,7 +30,7 @@ private val LightColorScheme = lightColorScheme(
     onSurface = LightTextPrimary,
     onSurfaceVariant = LightTextSecondary,
     outline = LightDividerGray,
-    error = AccentRed
+    error = VolcanicoDark
 )
 
 @Composable

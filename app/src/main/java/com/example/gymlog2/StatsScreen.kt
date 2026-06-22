@@ -58,7 +58,7 @@ fun StatsScreen(
     val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
     val cardBg = if (isDark) cardColor() else LightCard
     val accent = if (isDark) accentColor() else LightPrimaryRed
-    val dividerBg = if (isDark) dividerColor() else Color(0xFF2A2A2A)
+    val dividerBg = if (isDark) dividerColor() else LightDividerGray
 
     var selectedMetric by remember { mutableIntStateOf(0) }
     var selectedPeriod by remember { mutableIntStateOf(0) }

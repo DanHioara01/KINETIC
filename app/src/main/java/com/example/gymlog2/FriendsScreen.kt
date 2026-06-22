@@ -25,7 +25,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gymlog2.ui.theme.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +57,7 @@ fun FriendsScreen(
     var searchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf(listOf<Pair<String, String>>()) }
     var searchLoading by remember { mutableStateOf(false) }
+    var searchJob by remember { mutableStateOf<Job?>(null) }
 
     var friends by remember { mutableStateOf(listOf<FriendshipEntity>()) }
     var incomingRequests by remember { mutableStateOf(listOf<FriendshipEntity>()) }
@@ -68,6 +73,17 @@ fun FriendsScreen(
         }
         friends = socialRepository.getFriends(currentUserId)
         incomingRequests = socialRepository.getIncomingRequests(currentUserId)
+
+        val allIds = (friends.map { it.friendId } + incomingRequests.map { it.userId }).distinct().filter { it != currentUserId }
+        for (id in allIds) {
+            try {
+                val user = NetworkClient.api.getUser(id)
+                val name = (user["name"] as? String)?.takeIf { it.isNotBlank() } ?: id
+                val photo = (user["photoUri"] as? String) ?: ""
+                userProfileManager.saveProfile(UserProfileManager.UserProfile(userId = id, name = name, photoUri = photo))
+            } catch (_: Exception) {}
+        }
+
         friends.forEach { f ->
             val volData = socialRepository.getUserVolume(f.friendId)
             friendsVolume = friendsVolume + (f.friendId to volData)
@@ -105,14 +121,40 @@ fun FriendsScreen(
             )
         }
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(bottom = 80.dp)
+                .padding(horizontal = 16.dp)
         ) {
+            LaunchedEffect(searchQuery) {
+                searchJob?.cancel()
+                if (searchQuery.trim().length >= 2) {
+                    searchLoading = true
+                    searchJob = launch {
+                        delay(400)
+                        searchResults = withContext(Dispatchers.IO) {
+                            try {
+                                socialRepository.searchUsersOnline(searchQuery.trim())
+                                    .filter { it.first != currentUserId }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                emptyList()
+                            }
+                        }
+                        searchLoading = false
+                    }
+                } else {
+                    searchResults = emptyList()
+                    searchLoading = false
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
             item {
                 PageTitle(strings.friends, modifier = Modifier.padding(top = 0.dp, bottom = 0.dp))
             }
@@ -145,25 +187,7 @@ fun FriendsScreen(
 
             if (searchQuery.isNotBlank()) {
                 item {
-                    Button(
-                        onClick = {
-                            searchLoading = true
-                            scope.launch {
-                                searchResults = socialRepository.searchUsersOnline(searchQuery)
-                                    .filter { it.first != currentUserId }
-                                searchLoading = false
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = accent),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(strings.search, color = Color.White, fontWeight = FontWeight.SemiBold)
-                    }
-                }
-
-                if (searchLoading) {
-                    item {
+                    if (searchLoading) {
                         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(color = accent, modifier = Modifier.size(32.dp))
                         }
@@ -217,6 +241,7 @@ fun FriendsScreen(
                         socialRepository = socialRepository,
                         onAccepted = {
                             scope.launch {
+                                incomingRequests = socialRepository.getIncomingRequests(currentUserId)
                                 friends = socialRepository.getFriends(currentUserId)
                             }
                         },
@@ -235,7 +260,8 @@ fun FriendsScreen(
                 Text(strings.yourFriends.uppercase(), color = textSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
             }
 
-            if (friends.isEmpty() && !loading) {
+            val visibleFriends = friends.filter { it.friendId != currentUserId }
+            if (visibleFriends.isEmpty() && !loading && incomingRequests.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
@@ -250,7 +276,7 @@ fun FriendsScreen(
                 }
             }
 
-            items(friends) { friendship ->
+            items(visibleFriends) { friendship ->
                 val friendId = friendship.friendId
                 val profile = userProfileManager.getProfile(friendId)
                 val vol = friendsVolume[friendId]?.first ?: 0.0
@@ -307,8 +333,8 @@ fun FriendsScreen(
                             }
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                 DropdownMenuItem(
-                                    text = { Text(strings.removeFriend, color = Color(0xFFE24B4A)) },
-                                    leadingIcon = { Icon(Icons.Default.PersonRemove, contentDescription = null, tint = Color(0xFFE24B4A)) },
+                                    text = { Text(strings.removeFriend, color = Volcanico) },
+                                    leadingIcon = { Icon(Icons.Default.PersonRemove, contentDescription = null, tint = Volcanico) },
                                     onClick = {
                                         showMenu = false
                                         scope.launch {
@@ -340,6 +366,7 @@ fun FriendsScreen(
                 }
             }
         }
+    }
     }
 }
 

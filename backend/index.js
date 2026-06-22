@@ -42,7 +42,8 @@ db.exec(`
     totalVolume REAL NOT NULL DEFAULT 0,
     workoutCount INTEGER NOT NULL DEFAULT 0,
     lastSeen INTEGER NOT NULL DEFAULT 0,
-    createdAt INTEGER NOT NULL DEFAULT 0
+    createdAt INTEGER NOT NULL DEFAULT 0,
+    isActive INTEGER NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS friendships (
@@ -118,6 +119,15 @@ db.exec(`
   );
 `);
 
+// Migrate: add isActive column to users if it doesn't exist
+try {
+  db.prepare('SELECT isActive FROM users LIMIT 1').get();
+} catch (e) {
+  db.exec('ALTER TABLE users ADD COLUMN isActive INTEGER NOT NULL DEFAULT 0');
+  db.exec('UPDATE users SET isActive = 1 WHERE lastSeen > 0');
+  console.log('Migration: added isActive column to users table');
+}
+
 const SEED_BADGES = [
   { key: 'first_workout', title: 'First Workout', description: 'Completed your first workout', icon: '🏋️' },
   { key: '7day_streak', title: '7-Day Streak', description: 'Trained 7 days in a row', icon: '🔥' },
@@ -142,9 +152,9 @@ app.post('/users', (req, res) => {
   const { id, name, photoUri, fcmToken, totalVolume, workoutCount } = req.body;
   if (!id) return res.status(400).json({ error: 'id required' });
   const now = Date.now();
-  db.prepare(`INSERT INTO users (id, name, photoUri, fcmToken, totalVolume, workoutCount, lastSeen, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name=excluded.name, photoUri=excluded.photoUri, fcmToken=CASE WHEN excluded.fcmToken != '' THEN excluded.fcmToken ELSE users.fcmToken END, totalVolume=CASE WHEN excluded.totalVolume > 0 THEN excluded.totalVolume ELSE users.totalVolume END, workoutCount=CASE WHEN excluded.workoutCount > 0 THEN excluded.workoutCount ELSE users.workoutCount END, lastSeen=excluded.lastSeen`)
+  db.prepare(`INSERT INTO users (id, name, photoUri, fcmToken, totalVolume, workoutCount, lastSeen, createdAt, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1) ON CONFLICT(id) DO UPDATE SET name=excluded.name, photoUri=excluded.photoUri, fcmToken=CASE WHEN excluded.fcmToken != '' THEN excluded.fcmToken ELSE users.fcmToken END, totalVolume=CASE WHEN excluded.totalVolume > 0 THEN excluded.totalVolume ELSE users.totalVolume END, workoutCount=CASE WHEN excluded.workoutCount > 0 THEN excluded.workoutCount ELSE users.workoutCount END, lastSeen=excluded.lastSeen, isActive=1`)
     .run(id, name || '', photoUri || '', fcmToken || '', totalVolume || 0, workoutCount || 0, now, now);
-  res.json({ id, name, photoUri });
+  res.json({ id, name, photoUri, isActive: 1 });
 });
 
 app.get('/users/search', (req, res) => {
@@ -189,7 +199,7 @@ app.post('/friends/request', (req, res) => {
         title: 'Friend Request',
         body: `${sender?.name || 'Someone'} sent you a friend request!`,
       },
-      data: { type: 'friend_request', fromUserId },
+      data: { type: 'friend_request', fromUserId, fromUserName: sender?.name || '' },
     }).catch(e => console.log('FCM error:', e.message));
   }
 
@@ -207,6 +217,20 @@ app.post('/friends/accept', (req, res) => {
   if (!userId || !friendId) return res.status(400).json({ error: 'userId and friendId required' });
   db.prepare('UPDATE friendships SET status = ? WHERE userId = ? AND friendId = ?').run('accepted', friendId, userId);
   db.prepare('INSERT OR IGNORE INTO friendships (userId, friendId, status, createdAt) VALUES (?, ?, ?, ?)').run(userId, friendId, 'accepted', Date.now());
+
+  const acceptor = db.prepare('SELECT name FROM users WHERE id = ?').get(userId);
+  const recipient = db.prepare('SELECT fcmToken FROM users WHERE id = ?').get(friendId);
+  if (recipient && recipient.fcmToken && admin.apps.length > 0) {
+    admin.messaging().send({
+      token: recipient.fcmToken,
+      notification: {
+        title: 'Friend Request Accepted',
+        body: `${acceptor?.name || 'Someone'} accepted your friend request!`,
+      },
+      data: { type: 'friend_accepted', fromUserName: acceptor?.name || '' },
+    }).catch(e => console.log('FCM error:', e.message));
+  }
+
   res.json({ success: true });
 });
 

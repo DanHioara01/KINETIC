@@ -142,7 +142,7 @@ fun FoodJournalScreen(
             }
 
             if (mealGroups.isNotEmpty()) {
-                val mealOrder = listOf("breakfast", "lunch", "dinner", "snack")
+                val mealOrder = listOf("breakfast", "lunch", "dinner", "snack", "drinks")
                 mealOrder.forEach { mealType ->
                     val meals = mealGroups[mealType]
                     if (!meals.isNullOrEmpty()) {
@@ -216,7 +216,7 @@ private fun MacrosOverviewCard(
                 MacroItem(strings.caloriesLabel, String.format("%.0f", macros.calories), "kcal", accent, textPrimary, textSecondary)
                 MacroItem(strings.proteinLabel, String.format("%.1f", macros.protein), "g", Color(0xFF4CAF50), textPrimary, textSecondary)
                 MacroItem(strings.carbsLabel, String.format("%.1f", macros.carbs), "g", Color(0xFFFF9800), textPrimary, textSecondary)
-                MacroItem(strings.fatLabel, String.format("%.1f", macros.fat), "g", Color(0xFFE24B4A), textPrimary, textSecondary)
+                MacroItem(strings.fatLabel, String.format("%.1f", macros.fat), "g", Volcanico, textPrimary, textSecondary)
             }
         }
     }
@@ -270,6 +270,7 @@ private fun MealSection(
         "breakfast" -> strings.breakfast
         "lunch" -> strings.lunch
         "dinner" -> strings.dinner
+        "drinks" -> strings.drinks
         else -> strings.snack
     }
 
@@ -277,6 +278,7 @@ private fun MealSection(
         "breakfast" -> Icons.Default.WbSunny
         "lunch" -> Icons.Default.WbCloudy
         "dinner" -> Icons.Default.NightsStay
+        "drinks" -> Icons.Default.LocalBar
         else -> Icons.Default.Cookie
     }
 

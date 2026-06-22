@@ -88,17 +88,17 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
 
-    // CameraX
-    implementation("androidx.camera:camera-core:1.3.4")
-    implementation("androidx.camera:camera-camera2:1.3.4")
-    implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
-
-    // ZXing barcode scanning (pure Java — no native .so, 16KB compatible)
-    implementation("com.google.zxing:core:3.5.3")
+    // Google Code Scanner (no native .so, 16KB compatible)
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
 
     // OkHttp (for OpenFoodFacts)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Google Maps SDK
+    implementation("com.google.android.gms:play-services-maps:19.0.0")
+
+    // Google Play Services Location (GPS tracking)
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // Testing
     testImplementation(libs.junit)

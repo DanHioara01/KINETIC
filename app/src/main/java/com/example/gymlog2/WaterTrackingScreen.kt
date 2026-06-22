@@ -31,6 +31,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import com.example.gymlog2.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,6 +69,8 @@ fun WaterTrackingScreen(
     )
 
     val dividerBg = dividerColor()
+
+    val waterCardBg = cardBg
 
     var waterHistory by remember { mutableStateOf(preferencesManager.getWaterHistory7Days()) }
 
@@ -198,7 +201,7 @@ fun WaterTrackingScreen(
                         val waterColor = lerp(Color(0xFF2196F3), Color(0xFF00BCD4), animatedProgress)
                         clipPath(bodyPath) {
                             drawPath(waterPath, color = waterColor.copy(alpha = 0.7f))
-                            drawPath(wavePath, color = surfaceBg)
+                            drawPath(wavePath, color = cardBg)
                         }
                     }
 
@@ -412,7 +415,7 @@ fun WaterTrackingScreen(
                             val barColor = if (isToday) accent else accent.copy(alpha = 0.35f)
                             val barHeightFraction = if (maxMl > 0) (ml.toFloat() / maxMl) else 0f
 
-                            Column(
+    Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Bottom,
                                 modifier = Modifier.weight(1f)

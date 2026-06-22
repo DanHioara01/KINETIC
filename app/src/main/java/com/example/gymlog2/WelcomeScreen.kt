@@ -36,17 +36,7 @@ fun WelcomeScreen(
 ) {
     var phase by remember { mutableIntStateOf(0) }
 
-    val motivationalMessages = listOf(
-        "Every rep counts.",
-        "Stronger than yesterday.",
-        "Your body, your rules.",
-        "Push your limits.",
-        "Consistency beats talent.",
-        "Discipline is freedom.",
-        "No shortcuts.",
-        "Earned, not given."
-    )
-    val message = remember { motivationalMessages.random() }
+    val message = remember { strings.mottoMessages.random() }
 
     // Pulsing rings
     val infiniteTransition = rememberInfiniteTransition(label = "rings")
