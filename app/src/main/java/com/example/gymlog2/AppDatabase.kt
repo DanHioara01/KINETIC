@@ -226,9 +226,10 @@ interface ExercitiuDao {
         SELECT e.* FROM exercitii e
         INNER JOIN antrenamente a ON e.antrenamentId = a.id
         WHERE e.numeExercitiu = :exerciseName
+        AND DATE(a.data / 1000, 'unixepoch') = :todayKey
         ORDER BY a.data DESC
     """)
-    suspend fun getHistoryForExerciseSimple(exerciseName: String): List<ExercitiuEntity>
+    abstract suspend fun getHistoryForTodayExerciseSimple(exerciseName: String, todayKey: String): List<ExercitiuEntity>
 
     @Query("""
         SELECT e.* FROM exercitii e

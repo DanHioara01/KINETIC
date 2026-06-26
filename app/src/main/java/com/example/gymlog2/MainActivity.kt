@@ -2946,8 +2946,8 @@ fun ExerciseInputScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(strings.setLabel, color = secondaryTextColor(), fontWeight = FontWeight.Bold, modifier = Modifier.width(30.dp))
-                    Text("KG", color = secondaryTextColor(), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Text(strings.setLabel, color = secondaryTextColor(), fontWeight = FontWeight.Bold, modifier = Modifier.width(40.dp))
+                    Text(strings.kg, color = secondaryTextColor(), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(strings.reps, color = secondaryTextColor(), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     Spacer(modifier = Modifier.width(48.dp))
