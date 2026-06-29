@@ -187,6 +187,30 @@ class PreferencesManager(context: Context) {
     fun isBiometricReminderEnabled(): Boolean = prefs.getBoolean("biometric_reminder_enabled", false)
     fun setBiometricReminderEnabled(enabled: Boolean) { prefs.edit().putBoolean("biometric_reminder_enabled", enabled).apply() }
 
+    fun isAutoDeloadEnabled(): Boolean = prefs.getBoolean("auto_deload_enabled", true)
+    fun setAutoDeloadEnabled(enabled: Boolean) { prefs.edit().putBoolean("auto_deload_enabled", enabled).apply() }
+
+    fun getDeloadIntervalWeeks(): Int = prefs.getInt("deload_interval_weeks", 4)
+    fun setDeloadIntervalWeeks(weeks: Int) { prefs.edit().putInt("deload_interval_weeks", weeks).apply() }
+
+    fun getDeloadReductionFactor(): Float = prefs.getFloat("deload_reduction_factor", 0.65f)
+    fun setDeloadReductionFactor(factor: Float) { prefs.edit().putFloat("deload_reduction_factor", factor).apply() }
+
+    fun getLastDeloadTimestamp(): Long = prefs.getLong("last_deload_timestamp", 0L)
+    fun setLastDeloadTimestamp(timestamp: Long) { prefs.edit().putLong("last_deload_timestamp", timestamp).apply() }
+
+    fun getProgressionType(): String = prefs.getString("progression_type", "linear") ?: "linear"
+    fun setProgressionType(type: String) { prefs.edit().putString("progression_type", type).apply() }
+
+    fun getDefaultRepRangeMin(): Int = prefs.getInt("default_rep_range_min", 8)
+    fun setDefaultRepRangeMin(min: Int) { prefs.edit().putInt("default_rep_range_min", min).apply() }
+
+    fun getDefaultRepRangeMax(): Int = prefs.getInt("default_rep_range_max", 12)
+    fun setDefaultRepRangeMax(max: Int) { prefs.edit().putInt("default_rep_range_max", max).apply() }
+
+    fun getDeloadThreshold(): Float = prefs.getFloat("deload_threshold", 0.55f)
+    fun setDeloadThreshold(threshold: Float) { prefs.edit().putFloat("deload_threshold", threshold).apply() }
+
     fun getServerUrl(): String = prefs.getString("server_url", "") ?: ""
     fun setServerUrl(url: String) { prefs.edit().putString("server_url", url).apply() }
 }

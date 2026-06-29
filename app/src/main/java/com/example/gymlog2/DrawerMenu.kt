@@ -208,7 +208,7 @@ fun DrawerMenu(
             )
             HorizontalDivider(color = divider, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
             DrawerNavItem(
-                icon = Icons.Default.MyLocation,
+                icon = Icons.Default.DirectionsRun,
                 label = strings.gpsCardioMap,
                 selected = currentPage == DrawerPage.GPS_CARDIO,
                 accent = accent,
@@ -255,18 +255,7 @@ fun DrawerMenu(
                 iconBg = iconBg,
                 onClick = { onImportCsv(); onClose() }
             )
-            DrawerNavItem(
-                icon = Icons.Default.Dns,
-                label = "Server URL",
-                selected = false,
-                accent = accent,
-                selectedBg = selectedBg,
-                textPrimary = textPrimary,
-                textSecondary = textSecondary,
-                iconBg = iconBg,
-                onClick = { onOpenServerSettings() }
-            )
-
+            
             HorizontalDivider(color = divider, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
 
             // Logout
@@ -363,11 +352,11 @@ fun ThemeSelectionDialog(
     val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
     val accent = if (isDark) accentColor() else LightPrimaryRed
 
-    val themeOptions = listOf(
+    val themeOptions = remember(strings) { listOf(
         ThemeMode.LIGHT to strings.light,
         ThemeMode.DARK to strings.dark,
         ThemeMode.SYSTEM to strings.system
-    )
+    ) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -438,10 +427,10 @@ fun UnitsSelectionDialog(
     val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
     val accent = if (isDark) accentColor() else LightPrimaryRed
 
-    val unitOptions = listOf(
+    val unitOptions = remember(strings) { listOf(
         false to strings.kg,
         true to strings.lbs
-    )
+    ) }
 
     AlertDialog(
         onDismissRequest = onDismiss,

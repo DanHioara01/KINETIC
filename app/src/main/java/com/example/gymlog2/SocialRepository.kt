@@ -10,8 +10,13 @@ class SocialRepository(private val db: AppDatabase) {
     suspend fun sendFriendRequest(fromUserId: String, toUserId: String, fromUserName: String, fromUserPhoto: String = "") {
         withContext(Dispatchers.IO) {
             val existing = db.friendshipDao().getBetween(fromUserId, toUserId)
+            if (existing != null && existing.status == "accepted") return@withContext
+
             val reverse = db.friendshipDao().getBetween(toUserId, fromUserId)
-            if (existing != null || reverse != null) return@withContext
+            if (reverse != null && reverse.status == "accepted") return@withContext
+
+            if (existing != null) db.friendshipDao().deleteById(existing.id)
+            if (reverse != null) db.friendshipDao().deleteById(reverse.id)
 
             val local = FriendshipEntity(userId = fromUserId, friendId = toUserId, status = "pending")
             db.friendshipDao().upsert(local)
@@ -58,11 +63,14 @@ class SocialRepository(private val db: AppDatabase) {
         return withContext(Dispatchers.IO) {
             try {
                 val serverRequests = api.getIncomingRequests(userId)
-                for (req in serverRequests) {
-                    val existing = db.friendshipDao().getBetween(req.userId, userId)
-                    if (existing == null) {
-                        db.friendshipDao().upsert(req)
+                val serverRequestIds = serverRequests.map { it.userId }.toSet()
+                db.friendshipDao().getIncomingRequests(userId).forEach { local ->
+                    if (local.userId !in serverRequestIds) {
+                        db.friendshipDao().deleteById(local.id)
                     }
+                }
+                for (req in serverRequests) {
+                    db.friendshipDao().upsert(req)
                 }
             } catch (e: Exception) { e.printStackTrace() }
             db.friendshipDao().getIncomingRequests(userId)
@@ -73,12 +81,15 @@ class SocialRepository(private val db: AppDatabase) {
         return withContext(Dispatchers.IO) {
             try {
                 val serverFriends = api.getFriends(userId)
+                val serverFriendIds = serverFriends.map { if (it.userId == userId) it.friendId else it.userId }.toSet()
+                db.friendshipDao().getFriendsFor(userId).forEach { local ->
+                    if (local.friendId !in serverFriendIds) {
+                        db.friendshipDao().deleteById(local.id)
+                    }
+                }
                 for (f in serverFriends) {
                     val actualFriendId = if (f.userId == userId) f.friendId else f.userId
-                    val existing = db.friendshipDao().getBetween(userId, actualFriendId)
-                    if (existing == null) {
-                        db.friendshipDao().upsert(FriendshipEntity(userId = userId, friendId = actualFriendId, status = "accepted"))
-                    }
+                    db.friendshipDao().upsert(FriendshipEntity(userId = userId, friendId = actualFriendId, status = "accepted"))
                 }
             } catch (e: Exception) { e.printStackTrace() }
             db.friendshipDao().getFriendsFor(userId)
@@ -247,8 +258,8 @@ class SocialRepository(private val db: AppDatabase) {
     suspend fun isLikedByUser(postId: Long, userId: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val result = api.getLikesCount(postId)
-                (result["count"] ?: 0) > 0
+                val result = api.isLikedByUser(postId, userId)
+                result["liked"] ?: false
             } catch (_: Exception) { false }
         }
     }

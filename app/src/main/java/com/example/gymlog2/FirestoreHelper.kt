@@ -26,18 +26,56 @@ class FirestoreHelper {
         db.collection("users").document(userId).set(data, SetOptions.merge()).await()
     }
 
+    suspend fun createUserDocument(
+        userId: String,
+        name: String,
+        email: String,
+        weight: Double? = null,
+        height: Double? = null
+    ) {
+        val waterGoal = if (weight != null && weight > 0) (weight * 33).toInt() else 2000
+        val data = mutableMapOf<String, Any>(
+            "name" to name,
+            "email" to email,
+            "weight" to (weight ?: 0),
+            "height" to (height ?: 0),
+            "waterGoal" to waterGoal,
+            "createdAt" to com.google.firebase.Timestamp.now(),
+            "streak" to 0,
+            "measurements" to emptyList<Any>()
+        )
+        db.collection("users").document(userId).set(data, SetOptions.merge()).await()
+    }
+
+    suspend fun updateUserDocument(userId: String, data: Map<String, Any>) {
+        db.collection("users").document(userId).set(data, SetOptions.merge()).await()
+    }
+
+    suspend fun userDocumentExists(userId: String): Boolean {
+        return try {
+            val doc = db.collection("users").document(userId).get().await()
+            doc.exists()
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     suspend fun searchUsers(query: String): List<Pair<String, String>> {
         if (query.isBlank()) return emptyList()
         val q = query.trim().lowercase()
         val results = mutableListOf<Pair<String, String>>()
         try {
-            val snapshot = db.collection("users").get().await()
+            val snapshot = db.collection("users")
+                .orderBy("name")
+                .startAt(q)
+                .endAt(q + "\uf8ff")
+                .limit(20)
+                .get()
+                .await()
             for (doc in snapshot.documents) {
                 val userId = doc.id
-                val name = (doc.getString("name") ?: "").lowercase()
-                if (name.contains(q) || userId.lowercase().contains(q)) {
-                    results.add(userId to (doc.getString("name") ?: userId))
-                }
+                val name = (doc.getString("name") ?: "")
+                results.add(userId to name)
             }
         } catch (_: Exception) { }
         return results

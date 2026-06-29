@@ -20,6 +20,8 @@ class GymLogApplication : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        org.osmdroid.config.Configuration.getInstance().load(this, getSharedPreferences("osmdroid", MODE_PRIVATE))
+        org.osmdroid.config.Configuration.getInstance().userAgentValue = packageName
         backgroundSync(this)
     }
 

@@ -3,11 +3,12 @@ package com.example.gymlog2
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,14 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gymlog2.ui.theme.*
@@ -38,7 +37,8 @@ private data class ChartData(
     val labels: List<String>,
     val label: String,
     val unit: String,
-    val delta: String
+    val delta: String,
+    val hasData: Boolean = values.any { it > 0 }
 )
 
 @Composable
@@ -50,7 +50,14 @@ fun StatsScreen(
     weeklyTotalKg: Double,
     lastPR: PersonalRecordEntity?,
     paddingValues: PaddingValues = PaddingValues(0.dp),
-    onExerciseHistoryClick: (String) -> Unit = {}
+    onExerciseHistoryClick: (String) -> Unit = {},
+    userId: String = "simple",
+    currentStreak: Int = 0,
+    bestStreak: Int = 0,
+    badgeCount: Int = 0,
+    recentBadges: List<BadgeEntity> = emptyList(),
+    allRecentPRs: List<PersonalRecordEntity> = emptyList(),
+    allExerciseNames: List<String> = emptyList()
 ) {
     val context = LocalContext.current
     val surfaceBg = if (isDark) bgColor() else LightBackground
@@ -64,8 +71,10 @@ fun StatsScreen(
     var selectedPeriod by remember { mutableIntStateOf(0) }
     var chartData by remember { mutableStateOf<Map<Int, Map<Int, ChartData>>>(emptyMap()) }
     var distributionData by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var selectedExercise by remember { mutableStateOf<String?>(null) }
+    var showExerciseDropdown by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(selectedExercise) {
         withContext(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(context)
             val cal = Calendar.getInstance()
@@ -79,22 +88,16 @@ fun StatsScreen(
                 cal.add(Calendar.DAY_OF_YEAR, -days)
                 val startTime = cal.timeInMillis
 
-                val workouts = db.antrenamentDao().getWorkoutsInPeriod("simple", startTime, now)
-
-                val dayBuckets = mutableMapOf<Int, MutableList<Double>>()
-                val maxWeightBuckets = mutableMapOf<Int, MutableList<Double>>()
-                val setsBuckets = mutableMapOf<Int, MutableList<Int>>()
-
-                for (w in workouts) {
-                    val dayCal = Calendar.getInstance().apply { timeInMillis = w.data }
-                    val dayOfYear = dayCal.get(Calendar.DAY_OF_YEAR)
-                    val year = dayCal.get(Calendar.YEAR)
-                    val key = year * 1000 + dayOfYear
-
-                    dayBuckets.getOrPut(key) { mutableListOf() }.add(w.totalWeight)
-                    maxWeightBuckets.getOrPut(key) { mutableListOf() }.add(w.totalWeight)
-                    setsBuckets.getOrPut(key) { mutableListOf() }.add(1)
+                val allWorkouts = if (selectedExercise != null) {
+                    db.exercitiuDao().getWorkoutsWithExercise(userId, selectedExercise!!, startTime, now)
+                } else {
+                    db.antrenamentDao().getWorkoutsInPeriod(userId, startTime, now)
                 }
+
+                val workoutIds = allWorkouts.map { it.id }
+                val setCountMap = if (workoutIds.isNotEmpty()) {
+                    db.exercitiuDao().getSetCountsForWorkouts(workoutIds).associate { it.antrenamentId to it.cnt }
+                } else emptyMap()
 
                 val dateFmt = if (days <= 7) SimpleDateFormat("EEE", Locale.getDefault())
                     else SimpleDateFormat("dd", Locale.getDefault())
@@ -106,16 +109,13 @@ fun StatsScreen(
                 val setsValues = mutableListOf<Double>()
                 val setsLabels = mutableListOf<String>()
 
-                val sortedKeys = dayBuckets.keys.sorted().takeLast(days)
-
                 if (days <= 7) {
                     for (i in 0 until 7) {
                         val dayCal = Calendar.getInstance().apply {
                             timeInMillis = now
                             add(Calendar.DAY_OF_YEAR, -(6 - i))
                         }
-                        val key = dayCal.get(Calendar.YEAR) * 1000 + dayCal.get(Calendar.DAY_OF_YEAR)
-                        val dayWorkouts = workouts.filter {
+                        val dayWorkouts = allWorkouts.filter {
                             val wc = Calendar.getInstance().apply { timeInMillis = it.data }
                             wc.get(Calendar.DAY_OF_YEAR) == dayCal.get(Calendar.DAY_OF_YEAR) &&
                                     wc.get(Calendar.YEAR) == dayCal.get(Calendar.YEAR)
@@ -125,7 +125,8 @@ fun StatsScreen(
                         val maxW = dayWorkouts.maxOfOrNull { it.totalWeight } ?: 0.0
                         maxWeightValues.add(maxW)
                         maxWeightLabels.add(dateFmt.format(dayCal.time).take(3))
-                        setsValues.add(dayWorkouts.size.toDouble())
+                        val daySets = dayWorkouts.sumOf { setCountMap[it.id] ?: 0 }
+                        setsValues.add(daySets.toDouble())
                         setsLabels.add(dateFmt.format(dayCal.time).take(3))
                     }
                 } else if (days <= 30) {
@@ -139,13 +140,14 @@ fun StatsScreen(
                             timeInMillis = weekStartCal.timeInMillis
                             add(Calendar.DAY_OF_YEAR, 7)
                         }
-                        val weekWorkouts = workouts.filter { it.data >= weekStartCal.timeInMillis && it.data < weekEndCal.timeInMillis }
+                        val weekWorkouts = allWorkouts.filter { it.data >= weekStartCal.timeInMillis && it.data < weekEndCal.timeInMillis }
                         volumeValues.add(weekWorkouts.sumOf { it.totalWeight })
                         volumeLabels.add("S${w + 1}")
                         val maxW = weekWorkouts.maxOfOrNull { it.totalWeight } ?: 0.0
                         maxWeightValues.add(maxW)
                         maxWeightLabels.add("S${w + 1}")
-                        setsValues.add(weekWorkouts.size.toDouble())
+                        val weekSets = weekWorkouts.sumOf { setCountMap[it.id] ?: 0 }
+                        setsValues.add(weekSets.toDouble())
                         setsLabels.add("S${w + 1}")
                     }
                 } else {
@@ -165,43 +167,36 @@ fun StatsScreen(
                             timeInMillis = mStart.timeInMillis
                             add(Calendar.MONTH, 1)
                         }
-                        val monthWorkouts = workouts.filter { it.data >= mStart.timeInMillis && it.data < mEnd.timeInMillis }
+                        val monthWorkouts = allWorkouts.filter { it.data >= mStart.timeInMillis && it.data < mEnd.timeInMillis }
                         volumeValues.add(monthWorkouts.sumOf { it.totalWeight })
                         val monthFmt = SimpleDateFormat("MMM", Locale.getDefault())
                         volumeLabels.add(monthFmt.format(mStart.time).take(3))
                         val maxW = monthWorkouts.maxOfOrNull { it.totalWeight } ?: 0.0
                         maxWeightValues.add(maxW)
                         maxWeightLabels.add(monthFmt.format(mStart.time).take(3))
-                        setsValues.add(monthWorkouts.size.toDouble())
+                        val monthSets = monthWorkouts.sumOf { setCountMap[it.id] ?: 0 }
+                        setsValues.add(monthSets.toDouble())
                         setsLabels.add(monthFmt.format(mStart.time).take(3))
                     }
                 }
 
+                fun computeDelta(values: List<Double>): String {
+                    if (values.size < 2) return ""
+                    val prev = values[values.size - 2]
+                    val curr = values.last()
+                    if (prev == 0.0 && curr == 0.0) return ""
+                    if (prev == 0.0 && curr > 0.0) return "New"
+                    val pct = ((curr - prev) / prev * 100).toInt()
+                    return if (pct >= 0) "+$pct% ${strings.vsPrevious}" else "$pct% ${strings.vsPrevious}"
+                }
+
                 result[periodIdx] = mutableMapOf(
                     0 to ChartData(volumeValues, volumeLabels, strings.volume, if (isLbs) "lbs" else "kg",
-                        if (volumeValues.size >= 2) {
-                            val prev = volumeValues.dropLast(1).average()
-                            val curr = volumeValues.last()
-                            val pct = if (prev > 0) ((curr - prev) / prev * 100).toInt() else 0
-                            if (pct >= 0) "+$pct% ${strings.thisWeek.lowercase()}" else "$pct% ${strings.thisWeek.lowercase()}"
-                        } else strings.thisWeek
-                    ),
+                        computeDelta(volumeValues)),
                     1 to ChartData(maxWeightValues, maxWeightLabels, strings.maxWeight, if (isLbs) "lbs" else "kg",
-                        if (maxWeightValues.size >= 2) {
-                            val prev = maxWeightValues.dropLast(1).average()
-                            val curr = maxWeightValues.last()
-                            val pct = if (prev > 0) ((curr - prev) / prev * 100).toInt() else 0
-                            if (pct >= 0) "+$pct% ${strings.thisWeek.lowercase()}" else "$pct% ${strings.thisWeek.lowercase()}"
-                        } else strings.thisWeek
-                    ),
+                        computeDelta(maxWeightValues)),
                     2 to ChartData(setsValues, setsLabels, strings.sets, "",
-                        if (setsValues.size >= 2) {
-                            val prev = setsValues.dropLast(1).average()
-                            val curr = setsValues.last()
-                            val pct = if (prev > 0) ((curr - prev) / prev * 100).toInt() else 0
-                            if (pct >= 0) "+$pct% ${strings.thisWeek.lowercase()}" else "$pct% ${strings.thisWeek.lowercase()}"
-                        } else strings.thisWeek
-                    )
+                        computeDelta(setsValues))
                 )
             }
 
@@ -212,7 +207,7 @@ fun StatsScreen(
             cal2.set(Calendar.HOUR_OF_DAY, 0); cal2.set(Calendar.MINUTE, 0)
             cal2.set(Calendar.SECOND, 0); cal2.set(Calendar.MILLISECOND, 0)
             val monthStart = cal2.timeInMillis
-            val workoutsMonth = db.antrenamentDao().getWorkoutsInPeriod("simple", monthStart, now)
+            val workoutsMonth = db.antrenamentDao().getWorkoutsInPeriod(userId, monthStart, now)
             val counts = mutableMapOf<String, Int>()
             for (w in workoutsMonth) {
                 counts[w.grupaMusculara] = (counts[w.grupaMusculara] ?: 0) + 1
@@ -257,6 +252,66 @@ fun StatsScreen(
             }
         }
 
+        // Exercise filter dropdown
+        if (allExerciseNames.isNotEmpty()) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, dividerBg, RoundedCornerShape(10.dp))
+                            .clickable { showExerciseDropdown = !showExerciseDropdown }
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = selectedExercise ?: strings.allExercises,
+                            color = if (selectedExercise != null) textPrimary else textSecondary,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            tint = textSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showExerciseDropdown,
+                        onDismissRequest = { showExerciseDropdown = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(strings.allExercises) },
+                            onClick = {
+                                selectedExercise = null
+                                showExerciseDropdown = false
+                            }
+                        )
+                        allExerciseNames.forEach { name ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        name,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                },
+                                onClick = {
+                                    selectedExercise = name
+                                    showExerciseDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Chart card
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -268,7 +323,7 @@ fun StatsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        val metricLabels = listOf(strings.volume, strings.maxWeight, strings.sets)
+                        val metricLabels = remember(strings) { listOf(strings.volume, strings.maxWeight, strings.sets) }
                         metricLabels.forEachIndexed { idx, label ->
                             val isSelected = selectedMetric == idx
                             Box(
@@ -335,15 +390,19 @@ fun StatsScreen(
                                     )
                                 }
                             }
-                            Text(
-                                text = currentData?.delta ?: "",
-                                color = accent,
-                                fontSize = 12.sp
-                            )
+                            // #1: Fixed delta - only show when we have real data to compare
+                            val deltaText = currentData?.delta ?: ""
+                            if (deltaText.isNotEmpty()) {
+                                Text(
+                                    text = deltaText,
+                                    color = accent,
+                                    fontSize = 12.sp
+                                )
+                            }
                         }
 
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            val periodLabels = listOf("7${strings.days.take(1)}", "30${strings.days.take(1)}", "3l")
+                            val periodLabels = remember(strings) { listOf("7${strings.days.take(1)}", "30${strings.days.take(1)}", "3l") }
                             periodLabels.forEachIndexed { idx, label ->
                                 val isSelected = selectedPeriod == idx
                                 Box(
@@ -374,7 +433,8 @@ fun StatsScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    if (currentData != null && currentData.values.isNotEmpty() && currentData.values.any { it > 0 }) {
+                    // #5: Line chart with dashed segments for gaps
+                    if (currentData != null && currentData.hasData) {
                         val values = currentData.values
                         val labels = currentData.labels
                         val maxVal = values.max()
@@ -392,28 +452,42 @@ fun StatsScreen(
                             val padBottom = 15f
                             val usableH = h - padTop - padBottom
                             val step = if (values.size > 1) w / (values.size - 1) else w
+                            val dashEffect = PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f)
 
-                            val path = Path()
-                            values.forEachIndexed { i, v ->
+                            // Draw segments: solid where both endpoints have data, dashed where either is 0
+                            for (i in 0 until values.size) {
                                 val x = i * step
-                                val y = padTop + usableH - ((v - minVal) / range * usableH).toFloat()
-                                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                                val y = padTop + usableH - ((values[i] - minVal) / range * usableH).toFloat()
+                                if (i > 0) {
+                                    val prevX = (i - 1) * step
+                                    val prevY = padTop + usableH - ((values[i - 1] - minVal) / range * usableH).toFloat()
+                                    val bothHaveData = values[i] > 0 && values[i - 1] > 0
+                                    val segPath = Path().apply {
+                                        moveTo(prevX, prevY)
+                                        lineTo(x, y)
+                                    }
+                                    drawPath(
+                                        path = segPath,
+                                        color = accent,
+                                        style = Stroke(
+                                            width = 2.5.dp.toPx(),
+                                            pathEffect = if (bothHaveData) null else dashEffect
+                                        )
+                                    )
+                                }
                             }
 
-                            drawPath(
-                                path = path,
-                                color = accent,
-                                style = Stroke(width = 2.5.dp.toPx())
-                            )
-
-                            if (values.isNotEmpty()) {
-                                val lastX = (values.size - 1) * step
-                                val lastY = padTop + usableH - ((values.last() - minVal) / range * usableH).toFloat()
-                                drawCircle(
-                                    color = accent,
-                                    radius = 4.dp.toPx(),
-                                    center = Offset(lastX, lastY)
-                                )
+                            // Draw dots only where there's real data
+                            values.forEachIndexed { i, v ->
+                                if (v > 0) {
+                                    val x = i * step
+                                    val y = padTop + usableH - ((v - minVal) / range * usableH).toFloat()
+                                    drawCircle(
+                                        color = accent,
+                                        radius = if (i == values.size - 1) 5.dp.toPx() else 3.dp.toPx(),
+                                        center = Offset(x, y)
+                                    )
+                                }
                             }
                         }
 
@@ -445,11 +519,76 @@ fun StatsScreen(
             }
         }
 
+        // #2: Streak + Badges card
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = strings.currentStreakLabel.uppercase(),
+                            color = textSecondary,
+                            fontSize = 10.sp,
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "$currentStreak ${strings.days}",
+                            color = textPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = strings.bestStreak.uppercase(),
+                            color = textSecondary,
+                            fontSize = 10.sp,
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "$bestStreak ${strings.days}",
+                            color = textPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = strings.badges.uppercase(),
+                            color = textSecondary,
+                            fontSize = 10.sp,
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "$badgeCount",
+                            color = GoldPR,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+
+        // #3 & #6: Last PR + Most Trained row
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                // Last PR card
                 Card(
                     modifier = Modifier.weight(1f),
                     colors = CardDefaults.cardColors(containerColor = cardBg),
@@ -488,6 +627,7 @@ fun StatsScreen(
                     }
                 }
 
+                // #3: Most Trained card (renamed from "Start Here")
                 Card(
                     modifier = Modifier.weight(1f),
                     colors = CardDefaults.cardColors(containerColor = cardBg),
@@ -500,11 +640,11 @@ fun StatsScreen(
                                 .background(textSecondary.copy(alpha = 0.15f), RoundedCornerShape(4.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("📜", fontSize = 14.sp)
+                            Text("🔥", fontSize = 14.sp)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = strings.startHere.uppercase(),
+                            text = strings.mostTrained.uppercase(),
                             color = textSecondary,
                             fontSize = 10.sp,
                             letterSpacing = 0.5.sp
@@ -534,6 +674,68 @@ fun StatsScreen(
             }
         }
 
+        // #6: PR Timeline (recent PRs history)
+        if (allRecentPRs.size > 1) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = strings.personalRecords.uppercase(),
+                            color = textSecondary,
+                            fontSize = 10.sp,
+                            letterSpacing = 0.5.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        allRecentPRs.take(5).forEachIndexed { index, pr ->
+                            val dateFmt = SimpleDateFormat("dd MMM", Locale.getDefault())
+                            val dateStr = dateFmt.format(Date(pr.date))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = pr.exerciseName,
+                                        color = textPrimary,
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                Text(
+                                    text = "${weightLabel(pr.weight, isLbs)} x ${pr.reps}",
+                                    color = GoldPR,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = dateStr,
+                                    color = textSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                            if (index < allRecentPRs.size - 1 && index < 4) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 2.dp),
+                                    color = dividerBg,
+                                    thickness = 0.5.dp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // #4: Workout Distribution with improvements
         if (distributionData.isNotEmpty()) {
             item {
                 Card(
@@ -556,10 +758,12 @@ fun StatsScreen(
                         )
                         Spacer(modifier = Modifier.height(14.dp))
 
+                        val totalCount = distributionData.values.sum()
                         val maxCount = distributionData.values.maxOrNull() ?: 1
                         val sortedGroups = distributionData.entries.sortedByDescending { it.value }
 
                         sortedGroups.forEach { (group, count) ->
+                            val pct = if (totalCount > 0) (count * 100 / totalCount) else 0
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -570,7 +774,7 @@ fun StatsScreen(
                                     text = LanguageManager.translateMuscleGroup(group, strings),
                                     color = textPrimary,
                                     fontSize = 12.sp,
-                                    modifier = Modifier.width(46.dp)
+                                    modifier = Modifier.width(60.dp)
                                 )
                                 Box(
                                     modifier = Modifier
@@ -585,16 +789,31 @@ fun StatsScreen(
                                             .background(accent, RoundedCornerShape(6.dp))
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(10.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "$count",
                                     color = textSecondary,
                                     fontSize = 12.sp,
-                                    modifier = Modifier.width(16.dp),
+                                    modifier = Modifier.width(20.dp),
+                                    textAlign = TextAlign.End
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "$pct%",
+                                    color = textSecondary,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.width(28.dp),
                                     textAlign = TextAlign.End
                                 )
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "$totalCount ${strings.sessions}",
+                            color = textSecondary,
+                            fontSize = 10.sp
+                        )
                     }
                 }
             }

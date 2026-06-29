@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gymlog2.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -42,22 +44,64 @@ fun LoginScreen(
     onGoogleLogin: () -> Unit,
     onFacebookLogin: () -> Unit,
     onGuestLogin: () -> Unit,
-    error: String? = null
+    onSignUpClick: () -> Unit,
+    error: String? = null,
+    isLoadingExternal: Boolean = false
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var showPassword by remember { mutableStateOf(false) }
     var visible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+    var emailError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var firebaseError by remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+
+    val isLoadingCombined = isLoading || isLoadingExternal
 
     LaunchedEffect(Unit) {
         delay(100)
         visible = true
     }
 
-    val accent = AccentRed
-    val glassBg = Color.White.copy(alpha = 0.08f)
-    val glassBorder = Color.White.copy(alpha = 0.15f)
+    LaunchedEffect(error) {
+        firebaseError = error
+        if (error != null) isLoading = false
+    }
+
+    fun validateEmail(value: String): Boolean {
+        if (value.isBlank()) {
+            emailError = strings.emailError
+            return false
+        }
+        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+        if (!emailRegex.matches(value)) {
+            emailError = strings.emailError
+            return false
+        }
+        emailError = null
+        return true
+    }
+
+    fun validatePassword(value: String): Boolean {
+        if (value.isBlank()) {
+            passwordError = strings.passwordError
+            return false
+        }
+        if (value.length < 6) {
+            passwordError = strings.passwordError
+            return false
+        }
+        passwordError = null
+        return true
+    }
+
+    val isFormValid = email.isNotBlank() && password.length >= 6
+
+    val accent = Ember
+    val glassBg = MediumTeal.copy(alpha = 0.25f)
+    val glassBorder = MediumTeal.copy(alpha = 0.4f)
 
     val infiniteTransition = rememberInfiniteTransition(label = "logo")
     val logoScale by infiniteTransition.animateFloat(
@@ -95,9 +139,9 @@ fun LoginScreen(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.Black.copy(alpha = 0.7f),
-                            Color.Black.copy(alpha = 0.5f),
-                            Color.Black.copy(alpha = 0.8f)
+                            DeepTealBlack.copy(alpha = 0.85f),
+                            DarkTeal.copy(alpha = 0.6f),
+                            DeepTealBlack.copy(alpha = 0.9f)
                         )
                     )
                 )
@@ -109,7 +153,8 @@ fun LoginScreen(
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            accent.copy(alpha = 0.15f),
+                            Ember.copy(alpha = 0.12f),
+                            MediumTeal.copy(alpha = 0.05f),
                             Color.Transparent
                         ),
                         radius = 800f
@@ -146,14 +191,15 @@ fun LoginScreen(
                         "KINETIC",
                         fontSize = 32.sp,
                         letterSpacing = 10.sp,
-                        color = Color.White
+                        fontWeight = FontWeight.Bold,
+                        color = Cream
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         strings.appTagline,
                         fontSize = 11.sp,
                         letterSpacing = 4.sp,
-                        color = Color.White.copy(alpha = 0.5f)
+                        color = Cream.copy(alpha = 0.5f)
                     )
                 }
             }
@@ -175,7 +221,11 @@ fun LoginScreen(
                 ) {
                     OutlinedTextField(
                         value = email,
-                        onValueChange = { email = it },
+                        onValueChange = {
+                            email = it
+                            if (emailError != null) validateEmail(it)
+                            firebaseError = null
+                        },
                         label = { Text(strings.email) },
                         leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = accent) },
                         modifier = Modifier.fillMaxWidth(),
@@ -184,20 +234,29 @@ fun LoginScreen(
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = accent,
-                            unfocusedBorderColor = glassBorder,
-                            focusedContainerColor = Color.White.copy(alpha = 0.05f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.03f),
+                            unfocusedBorderColor = if (emailError != null) accent else Cream.copy(alpha = 0.2f),
+                            focusedContainerColor = Color(0xFF1A1A1A).copy(alpha = 0.8f),
+                            unfocusedContainerColor = Color(0xFF151515).copy(alpha = 0.8f),
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
-                            focusedLabelColor = accent,
-                            unfocusedLabelColor = Color.White.copy(alpha = 0.5f),
-                            cursorColor = accent
+                            focusedLabelColor = Cream,
+                            unfocusedLabelColor = Cream.copy(alpha = 0.7f),
+                            cursorColor = accent,
+                            focusedLeadingIconColor = accent,
+                            unfocusedLeadingIconColor = Cream.copy(alpha = 0.7f)
                         )
                     )
+                    if (emailError != null) {
+                        Text(emailError!!, color = accent, fontSize = 11.sp)
+                    }
 
                     OutlinedTextField(
                         value = password,
-                        onValueChange = { password = it },
+                        onValueChange = {
+                            password = it
+                            if (passwordError != null) validatePassword(it)
+                            firebaseError = null
+                        },
                         label = { Text(strings.password) },
                         leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = accent) },
                         trailingIcon = {
@@ -205,7 +264,7 @@ fun LoginScreen(
                                 Icon(
                                     if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                                     contentDescription = null,
-                                    tint = Color.White.copy(alpha = 0.5f)
+                                    tint = Cream.copy(alpha = 0.7f)
                                 )
                             }
                         },
@@ -215,22 +274,27 @@ fun LoginScreen(
                         shape = RoundedCornerShape(14.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = accent,
-                            unfocusedBorderColor = glassBorder,
-                            focusedContainerColor = Color.White.copy(alpha = 0.05f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.03f),
+                            unfocusedBorderColor = if (passwordError != null) accent else Cream.copy(alpha = 0.2f),
+                            focusedContainerColor = Color(0xFF1A1A1A).copy(alpha = 0.8f),
+                            unfocusedContainerColor = Color(0xFF151515).copy(alpha = 0.8f),
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
-                            focusedLabelColor = accent,
-                            unfocusedLabelColor = Color.White.copy(alpha = 0.5f),
-                            cursorColor = accent
+                            focusedLabelColor = Cream,
+                            unfocusedLabelColor = Cream.copy(alpha = 0.7f),
+                            cursorColor = accent,
+                            focusedLeadingIconColor = accent,
+                            unfocusedLeadingIconColor = Cream.copy(alpha = 0.7f)
                         )
                     )
+                    if (passwordError != null) {
+                        Text(passwordError!!, color = accent, fontSize = 11.sp)
+                    }
                 }
             }
 
-            if (error != null) {
+            if (firebaseError != null) {
                 Spacer(Modifier.height(6.dp))
-                Text(error, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, textAlign = TextAlign.Center)
+                Text(firebaseError!!, color = accent, fontSize = 12.sp, textAlign = TextAlign.Center)
             }
 
             Spacer(Modifier.height(10.dp))
@@ -241,9 +305,14 @@ fun LoginScreen(
             ) {
                 Button(
                     onClick = {
-                        if (!isLoading) {
-                            isLoading = true
-                            onEmailLogin(email, password)
+                        if (!isLoadingCombined) {
+                            val emailValid = validateEmail(email)
+                            val passwordValid = validatePassword(password)
+                            if (emailValid && passwordValid) {
+                                isLoading = true
+                                firebaseError = null
+                                onEmailLogin(email, password)
+                            }
                         }
                     },
                     modifier = Modifier
@@ -252,7 +321,7 @@ fun LoginScreen(
                         .shadow(12.dp, RoundedCornerShape(16.dp), ambientColor = accent.copy(alpha = 0.3f)),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    enabled = !isLoading,
+                    enabled = !isLoadingCombined && isFormValid,
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Box(
@@ -260,17 +329,26 @@ fun LoginScreen(
                             .fillMaxSize()
                             .background(
                                 Brush.horizontalGradient(
-                                    colors = listOf(accent, accent.copy(alpha = 0.8f))
+                                    colors = if (isFormValid) listOf(accent, EmberDark)
+                                    else listOf(MediumTeal, MediumTeal)
                                 )
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            strings.login,
-                            fontSize = 15.sp,
-                            letterSpacing = 3.sp,
-                            color = Color.White
-                        )
+                        if (isLoadingCombined) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                color = Cream,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                strings.login,
+                                fontSize = 15.sp,
+                                letterSpacing = 3.sp,
+                                color = if (isFormValid) Cream else Cream.copy(alpha = 0.4f)
+                            )
+                        }
                     }
                 }
             }
@@ -305,8 +383,8 @@ fun LoginScreen(
                     ) {
                         Text(
                             strings.or.uppercase(),
-                            color = Color.White.copy(alpha = 0.4f),
-                            fontSize = 10.sp,
+                            color = Cream.copy(alpha = 0.6f),
+                            fontSize = 11.sp,
                             letterSpacing = 3.sp
                         )
                     }
@@ -337,10 +415,11 @@ fun LoginScreen(
                         },
                         bgColor = glassBg,
                         borderColor = glassBorder,
-                        enabled = !isLoading,
+                        enabled = !isLoadingCombined,
                         onClick = {
-                            if (!isLoading) {
+                            if (!isLoadingCombined) {
                                 isLoading = true
+                                firebaseError = null
                                 onGoogleLogin()
                             }
                         }
@@ -352,10 +431,11 @@ fun LoginScreen(
                         },
                         bgColor = glassBg,
                         borderColor = glassBorder,
-                        enabled = !isLoading,
+                        enabled = !isLoadingCombined,
                         onClick = {
-                            if (!isLoading) {
+                            if (!isLoadingCombined) {
                                 isLoading = true
+                                firebaseError = null
                                 onFacebookLogin()
                             }
                         }
@@ -371,21 +451,54 @@ fun LoginScreen(
             ) {
                 Text(
                     strings.loginAsGuest,
-                    color = Color.White.copy(alpha = 0.35f),
-                    fontSize = 12.sp,
+                    color = Cream.copy(alpha = 0.6f),
+                    fontSize = 13.sp,
                     letterSpacing = 2.sp,
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
-                        .clickable(enabled = !isLoading) {
-                            isLoading = true
-                            onGuestLogin()
+                        .clickable(enabled = !isLoadingCombined) {
+                            if (!isLoadingCombined) {
+                                isLoading = true
+                                firebaseError = null
+                                onGuestLogin()
+                            }
                         }
                         .padding(horizontal = 18.dp, vertical = 10.dp)
                 )
             }
+
+            Spacer(Modifier.height(6.dp))
+
+            AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn(animationSpec = tween(600, delayMillis = 650))
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        strings.dontHaveAccount + " ",
+                        color = Cream.copy(alpha = 0.7f),
+                        fontSize = 13.sp
+                    )
+                    Text(
+                        strings.signUp,
+                        color = accent,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable(enabled = !isLoadingCombined) {
+                                onSignUpClick()
+                            }
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+            }
         }
 
-        if (isLoading) {
+        if (isLoadingCombined) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -396,7 +509,7 @@ fun LoginScreen(
                     modifier = Modifier.size(52.dp),
                     color = accent,
                     strokeWidth = 4.dp,
-                    trackColor = Color.White.copy(alpha = 0.15f)
+                    trackColor = DarkTeal.copy(alpha = 0.4f)
                 )
             }
         }
@@ -427,8 +540,8 @@ private fun SocialLoginButton(
         Spacer(Modifier.width(10.dp))
         Text(
             text,
-            color = if (enabled) Color.White.copy(alpha = 0.85f) else Color.White.copy(alpha = 0.3f),
-            fontSize = 13.sp,
+            color = if (enabled) Cream else Cream.copy(alpha = 0.3f),
+            fontSize = 14.sp,
             letterSpacing = 2.sp
         )
     }

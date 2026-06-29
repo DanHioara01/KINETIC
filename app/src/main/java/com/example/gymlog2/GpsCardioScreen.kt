@@ -1,39 +1,129 @@
 package com.example.gymlog2
 
 import android.Manifest
-import android.content.Context
+import android.annotation.SuppressLint
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas as AndroidCanvas
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.Location
-import android.os.Looper
+import android.location.LocationManager
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DirectionsBike
+import androidx.compose.material.icons.filled.DirectionsRun
+import androidx.compose.material.icons.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Route
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.gymlog2.ui.theme.*
-import com.google.android.gms.location.*
+import com.example.gymlog2.ui.theme.RecoveryRed
+import com.example.gymlog2.ui.theme.accentColor
+import com.example.gymlog2.ui.theme.bgColor
+import com.example.gymlog2.ui.theme.cardColor
+import com.example.gymlog2.ui.theme.secondaryTextColor
+import com.example.gymlog2.ui.theme.textColor
+import com.example.gymlog2.ui.theme.LightBackground
+import com.example.gymlog2.ui.theme.LightCard
+import com.example.gymlog2.ui.theme.LightPrimaryRed
+import com.example.gymlog2.ui.theme.LightTextPrimary
+import com.example.gymlog2.ui.theme.LightTextSecondary
+import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 data class GpsPoint(val lat: Double, val lng: Double, val timestamp: Long)
 
@@ -53,40 +143,211 @@ fun GpsCardioScreen(
     val cardBg = if (isDark) cardColor() else LightCard
     val accent = if (isDark) accentColor() else LightPrimaryRed
 
-    var isTracking by remember { mutableStateOf(false) }
-    var routePoints by remember { mutableStateOf<List<GpsPoint>>(emptyList()) }
-    var currentSpeed by remember { mutableDoubleStateOf(0.0) }
-    var totalDistance by remember { mutableDoubleStateOf(0.0) }
-    var elapsedTime by remember { mutableLongStateOf(0L) }
-    var lastLocation by remember { mutableStateOf<Location?>(null) }
+    val gpsState = GpsTrackingState
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     var savedRoutes by remember { mutableStateOf<List<CardioRouteEntity>>(emptyList()) }
     var showSaveDialog by remember { mutableStateOf(false) }
     var showSavedRoutes by remember { mutableStateOf(false) }
+    var selectedRoute by remember { mutableStateOf<CardioRouteEntity?>(null) }
     var hasLocationPermission by remember { mutableStateOf(false) }
-    var activityType by remember { mutableStateOf("running") }
+    var locationStatus by remember { mutableStateOf("Caut semnal GPS...") }
+    var showGpsDisabledDialog by remember { mutableStateOf(false) }
+    var showLocationDeniedDialog by remember { mutableStateOf(false) }
+    var pendingStartAfterPermission by remember { mutableStateOf(false) }
 
-    val fusedLocationClient = remember {
-        LocationServices.getFusedLocationProviderClient(context)
+    val locationManager = remember {
+        context.getSystemService(LocationManager::class.java)
     }
 
-    val locationCallback = remember {
-        object : LocationCallback() {
-            override fun onLocationResult(result: LocationResult) {
-                result.lastLocation?.let { location ->
-                    val point = GpsPoint(location.latitude, location.longitude, System.currentTimeMillis())
-                    val newPoints = routePoints + point
-                    routePoints = newPoints
-                    currentSpeed = location.speed * 3.6
+    val sensorManager = remember {
+        context.getSystemService(SensorManager::class.java)
+    }
+    val rotationMatrix = remember { FloatArray(9) }
+    val orientationAngles = remember { FloatArray(3) }
 
-                    lastLocation?.let { prev ->
-                        val results = FloatArray(1)
-                        Location.distanceBetween(prev.latitude, prev.longitude, location.latitude, location.longitude, results)
-                        totalDistance += results[0] / 1000.0
-                    }
-                    lastLocation = location
+    DisposableEffect(gpsState.isTracking) {
+        val listener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent) {
+                if (!gpsState.isTracking) return
+                SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+                SensorManager.getOrientation(rotationMatrix, orientationAngles)
+                val azimuth = -Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
+                gpsState.bearing = azimuth
+            }
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+        }
+        if (gpsState.isTracking) {
+            val rotationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+            rotationSensor?.let {
+                sensorManager.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI)
+            }
+        }
+        onDispose {
+            sensorManager?.unregisterListener(listener)
+        }
+    }
+
+    fun checkGpsEnabled(): Boolean {
+        val gpsEnabled = locationManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) == true
+        val networkEnabled = locationManager?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true
+        return gpsEnabled || networkEnabled
+    }
+
+    val locationUpdateCallback = remember { mutableStateOf<com.google.android.gms.location.LocationCallback?>(null) }
+    val handler = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
+    val timerRunnable = remember {
+        object : Runnable {
+            override fun run() {
+                if (GpsTrackingState.isTracking) {
+                    GpsTrackingState.elapsedTime += 1000
+                    handler.postDelayed(this, 1000)
                 }
             }
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun startTrackingService() {
+        try {
+            GpsTrackingState.isTracking = true
+            GpsTrackingState.isPaused = false
+            GpsTrackingState.elapsedTime = 0L
+            GpsTrackingState.totalDistance = 0.0
+            GpsTrackingState.routePoints = emptyList()
+            GpsTrackingState.currentSpeed = 0.0
+            GpsTrackingState.lastRouteLocation = null
+
+            val request = com.google.android.gms.location.LocationRequest.Builder(
+                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 1000L
+            ).apply {
+                setMinUpdateDistanceMeters(0f)
+                setGranularity(com.google.android.gms.location.Granularity.GRANULARITY_PERMISSION_LEVEL)
+                setWaitForAccurateLocation(true)
+            }.build()
+
+            locationUpdateCallback.value = object : com.google.android.gms.location.LocationCallback() {
+                override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
+                    result.lastLocation?.let { loc ->
+                        GpsTrackingState.lastLocation = loc
+                        if (loc.hasSpeed()) {
+                            GpsTrackingState.currentSpeed = loc.speed * 3.6
+                        } else {
+                            val prev = GpsTrackingState.lastRouteLocation
+                            if (prev != null) {
+                                val dt = (System.currentTimeMillis() - prev.time) / 1000.0
+                                if (dt > 0) {
+                                    val dist = prev.distanceTo(loc).toDouble()
+                                    GpsTrackingState.currentSpeed = (dist / dt) * 3.6
+                                }
+                            }
+                        }
+                        val prev = GpsTrackingState.lastRouteLocation
+                        if (prev != null) {
+                            val dist = prev.distanceTo(loc)
+                            if (dist > 2f) {
+                                GpsTrackingState.totalDistance += dist / 1000.0
+                                GpsTrackingState.routePoints = GpsTrackingState.routePoints + GpsPoint(loc.latitude, loc.longitude, System.currentTimeMillis())
+                            }
+                        } else {
+                            GpsTrackingState.routePoints = listOf(GpsPoint(loc.latitude, loc.longitude, System.currentTimeMillis()))
+                        }
+                        GpsTrackingState.lastRouteLocation = loc
+                    }
+                }
+            }
+
+            fusedLocationClient.requestLocationUpdates(request, locationUpdateCallback.value!!, android.os.Looper.getMainLooper())
+
+            handler.removeCallbacks(timerRunnable)
+            handler.postDelayed(timerRunnable, 1000)
+        } catch (e: Exception) {
+            GpsTrackingState.isTracking = false
+            android.widget.Toast.makeText(context, "Eroare GPS: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun stopTrackingService() {
+        locationUpdateCallback.value?.let { fusedLocationClient.removeLocationUpdates(it) }
+        locationUpdateCallback.value = null
+        handler.removeCallbacks(timerRunnable)
+        GpsTrackingState.isTracking = false
+    }
+
+    fun pauseTrackingService() {
+        locationUpdateCallback.value?.let { fusedLocationClient.removeLocationUpdates(it) }
+        locationUpdateCallback.value = null
+        handler.removeCallbacks(timerRunnable)
+        GpsTrackingState.isTracking = false
+        GpsTrackingState.isPaused = true
+    }
+
+    @SuppressLint("MissingPermission")
+    fun resumeTrackingService() {
+        try {
+            GpsTrackingState.isTracking = true
+            GpsTrackingState.isPaused = false
+
+            val request = com.google.android.gms.location.LocationRequest.Builder(
+                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY, 1000L
+            ).apply {
+                setMinUpdateDistanceMeters(0f)
+                setGranularity(com.google.android.gms.location.Granularity.GRANULARITY_PERMISSION_LEVEL)
+                setWaitForAccurateLocation(true)
+            }.build()
+
+            locationUpdateCallback.value = object : com.google.android.gms.location.LocationCallback() {
+                override fun onLocationResult(result: com.google.android.gms.location.LocationResult) {
+                    result.lastLocation?.let { loc ->
+                        GpsTrackingState.lastLocation = loc
+                        if (loc.hasSpeed()) {
+                            GpsTrackingState.currentSpeed = loc.speed * 3.6
+                        } else {
+                            val prev = GpsTrackingState.lastRouteLocation
+                            if (prev != null) {
+                                val dt = (System.currentTimeMillis() - prev.time) / 1000.0
+                                if (dt > 0) {
+                                    val dist = prev.distanceTo(loc).toDouble()
+                                    GpsTrackingState.currentSpeed = (dist / dt) * 3.6
+                                }
+                            }
+                        }
+                        val prev = GpsTrackingState.lastRouteLocation
+                        if (prev != null) {
+                            val dist = prev.distanceTo(loc)
+                            if (dist > 2f) {
+                                GpsTrackingState.totalDistance += dist / 1000.0
+                                GpsTrackingState.routePoints = GpsTrackingState.routePoints + GpsPoint(loc.latitude, loc.longitude, System.currentTimeMillis())
+                            }
+                        } else {
+                            GpsTrackingState.routePoints = GpsTrackingState.routePoints + GpsPoint(loc.latitude, loc.longitude, System.currentTimeMillis())
+                        }
+                        GpsTrackingState.lastRouteLocation = loc
+                    }
+                }
+            }
+
+            fusedLocationClient.requestLocationUpdates(request, locationUpdateCallback.value!!, android.os.Looper.getMainLooper())
+
+            handler.removeCallbacks(timerRunnable)
+            handler.postDelayed(timerRunnable, 1000)
+        } catch (e: Exception) {
+            GpsTrackingState.isTracking = false
+            android.widget.Toast.makeText(context, "Eroare GPS: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun cancelTrackingService() {
+        locationUpdateCallback.value?.let { fusedLocationClient.removeLocationUpdates(it) }
+        locationUpdateCallback.value = null
+        handler.removeCallbacks(timerRunnable)
+        GpsTrackingState.reset()
+    }
+
+    fun refreshPermissionAndGps() {
+        val fine = androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+        hasLocationPermission = fine == PackageManager.PERMISSION_GRANTED ||
+            coarse == PackageManager.PERMISSION_GRANTED
     }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -94,47 +355,93 @@ fun GpsCardioScreen(
     ) { permissions ->
         hasLocationPermission = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (hasLocationPermission) {
-            isTracking = true
+        if (pendingStartAfterPermission) {
+            pendingStartAfterPermission = false
+            if (hasLocationPermission && checkGpsEnabled()) {
+                startTrackingService()
+            } else if (hasLocationPermission) {
+                showGpsDisabledDialog = true
+            } else {
+                locationStatus = strings.locationPermissionRequired
+            }
         }
     }
 
-    LaunchedEffect(Unit) {
-        val fine = androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-        val coarse = androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
-        hasLocationPermission = fine == android.content.pm.PackageManager.PERMISSION_GRANTED ||
-            coarse == android.content.pm.PackageManager.PERMISSION_GRANTED
-    }
+    fun tryStartTracking() {
+        refreshPermissionAndGps()
 
-    LaunchedEffect(isTracking) {
-        if (isTracking && hasLocationPermission) {
-            val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2000L).apply {
-                setMinUpdateDistanceMeters(5f)
-                setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
-                setWaitForAccurateLocation(true)
-            }.build()
-            fusedLocationClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper())
+        if (!hasLocationPermission) {
+            pendingStartAfterPermission = true
+            locationPermissionLauncher.launch(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+            )
+        } else if (!checkGpsEnabled()) {
+            showGpsDisabledDialog = true
         } else {
-            fusedLocationClient.removeLocationUpdates(locationCallback)
+            startTrackingService()
         }
     }
 
-    LaunchedEffect(isTracking) {
-        if (isTracking) {
-            elapsedTime = 0
-            totalDistance = 0.0
-            routePoints = emptyList()
-            lastLocation = null
-            currentSpeed = 0.0
-            while (isTracking) {
-                delay(1000)
-                elapsedTime += 1000
+    fun tryResumeTracking() {
+        refreshPermissionAndGps()
+
+        if (!hasLocationPermission) {
+            pendingStartAfterPermission = true
+            locationPermissionLauncher.launch(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+            )
+        } else if (!checkGpsEnabled()) {
+            showGpsDisabledDialog = true
+        } else {
+            resumeTrackingService()
+        }
+    }
+
+    LaunchedEffect(hasLocationPermission) {
+        refreshPermissionAndGps()
+        if (hasLocationPermission && gpsState.lastLocation == null) {
+            try {
+                @SuppressLint("MissingPermission")
+                val loc = fusedLocationClient.lastLocation.await()
+                if (loc != null && gpsState.lastLocation == null) {
+                    gpsState.lastLocation = loc
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    LaunchedEffect(showGpsDisabledDialog) {
+        if (!showGpsDisabledDialog) return@LaunchedEffect
+        while (true) {
+            kotlinx.coroutines.delay(1000)
+            refreshPermissionAndGps()
+            if (hasLocationPermission && checkGpsEnabled()) {
+                showGpsDisabledDialog = false
+                startTrackingService()
+                break
+            }
+        }
+    }
+
+    LaunchedEffect(showLocationDeniedDialog) {
+        if (!showLocationDeniedDialog) return@LaunchedEffect
+        while (true) {
+            kotlinx.coroutines.delay(1000)
+            refreshPermissionAndGps()
+            if (hasLocationPermission) {
+                showLocationDeniedDialog = false
+                if (checkGpsEnabled()) {
+                    startTrackingService()
+                } else {
+                    showGpsDisabledDialog = true
+                }
+                break
             }
         }
     }
 
     LaunchedEffect(userId) {
-        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        withContext(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(context)
             savedRoutes = db.cardioRouteDao().getAllForUser(userId)
         }
@@ -145,8 +452,8 @@ fun GpsCardioScreen(
         val hours = totalSeconds / 3600
         val minutes = (totalSeconds % 3600) / 60
         val seconds = totalSeconds % 60
-        return if (hours > 0) String.format("%d:%02d:%02d", hours, minutes, seconds)
-        else String.format("%02d:%02d", minutes, seconds)
+        return if (hours > 0) String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
+        else String.format(Locale.US, "%02d:%02d", minutes, seconds)
     }
 
     fun formatPace(speedKmh: Double): String {
@@ -154,11 +461,11 @@ fun GpsCardioScreen(
         val paceMinPerKm = 60.0 / speedKmh
         val minutes = paceMinPerKm.toInt()
         val seconds = ((paceMinPerKm - minutes) * 60).toInt()
-        return String.format("%d:%02d /km", minutes, seconds)
+        return String.format(Locale.US, "%d:%02d /km", minutes, seconds)
     }
 
-    fun estimateCalories(distanceKm: Double, activityType: String): Double {
-        val calPerKm = when (activityType) {
+    fun estimateCalories(distanceKm: Double, type: String): Double {
+        val calPerKm = when (type) {
             "running" -> 70.0
             "cycling" -> 30.0
             "walking" -> 40.0
@@ -167,19 +474,137 @@ fun GpsCardioScreen(
         return distanceKm * calPerKm
     }
 
-    fun stopTracking() {
-        isTracking = false
-        fusedLocationClient.removeLocationUpdates(locationCallback)
-    }
-
     BackHandler {
-        if (isTracking) {
-            stopTracking()
+        if (selectedRoute != null) {
+            selectedRoute = null
+        } else if (gpsState.isTracking) {
+            val activity = context as? MainActivity
+            activity?.enterPipMode()
         } else if (showSavedRoutes) {
             showSavedRoutes = false
         } else {
             onBack()
         }
+    }
+
+    if (gpsState.isInPipMode) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                RouteCanvas(
+                    points = gpsState.routePoints,
+                    isTracking = gpsState.isTracking,
+                    lastLocation = gpsState.lastLocation,
+                    bearing = gpsState.bearing,
+                    forceCenterOnLocation = gpsState.lastLocation != null,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF161616))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        String.format(Locale.US, "%.1f", gpsState.currentSpeed),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Text("km/h", color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        String.format(Locale.US, "%.2f", gpsState.totalDistance),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Text(strings.distance, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        formatDuration(gpsState.elapsedTime),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Text(strings.duration, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
+                }
+            }
+        }
+        return
+    }
+
+    if (showGpsDisabledDialog) {
+        AlertDialog(
+            onDismissRequest = { showGpsDisabledDialog = false },
+            containerColor = cardBg,
+            titleContentColor = textPrimary,
+            title = { Text(strings.gpsDisabledTitle, fontWeight = FontWeight.Bold) },
+            text = {
+                Text(strings.gpsDisabledMessage, color = textSecondary, fontSize = 14.sp)
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showGpsDisabledDialog = false
+                        try {
+                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                        } catch (_: Exception) {}
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = accent),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(strings.openSettings, color = Color.White, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showGpsDisabledDialog = false }) {
+                    Text(strings.cancel, color = accent)
+                }
+            }
+        )
+    }
+
+    if (showLocationDeniedDialog) {
+        AlertDialog(
+            onDismissRequest = { showLocationDeniedDialog = false },
+            containerColor = cardBg,
+            titleContentColor = textPrimary,
+            title = { Text(strings.locationPermissionRequired, fontWeight = FontWeight.Bold) },
+            text = {
+                Text(strings.gpsDisabledMessage, color = textSecondary, fontSize = 14.sp)
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLocationDeniedDialog = false
+                        try {
+                            val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            intent.data = android.net.Uri.fromParts("package", context.packageName, null)
+                            context.startActivity(intent)
+                        } catch (_: Exception) {}
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = accent),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(strings.openSettings, color = Color.White, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLocationDeniedDialog = false }) {
+                    Text(strings.cancel, color = accent)
+                }
+            }
+        )
     }
 
     if (showSaveDialog) {
@@ -215,20 +640,20 @@ fun GpsCardioScreen(
                     onClick = {
                         if (routeName.isNotBlank()) {
                             scope.launch {
-                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                withContext(Dispatchers.IO) {
                                     val db = AppDatabase.getDatabase(context)
                                     val route = CardioRouteEntity(
                                         userId = userId,
                                         name = routeName.trim(),
-                                        routePoints = routePoints.joinToString(";") { "${it.lat},${it.lng}" },
-                                        distanceKm = totalDistance,
-                                        durationMs = elapsedTime,
-                                        avgSpeedKmh = currentSpeed,
-                                        avgPaceMinKm = if (currentSpeed > 0) 60.0 / currentSpeed else 0.0,
-                                        caloriesBurned = estimateCalories(totalDistance, activityType),
-                                        startTime = if (routePoints.isNotEmpty()) routePoints.first().timestamp else System.currentTimeMillis(),
+                                        routePoints = gpsState.routePoints.joinToString(";") { "${it.lat},${it.lng}" },
+                                        distanceKm = gpsState.totalDistance,
+                                        durationMs = gpsState.elapsedTime,
+                                        avgSpeedKmh = gpsState.currentSpeed,
+                                        avgPaceMinKm = if (gpsState.currentSpeed > 0) 60.0 / gpsState.currentSpeed else 0.0,
+                                        caloriesBurned = estimateCalories(gpsState.totalDistance, gpsState.activityType),
+                                        startTime = if (gpsState.routePoints.isNotEmpty()) gpsState.routePoints.first().timestamp else System.currentTimeMillis(),
                                         endTime = System.currentTimeMillis(),
-                                        activityType = activityType
+                                        activityType = gpsState.activityType
                                     )
                                     db.cardioRouteDao().insert(route)
                                     savedRoutes = db.cardioRouteDao().getAllForUser(userId)
@@ -240,7 +665,7 @@ fun GpsCardioScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = accent),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text(strings.save, color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(strings.save, color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
@@ -257,17 +682,42 @@ fun GpsCardioScreen(
             TopAppBar(
                 windowInsets = WindowInsets(0, 0, 0, 0),
                 title = {
-                    Text(strings.gpsCardioMap, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (selectedRoute != null) selectedRoute!!.name else "Cardio",
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (gpsState.isTracking) {
+                            Spacer(Modifier.width(8.dp))
+                            val pulseAlpha by rememberInfiniteTransition(label = "pulse").animateFloat(
+                                initialValue = 1f,
+                                targetValue = 0.3f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(1200, easing = LinearEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "pulseAlpha"
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(RecoveryRed.copy(alpha = pulseAlpha))
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        if (isTracking) stopTracking() else onBack()
+                        if (selectedRoute != null) {
+                            selectedRoute = null
+                        } else if (gpsState.isTracking || gpsState.isPaused) cancelTrackingService() else onBack()
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = strings.back, tint = textPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = strings.back, tint = textPrimary)
                     }
                 },
                 actions = {
-                    if (!isTracking && routePoints.isNotEmpty()) {
+                    if (selectedRoute == null && !gpsState.isTracking) {
                         IconButton(onClick = { showSavedRoutes = !showSavedRoutes }) {
                             Icon(Icons.Default.Route, contentDescription = strings.savedRoutes, tint = accent)
                         }
@@ -280,299 +730,356 @@ fun GpsCardioScreen(
             )
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
         ) {
-            if (showSavedRoutes) {
-                SavedRoutesSection(
-                    routes = savedRoutes,
-                    isDark = isDark,
-                    accent = accent,
-                    cardBg = cardBg,
-                    textPrimary = textPrimary,
-                    textSecondary = textSecondary,
-                    strings = strings,
-                    onDelete = { route ->
-                        scope.launch {
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                val db = AppDatabase.getDatabase(context)
-                                db.cardioRouteDao().delete(route)
-                                savedRoutes = db.cardioRouteDao().getAllForUser(userId)
-                            }
-                        }
-                    }
-                )
-            } else {
-                // Activity type selector
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val activities = listOf("running" to Icons.Default.DirectionsRun, "cycling" to Icons.Default.DirectionsBike, "walking" to Icons.Default.DirectionsWalk)
-                    activities.forEach { (type, icon) ->
-                        val isActive = activityType == type
-                        FilterChip(
-                            selected = isActive,
-                            onClick = { if (!isTracking) activityType = type },
-                            label = { Text(type.replaceFirstChar { it.uppercase() }, fontSize = 12.sp) },
-                            leadingIcon = {
-                                Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = accent.copy(alpha = 0.15f),
-                                selectedLabelColor = accent,
-                                selectedLeadingIconColor = accent
-                            ),
-                            shape = RoundedCornerShape(20.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                if (selectedRoute != null) {
+                        RouteDetailContent(
+                            route = selectedRoute!!,
+                            accent = accent,
+                            cardBg = cardBg,
+                            textPrimary = textPrimary,
+                            textSecondary = textSecondary,
+                            strings = strings
                         )
-                    }
-                }
-
-                // Map area with route drawing
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = cardBg)
-                ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        RouteCanvas(
-                            points = routePoints,
-                            isTracking = isTracking,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        if (routePoints.isEmpty() && !isTracking) {
-                            Column(
-                                modifier = Modifier.align(Alignment.Center),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Icon(
-                                    Icons.Default.Map,
-                                    contentDescription = null,
-                                    tint = textSecondary.copy(alpha = 0.4f),
-                                    modifier = Modifier.size(48.dp)
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    strings.currentLocation,
-                                    color = textSecondary,
-                                    fontSize = 13.sp,
-                                    textAlign = TextAlign.Center
-                                )
+                    } else if (showSavedRoutes) {
+                        SavedRoutesSection(
+                            routes = savedRoutes,
+                            accent = accent,
+                            cardBg = cardBg,
+                            textPrimary = textPrimary,
+                            textSecondary = textSecondary,
+                            strings = strings,
+                            onRouteClick = { route -> selectedRoute = route },
+                            onDelete = { route ->
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        val db = AppDatabase.getDatabase(context)
+                                        db.cardioRouteDao().delete(route)
+                                        savedRoutes = db.cardioRouteDao().getAllForUser(userId)
+                                    }
+                                }
                             }
-                        }
-                        if (isTracking) {
-                            Box(
+                        )
+                    } else {
+                        AnimatedVisibility(
+                            visible = !gpsState.isTracking || gpsState.routePoints.isEmpty(),
+                            exit = shrinkVertically(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
+                        ) {
+                            Row(
                                 modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(12.dp)
-                                    .background(accent, RoundedCornerShape(20.dp))
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .clip(CircleShape)
-                                            .background(Color.White)
+                                val activities = remember { listOf("running" to Icons.Default.DirectionsRun, "cycling" to Icons.Default.DirectionsBike, "walking" to Icons.Default.DirectionsWalk) }
+                                activities.forEach { (type, icon) ->
+                                    val isActive = gpsState.activityType == type
+                                    FilterChip(
+                                        selected = isActive,
+                                        onClick = { if (!gpsState.isTracking) gpsState.activityType = type },
+                                        label = { Text(type.replaceFirstChar { it.uppercase() }, fontSize = 12.sp) },
+                                        leadingIcon = {
+                                            Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = accent.copy(alpha = 0.15f),
+                                            selectedLabelColor = accent,
+                                            selectedLeadingIconColor = accent
+                                        ),
+                                        shape = RoundedCornerShape(20.dp)
                                     )
-                                    Spacer(Modifier.width(6.dp))
+                                }
+                            }
+                        }
+
+                        val mapCornerRadius = 12.dp
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .padding(horizontal = 16.dp),
+                            shape = RoundedCornerShape(mapCornerRadius),
+                            colors = CardDefaults.cardColors(containerColor = cardBg)
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                RouteCanvas(
+                                    points = gpsState.routePoints,
+                                    isTracking = gpsState.isTracking,
+                                    lastLocation = gpsState.lastLocation,
+                                    bearing = gpsState.bearing,
+                                    forceCenterOnLocation = gpsState.lastLocation != null,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                                if (gpsState.lastLocation == null || !hasLocationPermission) {
+                                    Card(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .padding(12.dp),
+                                        colors = CardDefaults.cardColors(containerColor = cardBg.copy(alpha = 0.92f)),
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text(
+                                            locationStatus,
+                                            color = textPrimary,
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(8.dp)
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.Black.copy(alpha = 0.5f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    val normalizedBearing = ((gpsState.bearing % 360) + 360) % 360
+                                    val direction = when {
+                                        normalizedBearing < 45 || normalizedBearing >= 315 -> "N"
+                                        normalizedBearing < 135 -> "E"
+                                        normalizedBearing < 225 -> "S"
+                                        else -> "W"
+                                    }
                                     Text(
-                                        strings.trackingActive,
+                                        direction,
                                         color = Color.White,
-                                        fontSize = 11.sp,
+                                        fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
                         }
-                    }
-                }
 
-                Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(8.dp))
 
-                // Stats row
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Speed,
-                        value = String.format("%.1f", totalDistance),
-                        unit = "km",
-                        label = strings.distance,
-                        cardBg = cardBg,
-                        accent = accent,
-                        textPrimary = textPrimary,
-                        textSecondary = textSecondary
-                    )
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Timer,
-                        value = formatDuration(elapsedTime),
-                        unit = "",
-                        label = strings.duration,
-                        cardBg = cardBg,
-                        accent = accent,
-                        textPrimary = textPrimary,
-                        textSecondary = textSecondary
-                    )
-                }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.Default.Speed,
+                                value = String.format(Locale.US, "%.2f", gpsState.totalDistance),
+                                unit = "km",
+                                label = strings.distance,
+                                cardBg = cardBg,
+                                accent = accent,
+                                textPrimary = textPrimary,
+                                textSecondary = textSecondary,
+                                iconBgColor = accent,
+                                isPrimary = true
+                            )
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.Default.Timer,
+                                value = formatDuration(gpsState.elapsedTime),
+                                unit = "",
+                                label = strings.duration,
+                                cardBg = cardBg,
+                                accent = accent,
+                                textPrimary = textPrimary,
+                                textSecondary = textSecondary,
+                                iconBgColor = accent,
+                                isPrimary = true
+                            )
+                        }
 
-                Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(6.dp))
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.Speed,
-                        value = String.format("%.1f", currentSpeed),
-                        unit = "km/h",
-                        label = strings.speed,
-                        cardBg = cardBg,
-                        accent = accent,
-                        textPrimary = textPrimary,
-                        textSecondary = textSecondary
-                    )
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.TrendingUp,
-                        value = formatPace(currentSpeed),
-                        unit = "",
-                        label = strings.pace,
-                        cardBg = cardBg,
-                        accent = accent,
-                        textPrimary = textPrimary,
-                        textSecondary = textSecondary
-                    )
-                }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.Default.Speed,
+                                value = String.format(Locale.US, "%.1f", gpsState.currentSpeed),
+                                unit = "km/h",
+                                label = strings.speed,
+                                cardBg = cardBg,
+                                accent = accent,
+                                textPrimary = textPrimary,
+                                textSecondary = textSecondary,
+                                iconBgColor = Color(0xFF3B8ADE)
+                            )
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.AutoMirrored.Filled.TrendingUp,
+                                value = formatPace(gpsState.currentSpeed),
+                                unit = "",
+                                label = strings.pace,
+                                cardBg = cardBg,
+                                accent = accent,
+                                textPrimary = textPrimary,
+                                textSecondary = textSecondary,
+                                iconBgColor = Color(0xFF8BC34A)
+                            )
+                        }
 
-                Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(6.dp))
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.LocalFireDepartment,
-                        value = String.format("%.0f", estimateCalories(totalDistance, activityType)),
-                        unit = "kcal",
-                        label = strings.calories,
-                        cardBg = cardBg,
-                        accent = accent,
-                        textPrimary = textPrimary,
-                        textSecondary = textSecondary
-                    )
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        icon = Icons.Default.FitnessCenter,
-                        value = routePoints.size.toString(),
-                        unit = "pts",
-                        label = "Route Points",
-                        cardBg = cardBg,
-                        accent = accent,
-                        textPrimary = textPrimary,
-                        textSecondary = textSecondary
-                    )
-                }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.Default.LocalFireDepartment,
+                                value = String.format(Locale.US, "%.0f", estimateCalories(gpsState.totalDistance, gpsState.activityType)),
+                                unit = "kcal",
+                                label = strings.caloriesBurned,
+                                cardBg = cardBg,
+                                accent = accent,
+                                textPrimary = textPrimary,
+                                textSecondary = textSecondary,
+                                iconBgColor = Color(0xFFFF9800)
+                            )
+                            StatCard(
+                                modifier = Modifier.weight(1f),
+                                icon = Icons.Default.FitnessCenter,
+                                value = gpsState.routePoints.size.toString(),
+                                unit = "pts",
+                                label = "Points",
+                                cardBg = cardBg,
+                                accent = accent,
+                                textPrimary = textPrimary,
+                                textSecondary = textSecondary,
+                                iconBgColor = Color(0xFFFFC107)
+                            )
+                        }
 
-                Spacer(Modifier.height(20.dp))
+                        Spacer(Modifier.height(12.dp))
 
-                // Control buttons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    if (!isTracking && routePoints.isEmpty()) {
-                        Button(
-                            onClick = {
-                                if (hasLocationPermission) {
-                                    isTracking = true
-                                } else {
-                                    locationPermissionLauncher.launch(
-                                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-                                    )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (gpsState.isTracking) {
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(56.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF616161))
+                                            .clickable { cancelTrackingService() },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(strings.cancel, color = Color(0xFF9E9E9E), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = accent),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(56.dp)
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(strings.startTracking, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        }
-                    } else if (isTracking) {
-                        Button(
-                            onClick = { stopTracking() },
-                            colors = ButtonDefaults.buttonColors(containerColor = RecoveryRed),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(56.dp)
-                        ) {
-                            Icon(Icons.Default.Stop, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(strings.stopTracking, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        }
-                    } else {
-                        OutlinedButton(
-                            onClick = {
-                                routePoints = emptyList()
-                                totalDistance = 0.0
-                                elapsedTime = 0
-                                currentSpeed = 0.0
-                            },
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(56.dp),
-                            border = BorderStroke(1.5.dp, textSecondary.copy(alpha = 0.3f))
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = null, tint = textSecondary, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(strings.cancel, color = textSecondary, fontWeight = FontWeight.Bold)
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(56.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFFFC107))
+                                            .clickable { pauseTrackingService() },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.Pause, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(strings.pauseTracking, color = Color(0xFFFFC107), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            } else if (gpsState.isPaused) {
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(56.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF616161))
+                                            .clickable { cancelTrackingService() },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(strings.cancel, color = Color(0xFF9E9E9E), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(56.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFFFC107))
+                                            .clickable { tryResumeTracking() },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(strings.resumeTracking, color = Color(0xFFFFC107), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(56.dp)
+                                            .clip(CircleShape)
+                                            .background(RecoveryRed)
+                                            .clickable { showSaveDialog = true },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(Icons.Default.Save, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(strings.save, color = RecoveryRed, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            } else {
+                                Button(
+                                    onClick = { tryStartTracking() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = accent),
+                                    shape = RoundedCornerShape(16.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(52.dp)
+                                ) {
+                                    Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(strings.startTracking, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                }
+                            }
                         }
 
-                        Button(
-                            onClick = { showSaveDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = accent),
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(56.dp)
-                        ) {
-                            Icon(Icons.Default.Save, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(strings.saveRoute, color = Color.White, fontWeight = FontWeight.Bold)
-                        }
+                        Spacer(Modifier.height(16.dp))
                     }
                 }
-
-                Spacer(Modifier.height(24.dp))
             }
-        }
     }
 }
 
@@ -580,104 +1087,215 @@ fun GpsCardioScreen(
 private fun RouteCanvas(
     points: List<GpsPoint>,
     isTracking: Boolean,
+    lastLocation: Location?,
+    bearing: Float = 0f,
+    forceCenterOnLocation: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val redRoute = Color(0xFFFF2D2D)
-    val gridColor = Color(0xFF1A3A4A).copy(alpha = 0.3f)
+    val context = LocalContext.current
+    val mapViewRef = remember { mutableStateOf<org.osmdroid.views.MapView?>(null) }
 
-    Canvas(modifier = modifier) {
-        // Draw grid pattern (map feel)
-        val gridSize = 40.dp.toPx()
-        for (x in 0f..size.width step gridSize) {
-            drawLine(gridColor, Offset(x, 0f), Offset(x, size.height), strokeWidth = 0.5.dp.toPx())
-        }
-        for (y in 0f..size.height step gridSize) {
-            drawLine(gridColor, Offset(0f, y), Offset(size.width, y), strokeWidth = 0.5.dp.toPx())
-        }
+    AndroidView(
+        factory = { ctx ->
+            org.osmdroid.config.Configuration.getInstance().load(
+                ctx,
+                ctx.getSharedPreferences("osmdroid", android.content.Context.MODE_PRIVATE)
+            )
+            org.osmdroid.config.Configuration.getInstance().userAgentValue = ctx.packageName
 
-        if (points.size >= 2) {
-            // Calculate bounds
-            val minLat = points.minOf { it.lat }
-            val maxLat = points.maxOf { it.lat }
-            val minLng = points.minOf { it.lng }
-            val maxLng = points.maxOf { it.lng }
+            org.osmdroid.views.MapView(ctx).apply {
+                setMultiTouchControls(true)
+                setBuiltInZoomControls(false)
+                minZoomLevel = 3.0
+                maxZoomLevel = 20.0
+                setTileSource(org.osmdroid.tileprovider.tilesource.TileSourceFactory.MAPNIK)
 
-            val latRange = (maxLat - minLat).coerceAtLeast(0.0001)
-            val lngRange = (maxLng - minLng).coerceAtLeast(0.0001)
+                val defaultGeoPoint = org.osmdroid.util.GeoPoint(44.4268, 26.1025)
+                controller.setZoom(15.0)
+                controller.setCenter(defaultGeoPoint)
 
-            val padding = 30.dp.toPx()
-            val drawWidth = size.width - padding * 2
-            val drawHeight = size.height - padding * 2
-
-            fun latToY(lat: Double) = padding + drawHeight - ((lat - minLat) / latRange * drawHeight).toFloat()
-            fun lngToX(lng: Double) = padding + ((lng - minLng) / lngRange * drawWidth).toFloat()
-
-            // Draw route shadow
-            val shadowPath = Path()
-            shadowPath.moveTo(lngToX(points[0].lng), latToY(points[0].lat))
-            for (i in 1 until points.size) {
-                shadowPath.lineTo(lngToX(points[i].lng), latToY(points[i].lat))
+                mapViewRef.value = this
             }
-            drawPath(shadowPath, redRoute.copy(alpha = 0.2f), style = Stroke(width = 8.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+        },
+        update = { mapView ->
+            mapView.overlays.clear()
+            val currentPoint = lastLocation?.let { org.osmdroid.util.GeoPoint(it.latitude, it.longitude) }
 
-            // Draw route
-            val routePath = Path()
-            routePath.moveTo(lngToX(points[0].lng), latToY(points[0].lat))
-            for (i in 1 until points.size) {
-                routePath.lineTo(lngToX(points[i].lng), latToY(points[i].lat))
+            if (forceCenterOnLocation && currentPoint != null) {
+                if (points.size >= 2) {
+                    val geoPoints = points.map { org.osmdroid.util.GeoPoint(it.lat, it.lng) }
+
+                    val routeShadow = org.osmdroid.views.overlay.Polyline().apply {
+                        outlinePaint.color = android.graphics.Color.argb(95, 20, 20, 20)
+                        outlinePaint.strokeWidth = 15f
+                        outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
+                        outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
+                        setPoints(geoPoints)
+                    }
+                    mapView.overlays.add(routeShadow)
+
+                    val routeLine = org.osmdroid.views.overlay.Polyline().apply {
+                        outlinePaint.color = android.graphics.Color.rgb(255, 45, 45)
+                        outlinePaint.strokeWidth = 8f
+                        outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
+                        outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
+                        setPoints(geoPoints)
+                    }
+                    mapView.overlays.add(routeLine)
+                }
+
+                if (isTracking) {
+                    val marker = org.osmdroid.views.overlay.Marker(mapView)
+                    marker.position = currentPoint
+                    marker.setAnchor(org.osmdroid.views.overlay.Marker.ANCHOR_CENTER, org.osmdroid.views.overlay.Marker.ANCHOR_CENTER)
+                    val arrowBmp = createArrowBitmap(android.graphics.Color.rgb(0, 122, 255), 28)
+                    marker.icon = android.graphics.drawable.BitmapDrawable(mapView.context.resources, arrowBmp)
+                    marker.setRotation(bearing)
+                    mapView.overlays.add(marker)
+                }
+
+                mapView.controller.setZoom(17.0)
+                mapView.controller.setCenter(currentPoint)
+            } else if (points.size >= 2) {
+                val geoPoints = points.map { org.osmdroid.util.GeoPoint(it.lat, it.lng) }
+
+                val routeShadow = org.osmdroid.views.overlay.Polyline().apply {
+                    outlinePaint.color = android.graphics.Color.argb(95, 20, 20, 20)
+                    outlinePaint.strokeWidth = 15f
+                    outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
+                    outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
+                    setPoints(geoPoints)
+                }
+                mapView.overlays.add(routeShadow)
+
+                val routeLine = org.osmdroid.views.overlay.Polyline().apply {
+                    outlinePaint.color = android.graphics.Color.rgb(255, 45, 45)
+                    outlinePaint.strokeWidth = 8f
+                    outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
+                    outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
+                    setPoints(geoPoints)
+                }
+                mapView.overlays.add(routeLine)
+
+                val ctx = mapView.context
+                if (!isTracking) {
+                    val startMarker = org.osmdroid.views.overlay.Marker(mapView)
+                    startMarker.position = geoPoints.first()
+                    startMarker.setAnchor(org.osmdroid.views.overlay.Marker.ANCHOR_CENTER, org.osmdroid.views.overlay.Marker.ANCHOR_CENTER)
+                    startMarker.icon = android.graphics.drawable.BitmapDrawable(ctx.resources, createCircleBitmap(android.graphics.Color.rgb(76, 175, 80), 16))
+                    mapView.overlays.add(startMarker)
+                }
+
+                if (!isTracking) {
+                    val endMarker = org.osmdroid.views.overlay.Marker(mapView)
+                    endMarker.position = geoPoints.last()
+                    endMarker.setAnchor(org.osmdroid.views.overlay.Marker.ANCHOR_CENTER, org.osmdroid.views.overlay.Marker.ANCHOR_CENTER)
+                    endMarker.icon = android.graphics.drawable.BitmapDrawable(ctx.resources, createCircleBitmap(android.graphics.Color.rgb(255, 45, 45), 16))
+                    mapView.overlays.add(endMarker)
+                }
+
+                if (isTracking && currentPoint != null) {
+                    mapView.controller.setZoom(17.0)
+                    mapView.controller.animateTo(currentPoint)
+                } else {
+                    val bbox = org.osmdroid.util.BoundingBox.fromGeoPoints(geoPoints)
+                    val center = bbox.center
+                    mapView.controller.setCenter(center)
+                    mapView.post {
+                        mapView.zoomToBoundingBox(bbox.increaseByScale(2.0f), true)
+                    }
+                }
+            } else if (points.size == 1) {
+                val geoPoint = org.osmdroid.util.GeoPoint(points[0].lat, points[0].lng)
+                mapView.controller.setZoom(16.0)
+                if (isTracking) {
+                    mapView.controller.animateTo(currentPoint ?: geoPoint)
+                } else {
+                    mapView.controller.setCenter(geoPoint)
+                    val ctx = mapView.context
+                    val marker = org.osmdroid.views.overlay.Marker(mapView)
+                    marker.position = geoPoint
+                    marker.setAnchor(org.osmdroid.views.overlay.Marker.ANCHOR_CENTER, org.osmdroid.views.overlay.Marker.ANCHOR_CENTER)
+                    marker.icon = android.graphics.drawable.BitmapDrawable(ctx.resources, createCircleBitmap(android.graphics.Color.rgb(255, 45, 45), 16))
+                    mapView.overlays.add(marker)
+                }
+            } else if (currentPoint != null) {
+                mapView.controller.setZoom(16.0)
+                if (isTracking) {
+                    mapView.controller.animateTo(currentPoint)
+                } else {
+                    mapView.controller.setCenter(currentPoint)
+                }
             }
-            drawPath(routePath, redRoute, style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
 
-            // Draw start point
-            drawCircle(
-                Color(0xFF4CAF50),
-                radius = 10.dp.toPx(),
-                center = Offset(lngToX(points.first().lng), latToY(points.first().lat))
-            )
-            drawCircle(
-                Color.White,
-                radius = 5.dp.toPx(),
-                center = Offset(lngToX(points.first().lng), latToY(points.first().lat))
-            )
-
-            // Draw current position
-            if (isTracking && points.isNotEmpty()) {
-                val last = points.last()
-                drawCircle(
-                    redRoute,
-                    radius = 12.dp.toPx(),
-                    center = Offset(lngToX(last.lng), latToY(last.lat))
-                )
-                drawCircle(
-                    Color.White,
-                    radius = 6.dp.toPx(),
-                    center = Offset(lngToX(last.lng), latToY(last.lat))
-                )
+            currentPoint?.let { point ->
+                val marker = org.osmdroid.views.overlay.Marker(mapView)
+                marker.position = point
+                marker.setAnchor(org.osmdroid.views.overlay.Marker.ANCHOR_CENTER, org.osmdroid.views.overlay.Marker.ANCHOR_CENTER)
+                if (isTracking) {
+                    val arrowBmp = createArrowBitmap(android.graphics.Color.rgb(0, 122, 255), 28)
+                    marker.icon = android.graphics.drawable.BitmapDrawable(mapView.context.resources, arrowBmp)
+                    marker.setRotation(bearing)
+                } else if (points.isNotEmpty()) {
+                    marker.icon = android.graphics.drawable.BitmapDrawable(
+                        mapView.context.resources,
+                        createCircleBitmap(android.graphics.Color.rgb(255, 45, 45), 16)
+                    )
+                }
+                if (isTracking || points.isNotEmpty()) {
+                    mapView.overlays.add(marker)
+                }
             }
-        } else if (isTracking) {
-            // Pulsing indicator while waiting for first point
-            val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-            val pulse by infiniteTransition.animateFloat(
-                initialValue = 0.5f,
-                targetValue = 1f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(1000, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "pulseAnim"
-            )
-            drawCircle(
-                redRoute.copy(alpha = pulse),
-                radius = 16.dp.toPx(),
-                center = Offset(size.width / 2, size.height / 2)
-            )
-            drawCircle(
-                Color.White,
-                radius = 8.dp.toPx(),
-                center = Offset(size.width / 2, size.height / 2)
-            )
-        }
+
+            val scaleBar = org.osmdroid.views.overlay.ScaleBarOverlay(mapView)
+            scaleBar.setScaleBarOffset(16, 16)
+            mapView.overlays.add(scaleBar)
+            mapView.invalidate()
+        },
+        modifier = modifier
+    )
+}
+
+private fun createCircleBitmap(color: Int, sizeDp: Int): Bitmap {
+    val sizePx = sizeDp * 3
+    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = AndroidCanvas(bitmap)
+    val paint = android.graphics.Paint().apply {
+        this.color = color
+        isAntiAlias = true
+        style = android.graphics.Paint.Style.FILL
     }
+    canvas.drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f, paint)
+    paint.color = android.graphics.Color.WHITE
+    paint.style = android.graphics.Paint.Style.STROKE
+    paint.strokeWidth = 2f
+    canvas.drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f - 2f, paint)
+    return bitmap
+}
+
+private fun createArrowBitmap(color: Int, sizeDp: Int): Bitmap {
+    val sizePx = sizeDp * 3
+    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = AndroidCanvas(bitmap)
+    val paint = android.graphics.Paint().apply {
+        this.color = color
+        isAntiAlias = true
+        style = android.graphics.Paint.Style.FILL
+    }
+    val path = android.graphics.Path()
+    val cx = sizePx / 2f
+    val cy = sizePx / 2f
+    path.moveTo(cx, cy - sizePx * 0.45f)
+    path.lineTo(cx + sizePx * 0.35f, cy + sizePx * 0.35f)
+    path.lineTo(cx, cy + sizePx * 0.15f)
+    path.lineTo(cx - sizePx * 0.35f, cy + sizePx * 0.35f)
+    path.close()
+    canvas.drawPath(path, paint)
+    paint.color = android.graphics.Color.WHITE
+    paint.style = android.graphics.Paint.Style.STROKE
+    paint.strokeWidth = 2f
+    canvas.drawPath(path, paint)
+    return bitmap
 }
 
 @Composable
@@ -690,46 +1308,249 @@ private fun StatCard(
     cardBg: Color,
     accent: Color,
     textPrimary: Color,
-    textSecondary: Color
+    textSecondary: Color,
+    iconBgColor: Color = accent,
+    isPrimary: Boolean = false,
+    valueColor: Color = textPrimary
 ) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg)
+        colors = CardDefaults.cardColors(containerColor = if (isPrimary) Color(0xFF0D0D0D) else cardBg)
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(if (isPrimary) 16.dp else 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(accent.copy(alpha = 0.12f)),
+                    .size(if (isPrimary) 44.dp else 36.dp)
+                    .clip(CircleShape)
+                    .background(iconBgColor.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = iconBgColor,
+                    modifier = Modifier.size(if (isPrimary) 22.dp else 18.dp)
+                )
             }
             Spacer(Modifier.width(10.dp))
             Column {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         value,
-                        fontSize = 16.sp,
+                        fontSize = if (isPrimary) 30.sp else 16.sp,
                         fontWeight = FontWeight.Black,
-                        color = textPrimary
+                        color = if (isPrimary) Color.White else valueColor
                     )
                     if (unit.isNotEmpty()) {
                         Spacer(Modifier.width(3.dp))
                         Text(
                             unit,
-                            fontSize = 11.sp,
-                            color = textSecondary,
-                            modifier = Modifier.padding(bottom = 2.dp)
+                            fontSize = if (isPrimary) 13.sp else 11.sp,
+                            color = if (isPrimary) Color.White.copy(alpha = 0.6f) else textSecondary,
+                            modifier = Modifier.padding(bottom = if (isPrimary) 4.dp else 2.dp)
                         )
                     }
                 }
-                Text(label, fontSize = 11.sp, color = textSecondary)
+                Text(
+                    label,
+                    fontSize = if (isPrimary) 12.sp else 11.sp,
+                    color = if (isPrimary) Color.White.copy(alpha = 0.5f) else textSecondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RouteDetailContent(
+    route: CardioRouteEntity,
+    accent: Color,
+    cardBg: Color,
+    textPrimary: Color,
+    textSecondary: Color,
+    strings: LanguageManager.Strings
+) {
+    val routePoints = remember(route) {
+        route.routePoints.split(";").filter { it.contains(",") }.mapNotNull { pair ->
+            val parts = pair.split(",")
+            if (parts.size == 2) {
+                val lat = parts[0].toDoubleOrNull()
+                val lng = parts[1].toDoubleOrNull()
+                if (lat != null && lng != null) GpsPoint(lat, lng, 0L) else null
+            } else null
+        }
+    }
+
+    val stepsEstimate = (route.distanceKm * 1312).toInt().coerceIn(0, 99999)
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            strings.savedRoutes.uppercase(),
+            fontSize = 12.sp,
+            letterSpacing = 2.sp,
+            color = accent,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(Modifier.height(12.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = cardBg)
+        ) {
+            Box(modifier = Modifier.height(300.dp).fillMaxWidth()) {
+                RouteCanvas(
+                    points = routePoints,
+                    isTracking = false,
+                    lastLocation = null,
+                    modifier = Modifier.fillMaxSize()
+                )
+                if (routePoints.isEmpty()) {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            Icons.Default.Map,
+                            contentDescription = null,
+                            tint = textSecondary.copy(alpha = 0.4f),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "No route data",
+                            color = textSecondary,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            StatCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.Speed,
+                value = String.format(Locale.US, "%.2f", route.distanceKm),
+                unit = "km",
+                label = strings.distance,
+                cardBg = cardBg,
+                accent = accent,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary
+            )
+            StatCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.Timer,
+                value = formatDurationShort(route.durationMs),
+                unit = "",
+                label = strings.duration,
+                cardBg = cardBg,
+                accent = accent,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary
+            )
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            StatCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.Speed,
+                value = String.format(Locale.US, "%.1f", route.avgSpeedKmh),
+                unit = "km/h",
+                label = strings.speed,
+                cardBg = cardBg,
+                accent = accent,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary
+            )
+            StatCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.LocalFireDepartment,
+                value = String.format(Locale.US, "%.0f", route.caloriesBurned),
+                unit = "kcal",
+                label = strings.caloriesBurned,
+                cardBg = cardBg,
+                accent = accent,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary
+            )
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            StatCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.DirectionsRun,
+                value = "$stepsEstimate",
+                unit = "",
+                label = "Steps",
+                cardBg = cardBg,
+                accent = accent,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary
+            )
+            StatCard(
+                modifier = Modifier.weight(1f),
+                icon = Icons.Default.FitnessCenter,
+                value = routePoints.size.toString(),
+                unit = "pts",
+                label = "Route Points",
+                cardBg = cardBg,
+                accent = accent,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = cardBg)
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text(
+                    route.name,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = textPrimary
+                )
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(route.startTime)),
+                        fontSize = 12.sp,
+                        color = textSecondary
+                    )
+                    Text(
+                        route.activityType.replaceFirstChar { it.uppercase() },
+                        fontSize = 12.sp,
+                        color = accent
+                    )
+                }
             }
         }
     }
@@ -738,12 +1559,12 @@ private fun StatCard(
 @Composable
 private fun SavedRoutesSection(
     routes: List<CardioRouteEntity>,
-    isDark: Boolean,
     accent: Color,
     cardBg: Color,
     textPrimary: Color,
     textSecondary: Color,
     strings: LanguageManager.Strings,
+    onRouteClick: (CardioRouteEntity) -> Unit,
     onDelete: (CardioRouteEntity) -> Unit
 ) {
     Column(modifier = Modifier.padding(16.dp)) {
@@ -779,7 +1600,8 @@ private fun SavedRoutesSection(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
+                        .padding(bottom = 8.dp)
+                        .clickable { onRouteClick(route) },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = cardBg)
                 ) {
@@ -812,9 +1634,9 @@ private fun SavedRoutesSection(
                             Text(route.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = textPrimary)
                             Spacer(Modifier.height(2.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text("${String.format("%.2f", route.distanceKm)} km", fontSize = 11.sp, color = textSecondary)
+                                Text("${String.format(Locale.US, "%.2f", route.distanceKm)} km", fontSize = 11.sp, color = textSecondary)
                                 Text(formatDurationShort(route.durationMs), fontSize = 11.sp, color = textSecondary)
-                                Text("${String.format("%.0f", route.caloriesBurned)} kcal", fontSize = 11.sp, color = textSecondary)
+                                Text("${String.format(Locale.US, "%.0f", route.caloriesBurned)} kcal", fontSize = 11.sp, color = textSecondary)
                             }
                             Spacer(Modifier.height(2.dp))
                             Text(
@@ -841,7 +1663,7 @@ private fun SavedRoutesSection(
                                 colors = ButtonDefaults.buttonColors(containerColor = RecoveryRed),
                                 shape = RoundedCornerShape(10.dp)
                             ) {
-                                Text(strings.delete, color = androidx.compose.ui.graphics.Color.White)
+                                Text(strings.delete, color = Color.White)
                             }
                         },
                         dismissButton = {
@@ -861,6 +1683,6 @@ private fun formatDurationShort(ms: Long): String {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
-    return if (hours > 0) String.format("%d:%02d:%02d", hours, minutes, seconds)
-    else String.format("%02d:%02d", minutes, seconds)
+    return if (hours > 0) String.format(Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
+    else String.format(Locale.US, "%02d:%02d", minutes, seconds)
 }

@@ -52,7 +52,8 @@ data class BadgeEntity(
     @PrimaryKey val key: String,
     val title: String,
     val description: String,
-    val icon: String = ""
+    val icon: String = "",
+    val hint: String = ""
 )
 
 @Entity(tableName = "user_badges")

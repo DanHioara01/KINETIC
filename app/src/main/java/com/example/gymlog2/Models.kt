@@ -52,3 +52,40 @@ data class ProgresLunar(
     val luna: String,
     val greutateMaxima: Double
 )
+
+data class DeloadAdjustedValues(
+    val originalWeight: Double,
+    val originalSets: Int,
+    val originalReps: Int,
+    val deloadWeight: Double,
+    val deloadSets: Int,
+    val deloadReps: Int,
+    val weightReductionPercent: Int,
+    val isCompound: Boolean
+)
+
+data class DeloadWeekEntity(
+    val id: Long = 0,
+    val userId: String = "",
+    val startDate: Long = 0L,
+    val endDate: Long = 0L,
+    val reason: String = "",
+    val reductionFactor: Double = 0.65,
+    val completed: Boolean = false
+)
+
+data class DeloadExerciseReduction(
+    val exerciseName: String = "",
+    val originalWeight: Double = 0.0,
+    val originalSets: Int = 0,
+    val newWeight: Double = 0.0,
+    val newSets: Int = 0,
+    val weightReductionPercent: Int = 0,
+    val setsReduction: Int = 0,
+    val isCompound: Boolean = false
+)
+
+data class DeloadTrigger(
+    val reason: String = "",
+    val triggeredAt: Long = System.currentTimeMillis()
+)

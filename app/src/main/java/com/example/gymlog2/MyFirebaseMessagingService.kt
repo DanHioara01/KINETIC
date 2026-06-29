@@ -23,14 +23,25 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     private fun ensureChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
+            val manager = getSystemService(NotificationManager::class.java)
+
+            val kineticChannel = NotificationChannel(
                 CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Notifications from Kinetic"
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 300, 200, 300)
             }
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+            manager.createNotificationChannel(kineticChannel)
+
+            val friendChannel = NotificationChannel(
+                "friend_requests", "Friend Requests", NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifications for incoming friend requests"
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 300, 200, 300)
+            }
+            manager.createNotificationChannel(friendChannel)
         }
     }
 
@@ -67,36 +78,66 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val senderName = remoteMessage.data["fromUserName"] ?: ""
         val fromUserId = remoteMessage.data["fromUserId"] ?: ""
 
-        if (type == "friend_request") {
-            val notificationHelper = NotificationHelper(applicationContext)
-            notificationHelper.showFriendRequestNotification(
-                targetUserId = UserProfileManager(applicationContext).getOwnUserId(),
-                senderName = senderName.ifEmpty { body }
-            )
-        } else {
-            val intent = Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra("open_friends", true)
+        when (type) {
+            "friend_request" -> {
+                val notificationHelper = NotificationHelper(applicationContext)
+                notificationHelper.showFriendRequestNotification(
+                    targetUserId = UserProfileManager(applicationContext).getOwnUserId(),
+                    senderName = senderName.ifEmpty { body }
+                )
             }
-            val pendingIntent = PendingIntent.getActivity(
-                this,
-                System.currentTimeMillis().toInt(),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(title)
-                .setContentText(body)
-                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setDefaults(NotificationCompat.DEFAULT_ALL)
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true)
-                .build()
-            try {
-                NotificationManagerCompat.from(this).notify((System.currentTimeMillis() % Int.MAX_VALUE).toInt(), notification)
-            } catch (_: SecurityException) { }
+            "friend_accepted" -> {
+                val intent = Intent(this, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    putExtra("open_friends", true)
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    this,
+                    System.currentTimeMillis().toInt(),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle(title)
+                    .setContentText(body)
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setDefaults(NotificationCompat.DEFAULT_ALL)
+                    .setVibrate(longArrayOf(0, 300, 200, 300))
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .build()
+                try {
+                    NotificationManagerCompat.from(this).notify(2001, notification)
+                } catch (_: SecurityException) { }
+            }
+            else -> {
+                val intent = Intent(this, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    putExtra("open_friends", true)
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    this,
+                    System.currentTimeMillis().toInt(),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle(title)
+                    .setContentText(body)
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setDefaults(NotificationCompat.DEFAULT_ALL)
+                    .setVibrate(longArrayOf(0, 300, 200, 300))
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .build()
+                try {
+                    NotificationManagerCompat.from(this).notify((System.currentTimeMillis() % Int.MAX_VALUE).toInt(), notification)
+                } catch (_: SecurityException) { }
+            }
         }
     }
 }

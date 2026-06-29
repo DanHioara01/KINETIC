@@ -11,7 +11,7 @@ Run:
 Environment variables:
   PROVIDER=groq
   GROQ_API_KEY=gsk_...
-  MODEL=llama-3.3-70b-versatile
+  MODEL=llama-3.1-8b-instant
 """
 
 import os
@@ -22,10 +22,18 @@ from pydantic import BaseModel
 from typing import List
 
 app = FastAPI(title="Kinetic AI Trainer")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://kinetic-backend-3ff6.onrender.com",
+        "http://localhost:8000",
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-MODEL = os.getenv("MODEL", "llama-3.3-70b-versatile")
+MODEL = os.getenv("MODEL", "llama-3.1-8b-instant")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 PROVIDER = os.getenv("PROVIDER", "groq")
 

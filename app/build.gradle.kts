@@ -94,8 +94,8 @@ dependencies {
     // OkHttp (for OpenFoodFacts)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    // Google Maps SDK
-    implementation("com.google.android.gms:play-services-maps:19.0.0")
+    // OSMDroid (satellite map)
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
 
     // Google Play Services Location (GPS tracking)
     implementation("com.google.android.gms:play-services-location:21.3.0")

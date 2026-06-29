@@ -42,7 +42,7 @@ export const onFriendRequestCreated = functions.firestore
         priority: "high",
         notification: {
           channelId: "friend_requests",
-          priority: "high",
+          priority: "max",
         },
       },
     };

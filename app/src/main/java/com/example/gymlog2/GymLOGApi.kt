@@ -62,6 +62,9 @@ interface GymLOGApi {
     @GET("posts/{postId}/likes/count")
     suspend fun getLikesCount(@Path("postId") postId: Long): Map<String, Int>
 
+    @GET("posts/{postId}/liked/{userId}")
+    suspend fun isLikedByUser(@Path("postId") postId: Long, @Path("userId") userId: String): Map<String, Boolean>
+
     // Leaderboard
     @POST("leaderboard")
     suspend fun upsertLeaderboardEntry(@Body body: Map<String, Any>): Map<String, Any>

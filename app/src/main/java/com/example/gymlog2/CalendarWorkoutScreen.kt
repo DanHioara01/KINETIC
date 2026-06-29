@@ -27,15 +27,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gymlog2.ui.theme.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarWorkoutScreen(onBackClick: () -> Unit, onWorkoutDeleted: () -> Unit = {}) {
+fun CalendarWorkoutScreen(onBackClick: () -> Unit, onWorkoutDeleted: () -> Unit = {}, userId: String = "simple") {
     val context = LocalContext.current
     val db = AppDatabase.getDatabase(context)
     val strings = LanguageManager.getStrings(context)
+    val scope = rememberCoroutineScope()
 
     var currentMonth by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.MONTH)) }
     var currentYear by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.YEAR)) }
@@ -45,10 +47,10 @@ fun CalendarWorkoutScreen(onBackClick: () -> Unit, onWorkoutDeleted: () -> Unit 
     var workoutGroupMap by remember { mutableStateOf<Map<Int, Set<String>>>(emptyMap()) }
     var deleteTrigger by remember { mutableIntStateOf(0) }
 
-    val monthNames = listOf(
+    val monthNames = remember(strings) { listOf(
         strings.jan, strings.feb, strings.mar, strings.apr, strings.may, strings.jun,
         strings.jul, strings.aug, strings.sep, strings.oct, strings.nov, strings.dec
-    )
+    ) }
 
     LaunchedEffect(currentMonth, currentYear, deleteTrigger) {
         withContext(Dispatchers.IO) {
@@ -63,7 +65,7 @@ fun CalendarWorkoutScreen(onBackClick: () -> Unit, onWorkoutDeleted: () -> Unit 
             cal.set(Calendar.MILLISECOND, 999)
             val monthEnd = cal.timeInMillis
 
-            val workouts = db.antrenamentDao().getWorkoutsInPeriod("simple", monthStart, monthEnd)
+            val workouts = db.antrenamentDao().getWorkoutsInPeriod(userId, monthStart, monthEnd)
             val days = mutableSetOf<Int>()
             val groupMap = mutableMapOf<Int, MutableSet<String>>()
             for (w in workouts) {
@@ -88,7 +90,7 @@ fun CalendarWorkoutScreen(onBackClick: () -> Unit, onWorkoutDeleted: () -> Unit 
             cal.set(Calendar.SECOND, 59)
             cal.set(Calendar.MILLISECOND, 999)
             val dayEnd = cal.timeInMillis
-            selectedDayWorkouts = db.antrenamentDao().getWorkoutsInPeriod("simple", dayStart, dayEnd)
+            selectedDayWorkouts = db.antrenamentDao().getWorkoutsInPeriod(userId, dayStart, dayEnd)
         }
     }
 
@@ -266,14 +268,14 @@ fun CalendarWorkoutScreen(onBackClick: () -> Unit, onWorkoutDeleted: () -> Unit 
                             confirmButton = {
                                 TextButton(onClick = {
                                     showDeleteDialog = false
-                                    kotlinx.coroutines.runBlocking {
+                                                    scope.launch {
                                         withContext(Dispatchers.IO) {
                                             db.exercitiuDao().deleteForAntrenament(workout.id)
                                             db.antrenamentDao().delete(workout)
                                         }
+                                        deleteTrigger++
+                                        onWorkoutDeleted()
                                     }
-                                    deleteTrigger++
-                                    onWorkoutDeleted()
                                 }) {
                                     Text(strings.delete ?: "Delete", color = AccentRed, fontWeight = FontWeight.Bold)
                                 }
@@ -334,9 +336,10 @@ fun CalendarWorkoutScreen(onBackClick: () -> Unit, onWorkoutDeleted: () -> Unit 
                                 }
                             }
 
-                            val exercises = remember(workout.id) {
-                                kotlinx.coroutines.runBlocking {
-                                    db.exercitiuDao().getForAntrenament(workout.id)
+                            var exercises by remember(workout.id) { mutableStateOf(emptyList<ExercitiuEntity>()) }
+                            LaunchedEffect(workout.id) {
+                                withContext(Dispatchers.IO) {
+                                    exercises = db.exercitiuDao().getForAntrenament(workout.id)
                                 }
                             }
                             if (exercises.isNotEmpty()) {

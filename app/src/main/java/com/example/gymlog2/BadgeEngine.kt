@@ -3,14 +3,14 @@ package com.example.gymlog2
 class BadgeEngine(private val db: AppDatabase) {
     companion object {
         val ALL_BADGES = listOf(
-            BadgeEntity(key = "first_workout", title = "First Workout", description = "Completed your first workout", icon = "🏋️"),
-            BadgeEntity(key = "7day_streak", title = "7-Day Streak", description = "Trained 7 days in a row", icon = "🔥"),
-            BadgeEntity(key = "30day_streak", title = "30-Day Streak", description = "Trained 30 days in a row", icon = "🔥"),
-            BadgeEntity(key = "pr_machine", title = "PR Machine", description = "Set 10 personal records", icon = "🏆"),
-            BadgeEntity(key = "century_club", title = "Century Club", description = "Logged 100 workouts", icon = "💯"),
-            BadgeEntity(key = "social_butterfly", title = "Social Butterfly", description = "Added 10 friends", icon = "🦋"),
-            BadgeEntity(key = "helping_hand", title = "Helping Hand", description = "Commented on 10 posts", icon = "🤝"),
-            BadgeEntity(key = "1000kg_club", title = "1000kg Club", description = "Lifted 1000kg total in one session", icon = "💪")
+            BadgeEntity(key = "first_workout", title = "First Workout", description = "Completed your first workout", icon = "🏋️", hint = "Loghează primul tău antrenament"),
+            BadgeEntity(key = "7day_streak", title = "7-Day Streak", description = "Trained 7 days in a row", icon = "🔥", hint = "Antrenează-te 7 zile consecutive"),
+            BadgeEntity(key = "30day_streak", title = "30-Day Streak", description = "Trained 30 days in a row", icon = "🔥", hint = "Antrenează-te 30 zile consecutive"),
+            BadgeEntity(key = "pr_machine", title = "PR Machine", description = "Set 10 personal records", icon = "🏆", hint = "Setează 10 recorduri personale"),
+            BadgeEntity(key = "century_club", title = "Century Club", description = "Logged 100 workouts", icon = "💯", hint = "Loghează 100 de antrenamente"),
+            BadgeEntity(key = "social_butterfly", title = "Social Butterfly", description = "Added 10 friends", icon = "🦋", hint = "Adaugă 10 prieteni"),
+            BadgeEntity(key = "helping_hand", title = "Helping Hand", description = "Commented on 10 posts", icon = "🤝", hint = "Comentează la 10 postări"),
+            BadgeEntity(key = "1000kg_club", title = "1000kg Club", description = "Lifted 1000kg total in one session", icon = "💪", hint = "Ridică 1000kg total într-o sesiune")
         )
     }
 

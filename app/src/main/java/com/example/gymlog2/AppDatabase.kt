@@ -151,6 +151,16 @@ data class RestDayEntity(
     val completed: Boolean = false
 )
 
+@Entity(tableName = "ai_chat_history")
+data class AiChatHistoryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val userId: String,
+    val sessionId: Long = 0,
+    val role: String,
+    val message: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
 data class MostFrequentExercise(
     val numeExercitiu: String,
     val cnt: Int
@@ -225,11 +235,19 @@ interface ExercitiuDao {
     @Query("""
         SELECT e.* FROM exercitii e
         INNER JOIN antrenamente a ON e.antrenamentId = a.id
+        WHERE a.userId = 'simple' AND e.numeExercitiu = :exerciseName
+        ORDER BY a.data DESC
+    """)
+    suspend fun getHistoryForExerciseSimple(exerciseName: String): List<ExercitiuEntity>
+
+    @Query("""
+        SELECT e.* FROM exercitii e
+        INNER JOIN antrenamente a ON e.antrenamentId = a.id
         WHERE e.numeExercitiu = :exerciseName
         AND DATE(a.data / 1000, 'unixepoch') = :todayKey
         ORDER BY a.data DESC
     """)
-    abstract suspend fun getHistoryForTodayExerciseSimple(exerciseName: String, todayKey: String): List<ExercitiuEntity>
+    suspend fun getHistoryForTodayExerciseSimple(exerciseName: String, todayKey: String): List<ExercitiuEntity>
 
     @Query("""
         SELECT e.* FROM exercitii e
@@ -238,7 +256,36 @@ interface ExercitiuDao {
         ORDER BY e.greutateKg DESC LIMIT 1
     """)
     suspend fun getBestSetForExercise(userId: String, exerciseName: String): ExercitiuEntity?
+
+    @Query("""
+        SELECT DISTINCT a.* FROM antrenamente a
+        INNER JOIN exercitii e ON e.antrenamentId = a.id
+        WHERE a.userId = :userId AND e.numeExercitiu = :exerciseName
+        AND a.data BETWEEN :startTime AND :endTime
+        ORDER BY a.data DESC
+    """)
+    suspend fun getWorkoutsWithExercise(userId: String, exerciseName: String, startTime: Long, endTime: Long): List<AntrenamentEntity>
+
+    @Query("""
+        SELECT DISTINCT e.numeExercitiu FROM exercitii e
+        INNER JOIN antrenamente a ON e.antrenamentId = a.id
+        WHERE a.userId = :userId AND a.data BETWEEN :startTime AND :endTime
+        ORDER BY e.numeExercitiu
+    """)
+    suspend fun getDistinctExerciseNames(userId: String, startTime: Long, endTime: Long): List<String>
+
+    @Query("SELECT COUNT(*) FROM exercitii WHERE antrenamentId = :antrenamentId")
+    suspend fun getSetCountForWorkout(antrenamentId: Long): Int
+
+    @Query("""
+        SELECT antrenamentId, COUNT(*) as cnt FROM exercitii
+        WHERE antrenamentId IN (:workoutIds)
+        GROUP BY antrenamentId
+    """)
+    suspend fun getSetCountsForWorkouts(workoutIds: List<Long>): List<SetCountResult>
 }
+
+data class SetCountResult(val antrenamentId: Long, val cnt: Int)
 
 @Dao
 interface ExerciseDefinitionDao {
@@ -400,6 +447,15 @@ interface CardioRouteDao {
 
     @Query("SELECT SUM(caloriesBurned) FROM cardio_routes WHERE userId = :userId")
     suspend fun getTotalCalories(userId: String): Double?
+
+    @Query("SELECT SUM(distanceKm) FROM cardio_routes WHERE userId = :userId AND startTime BETWEEN :start AND :end")
+    suspend fun getTotalDistanceBetween(userId: String, start: Long, end: Long): Double?
+
+    @Query("SELECT SUM(durationMs) FROM cardio_routes WHERE userId = :userId AND startTime BETWEEN :start AND :end")
+    suspend fun getTotalDurationBetween(userId: String, start: Long, end: Long): Long?
+
+    @Query("SELECT SUM(caloriesBurned) FROM cardio_routes WHERE userId = :userId AND startTime BETWEEN :start AND :end")
+    suspend fun getTotalCaloriesBetween(userId: String, start: Long, end: Long): Double?
 }
 
 @Dao
@@ -427,6 +483,27 @@ interface RestDayDao {
 
     @Query("UPDATE rest_days SET completed = 1 WHERE id = :id")
     suspend fun markCompleted(id: Long)
+}
+
+@Dao
+interface AiChatHistoryDao {
+    @Insert
+    suspend fun insert(message: AiChatHistoryEntity): Long
+
+    @Query("SELECT * FROM ai_chat_history WHERE userId = :userId ORDER BY timestamp ASC")
+    suspend fun getAllForUser(userId: String): List<AiChatHistoryEntity>
+
+    @Query("SELECT * FROM ai_chat_history WHERE userId = :userId AND sessionId = :sessionId ORDER BY timestamp ASC")
+    suspend fun getForSession(userId: String, sessionId: Long): List<AiChatHistoryEntity>
+
+    @Query("SELECT DISTINCT sessionId FROM ai_chat_history WHERE userId = :userId ORDER BY sessionId DESC")
+    suspend fun getSessionIds(userId: String): List<Long>
+
+    @Query("SELECT * FROM ai_chat_history WHERE userId = :userId AND sessionId = :sessionId AND role = 'user' ORDER BY timestamp ASC LIMIT 1")
+    suspend fun getFirstUserMessage(userId: String, sessionId: Long): AiChatHistoryEntity?
+
+    @Query("DELETE FROM ai_chat_history WHERE userId = :userId")
+    suspend fun deleteAllForUser(userId: String)
 }
 
 @Dao
@@ -471,9 +548,10 @@ interface ExerciseMetadataDao {
         BiometricEntity::class,
         FoodEntity::class,
         CardioRouteEntity::class,
-        RestDayEntity::class
+        RestDayEntity::class,
+        AiChatHistoryEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -500,6 +578,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun foodDao(): FoodDao
     abstract fun cardioRouteDao(): CardioRouteDao
     abstract fun restDayDao(): RestDayDao
+    abstract fun aiChatHistoryDao(): AiChatHistoryDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -642,6 +721,21 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS ai_chat_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        userId TEXT NOT NULL,
+                        sessionId INTEGER NOT NULL DEFAULT 0,
+                        role TEXT NOT NULL,
+                        message TEXT NOT NULL,
+                        timestamp INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -649,7 +743,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "kinetic.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

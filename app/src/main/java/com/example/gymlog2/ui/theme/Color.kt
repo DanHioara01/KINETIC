@@ -2,26 +2,37 @@ package com.example.gymlog2.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Volcanico = Color(0xFFFF4103)
-val VolcanicoDark = Color(0xFFE03A00)
-val VolcanicoLight = Color(0xFFFF6A33)
+val Ember = Color(0xFFE63030)
+val EmberDark = Color(0xFFB71C1C)
+val EmberLight = Color(0xFFFF5252)
+val DeepTealBlack = Color(0xFF000000)
+val DarkTeal = Color(0xFF0A0A0A)
+val MediumTeal = Color(0xFF1A1A1A)
+val TealAccent = Color(0xFF2A2A2A)
+val Cream = Color(0xFFF5EDDA)
+val LightCream = Color(0xFFF7F0E6)
+val TanGold = Color(0xFFC4A882)
 
-val Noturno = Color(0xFF001621)
-val NoturnoLight = Color(0xFF0A2535)
-val NoturnoMedium = Color(0xFF14334A)
-val NoturnoSurface = Color(0xFF0D2030)
-val NoturnoCard = Color(0xFF0A1E2D)
-val NoturnoDivider = Color(0xFF1E3A4F)
-val NoturnoTextMuted = Color(0xFF8A9BAA)
+val Volcanico = Ember
+val VolcanicoDark = EmberDark
+val VolcanicoLight = EmberLight
 
-val AccentRed = Volcanico
-val AccentPurple = Color(0xFF1A4060)
+val Noturno = DeepTealBlack
+val NoturnoLight = DarkTeal
+val NoturnoMedium = MediumTeal
+val NoturnoSurface = DarkTeal
+val NoturnoCard = DarkTeal
+val NoturnoDivider = MediumTeal
+val NoturnoTextMuted = Cream.copy(alpha = 0.55f)
 
-val DarkBackground = Noturno
-val DarkCard = NoturnoCard
-val DarkSurface = NoturnoSurface
-val DarkSurfaceVariant = NoturnoLight
-val DarkDivider = NoturnoDivider
+val AccentRed = Ember
+val AccentPurple = MediumTeal
+
+val DarkBackground = DeepTealBlack
+val DarkCard = DarkTeal
+val DarkSurface = DarkTeal
+val DarkSurfaceVariant = MediumTeal
+val DarkDivider = MediumTeal
 
 val LightBackground = Color(0xFFF0F4F7)
 val LightCard = Color(0xFFFFFFFF)
@@ -29,46 +40,46 @@ val LightSurface = Color(0xFFFFFFFF)
 val LightTextPrimary = Color(0xFF0A1628)
 val LightTextSecondary = Color(0xFF5A6B7A)
 val LightDividerGray = Color(0xFFDDE4EA)
-val LightPrimaryRed = Volcanico
+val LightPrimaryRed = Ember
 
-val TextWarmWhite = Color(0xFFF0E8E4)
-val TextGrayRed = NoturnoTextMuted
-val TextTertiary = Color(0xFF3A5060)
+val TextWarmWhite = Cream
+val TextGrayRed = Cream.copy(alpha = 0.55f)
+val TextTertiary = MediumTeal
 
-val WhiteText = TextWarmWhite
-val GrayText = TextGrayRed
+val WhiteText = Cream
+val GrayText = Cream.copy(alpha = 0.55f)
 
 val RecoveryGreen = Color(0xFF4CAF50)
 val RecoveryYellow = Color(0xFFFFEB3B)
 val RecoveryOrange = Color(0xFFFF9800)
-val RecoveryRed = AccentRed
-val RecoveryTrack = NoturnoDivider
-val RecoveryTrackLight = NoturnoLight
+val RecoveryRed = Ember
+val RecoveryTrack = MediumTeal
+val RecoveryTrackLight = DarkTeal
 val GoldPR = Color(0xFFFFD700)
-val IconBackground = NoturnoLight
+val IconBackground = DarkTeal
 val LightIconBackground = Color(0xFFF0F0F0)
-val DarkRed = Color(0xFFB71C1C)
-val Red = AccentRed
-val DarkCardHover = NoturnoMedium
+val DarkRed = EmberDark
+val Red = Ember
+val DarkCardHover = MediumTeal
 val LightCardHover = Color(0xFFF8F8F8)
 val TimerGreen = Color(0xFF00E676)
 val BestSetGold = Color(0xFFFFD700)
 
-val DrawerHeaderDark = Noturno
+val DrawerHeaderDark = DeepTealBlack
 val DrawerHeaderLight = Color(0xFFFFFFFF)
-val DrawerItemSelectedDark = Color(0xFF0D2A40)
+val DrawerItemSelectedDark = DarkTeal
 val DrawerItemSelectedLight = Color(0xFFFFEBEE)
 val DrawerOverlay = Color(0x80000000)
 val GoogleBlue = Color(0xFF4285F4)
 val FacebookBlue = Color(0xFF1877F2)
-val GuestPurple = AccentPurple
-val AccentTeal = Color(0xFF00BFA5)
-val LoginGradientStart = Volcanico
-val LoginGradientEnd = Color(0xFFB71C1C)
-val SubtleGray = NoturnoTextMuted
-val CardStrokeDark = NoturnoDivider
+val GuestPurple = MediumTeal
+val AccentTeal = MediumTeal
+val LoginGradientStart = Ember
+val LoginGradientEnd = EmberDark
+val SubtleGray = Cream.copy(alpha = 0.55f)
+val CardStrokeDark = MediumTeal
 val CardStrokeLight = Color(0xFFE8E8E8)
-val LanguageFlagBg = Noturno
+val LanguageFlagBg = DeepTealBlack
 
-val LightRed = AccentRed
+val LightRed = Ember
 val DividerGray = DarkDivider

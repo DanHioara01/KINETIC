@@ -219,11 +219,17 @@ class AntrenamentRepository(private val db: AppDatabase) {
     }
 
     suspend fun getIstoricExercitiu(exerciseName: String): List<ExercitiuEntity> {
-        return db.exercitiuDao().getHistoryForExerciseSimple(exerciseName)
+        val cal = Calendar.getInstance()
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        val todayKey = fmt.format(cal.time)
+        return db.exercitiuDao().getHistoryForTodayExerciseSimple(exerciseName, todayKey)
     }
 
     suspend fun getStatisticiExercitiu(exerciseName: String): ExerciseStats {
-        val history = db.exercitiuDao().getHistoryForExerciseSimple(exerciseName)
+        val cal = Calendar.getInstance()
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        val todayKey = fmt.format(cal.time)
+        val history = db.exercitiuDao().getHistoryForTodayExerciseSimple(exerciseName, todayKey)
         val maxGreutate = history.maxOfOrNull { it.greutateKg } ?: 0.0
         val maxRepetari = history.maxOfOrNull { it.repetari } ?: 0
         val maxVolumSet = history.maxOfOrNull { it.greutateKg * it.repetari } ?: 0.0
@@ -332,5 +338,59 @@ class AntrenamentRepository(private val db: AppDatabase) {
             "Gat & Trapezi" -> 48
             else -> 48
         }
+    }
+
+    fun shouldTriggerDeload(userId: String, intervalWeeks: Int): DeloadTrigger? {
+        return null
+    }
+
+    fun getDeloadHistory(userId: String): List<DeloadWeekEntity> {
+        return emptyList()
+    }
+
+    fun getDeloadReason(trigger: DeloadTrigger?): String {
+        return trigger?.reason ?: "General deload"
+    }
+
+    fun startDeload(userId: String, reason: String, reductionFactor: Double): Long {
+        return 0L
+    }
+
+    fun getActiveDeload(userId: String): DeloadWeekEntity? {
+        return null
+    }
+
+    fun applyDeloadReduction(maxWeight: Double, setCount: Int, avgReps: Int, exerciseName: String): DeloadExerciseReduction {
+        val reductionPercent = 35
+        val newWeight = maxWeight * (1.0 - reductionPercent / 100.0)
+        val newSets = (setCount * 0.6).toInt().coerceAtLeast(2)
+        val isCompound = exerciseName in listOf("Bench Press", "Squat", "Deadlift", "Barbell Row", "Overhead Press")
+        return DeloadExerciseReduction(
+            exerciseName = exerciseName,
+            originalWeight = maxWeight,
+            originalSets = setCount,
+            newWeight = newWeight,
+            newSets = newSets,
+            weightReductionPercent = reductionPercent,
+            setsReduction = setCount - newSets,
+            isCompound = isCompound
+        )
+    }
+
+    fun weeksSinceLastDeload(userId: String): Int {
+        return 0
+    }
+
+    fun getTiredMusclesCount(recoveryMap: Map<String, Double>): Int {
+        return recoveryMap.count { it.value > 0.5 }
+    }
+
+    fun getAvgRecoveryPercent(recoveryMap: Map<String, Double>): Int {
+        if (recoveryMap.isEmpty()) return 100
+        val avg = recoveryMap.values.average()
+        return ((1.0 - avg) * 100).toInt().coerceIn(0, 100)
+    }
+
+    fun endDeload(deloadId: Long) {
     }
 }

@@ -252,12 +252,12 @@ private fun GoalStep(
     border: Color
 ) {
     data class Goal(val key: String, val label: String, val icon: ImageVector)
-    val goals = listOf(
+    val goals = remember(strings) { listOf(
         Goal("strength", strings.goalStrength, Icons.Default.FitnessCenter),
         Goal("mass", strings.goalMass, Icons.Default.FavoriteBorder),
         Goal("weight_loss", strings.goalWeightLoss, Icons.Default.Speed),
         Goal("maintenance", strings.goalMaintenance, Icons.Default.SelfImprovement)
-    )
+    ) }
 
     Text(
         strings.selectGoal,
@@ -321,11 +321,11 @@ private fun ExperienceStep(
     border: Color
 ) {
     data class Level(val key: String, val label: String, val icon: ImageVector, val desc: String)
-    val levels = listOf(
+    val levels = remember { listOf(
         Level("beginner", "Beginner", Icons.Default.ChildCare, "0-1 years of training"),
         Level("intermediate", "Intermediate", Icons.Default.Person, "1-3 years of consistent training"),
         Level("advanced", "Advanced", Icons.Default.EmojiEvents, "3+ years of serious training")
-    )
+    ) }
 
     Text(
         "What's your experience level?",

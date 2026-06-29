@@ -42,7 +42,7 @@ fun GymLOGTheme(themeMode: ThemeMode = ThemeMode.SYSTEM, content: @Composable ()
     }
     MaterialTheme(
         colorScheme = if (isDark) DarkColorScheme else LightColorScheme,
-        typography = Typography,
+        typography = KineticTypography,
         content = content
     )
 }

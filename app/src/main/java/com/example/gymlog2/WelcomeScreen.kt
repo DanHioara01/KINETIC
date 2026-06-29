@@ -17,9 +17,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,6 +25,8 @@ import com.example.gymlog2.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlin.math.sin
 import kotlin.random.Random
+
+import java.util.Calendar
 
 @Composable
 fun WelcomeScreen(
@@ -36,7 +36,10 @@ fun WelcomeScreen(
 ) {
     var phase by remember { mutableIntStateOf(0) }
 
-    val message = remember { strings.mottoMessages.random() }
+    val message = remember {
+        val dayIndex = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
+        strings.mottoMessages[dayIndex % strings.mottoMessages.size]
+    }
 
     // Pulsing rings
     val infiniteTransition = rememberInfiniteTransition(label = "rings")
@@ -101,9 +104,8 @@ fun WelcomeScreen(
             visibleChars = i
             delay(120)
         }
-        delay(4000)
+        delay(2880)
         phase = 2
-        delay(700)
         onFinished()
     }
 
@@ -192,6 +194,7 @@ fun WelcomeScreen(
                             text = char.toString(),
                             fontSize = 64.sp,
                             letterSpacing = 18.sp,
+                            fontWeight = FontWeight.Black,
                             color = Color.White
                         )
                     }

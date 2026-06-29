@@ -7,13 +7,16 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.AccessAlarm
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +28,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -403,44 +407,62 @@ fun WaterTrackingScreen(
                     val maxMl = waterHistory.maxOfOrNull { it.second }?.coerceAtLeast(1) ?: 1
                     val todayIndex = waterHistory.size - 1
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(100.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        waterHistory.forEachIndexed { idx, (dayName, ml) ->
-                            val isToday = idx == todayIndex
-                            val barColor = if (isToday) accent else accent.copy(alpha = 0.35f)
-                            val barHeightFraction = if (maxMl > 0) (ml.toFloat() / maxMl) else 0f
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(80.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            waterHistory.forEachIndexed { idx, (dayName, ml) ->
+                                val isToday = idx == todayIndex
+                                val barColor = if (isToday) accent else accent.copy(alpha = 0.5f)
+                                val barHeightFraction = if (maxMl > 0) (ml.toFloat() / maxMl) else 0f
 
-    Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Bottom,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                if (ml > 0) {
-                                    Text(
-                                        "${ml}",
-                                        color = textSecondary,
-                                        fontSize = 9.sp
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Bottom,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    if (ml > 0) {
+                                        Text(
+                                            "$ml",
+                                            color = if (isToday) accent else textSecondary,
+                                            fontSize = 10.sp,
+                                            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                        Spacer(modifier = Modifier.height(3.dp))
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .width(if (isToday) 22.dp else 18.dp)
+                                            .heightIn(min = 6.dp)
+                                            .fillMaxHeight(fraction = barHeightFraction.coerceIn(0.06f, 1f))
+                                            .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
+                                            .background(
+                                                if (isToday) Brush.verticalGradient(
+                                                    colors = listOf(accent, accent.copy(alpha = 0.6f))
+                                                ) else SolidColor(barColor)
+                                            )
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
                                 }
-                                Box(
-                                    modifier = Modifier
-                                        .width(20.dp)
-                                        .fillMaxHeight(fraction = barHeightFraction.coerceAtLeast(0.04f))
-                                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                        .background(barColor)
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            waterHistory.forEachIndexed { idx, (dayName, _) ->
+                                val isToday = idx == todayIndex
                                 Text(
                                     dayName,
                                     color = if (isToday) accent else textSecondary,
                                     fontSize = 10.sp,
-                                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
+                                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }
@@ -452,55 +474,98 @@ fun WaterTrackingScreen(
         if (alarms.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            alarms.forEach { alarm ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = cardBg),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable {
-                                    editingAlarmId = alarm.id
-                                    pickerHour = alarm.hour
-                                    pickerMinute = alarm.minute
-                                    showTimePicker = true
-                                }
-                        ) {
-                            Text(
-                                "${alarm.hour.toString().padStart(2, '0')}:${alarm.minute.toString().padStart(2, '0')}",
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Light,
-                                color = if (alarm.enabled) textPrimary else textSecondary.copy(alpha = 0.5f)
-                            )
-                            Text(
-                                strings.everyDay,
-                                fontSize = 12.sp,
-                                color = if (alarm.enabled) accent else textSecondary.copy(alpha = 0.5f)
-                            )
-                        }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = strings.reminder.uppercase(),
+                        color = textSecondary,
+                        fontSize = 11.sp,
+                        letterSpacing = 2.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                        Switch(
-                            checked = alarm.enabled,
-                            onCheckedChange = { enabled ->
-                                preferencesManager.toggleWaterReminder(alarm.id, enabled)
-                                alarms = preferencesManager.getWaterReminders()
-                                val receiver = WaterReminderReceiver()
-                                if (enabled) receiver.scheduleAlarm(context, alarm.id)
-                                else receiver.cancelAlarm(context, alarm.id)
-                            },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = accent
-                            )
-                        )
+                    alarms.forEachIndexed { index, alarm ->
+                        if (index > 0) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (alarm.enabled) accent.copy(alpha = 0.08f) else cardBg
+                            ),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(42.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (alarm.enabled) accent.copy(alpha = 0.15f)
+                                            else textSecondary.copy(alpha = 0.1f)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.AccessAlarm,
+                                        contentDescription = null,
+                                        tint = if (alarm.enabled) accent else textSecondary.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            editingAlarmId = alarm.id
+                                            pickerHour = alarm.hour
+                                            pickerMinute = alarm.minute
+                                            showTimePicker = true
+                                        }
+                                ) {
+                                    Text(
+                                        "${alarm.hour.toString().padStart(2, '0')}:${alarm.minute.toString().padStart(2, '0')}",
+                                        fontSize = 22.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (alarm.enabled) textPrimary else textSecondary.copy(alpha = 0.5f),
+                                        letterSpacing = 1.sp
+                                    )
+                                    Text(
+                                        strings.everyDay,
+                                        fontSize = 12.sp,
+                                        color = if (alarm.enabled) accent else textSecondary.copy(alpha = 0.4f)
+                                    )
+                                }
+
+                                Switch(
+                                    checked = alarm.enabled,
+                                    onCheckedChange = { enabled ->
+                                        preferencesManager.toggleWaterReminder(alarm.id, enabled)
+                                        alarms = preferencesManager.getWaterReminders()
+                                        val receiver = WaterReminderReceiver()
+                                        if (enabled) receiver.scheduleAlarm(context, alarm.id)
+                                        else receiver.cancelAlarm(context, alarm.id)
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = accent,
+                                        uncheckedThumbColor = textSecondary,
+                                        uncheckedTrackColor = textSecondary.copy(alpha = 0.3f)
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }

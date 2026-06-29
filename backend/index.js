@@ -7,8 +7,23 @@ const admin = require('firebase-admin');
 const app = express();
 const PORT = process.env.PORT || 4242;
 
-app.use(cors());
-app.use(express.json());
+const ALLOWED_ORIGINS = [
+  'https://kinetic-backend-3ff6.onrender.com',
+  'https://ai-server-7tqx.onrender.com',
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.use(express.json({ limit: '1mb' }));
 
 try {
   const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
@@ -32,6 +47,34 @@ try {
 const db = new Database(path.join(__dirname, 'kinetic.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
+
+// =============================================
+// AUTH MIDDLEWARE (optional — verifies if token present)
+// =============================================
+async function verifyToken(req, res, next) {
+  req.authUserId = null;
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+  const idToken = authHeader.split('Bearer ')[1];
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    req.authUserId = decoded.uid;
+  } catch (e) {
+    console.log('Token verification failed:', e.message);
+  }
+  next();
+}
+
+function enforceAuth(req, res, next) {
+  if (!req.authUserId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  next();
+}
+
+app.use(verifyToken);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -200,6 +243,13 @@ app.post('/friends/request', (req, res) => {
         body: `${sender?.name || 'Someone'} sent you a friend request!`,
       },
       data: { type: 'friend_request', fromUserId, fromUserName: sender?.name || '' },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'friend_requests',
+          priority: 'max',
+        },
+      },
     }).catch(e => console.log('FCM error:', e.message));
   }
 
@@ -215,8 +265,8 @@ app.get('/friends/incoming/:userId', (req, res) => {
 app.post('/friends/accept', (req, res) => {
   const { userId, friendId } = req.body;
   if (!userId || !friendId) return res.status(400).json({ error: 'userId and friendId required' });
-  db.prepare('UPDATE friendships SET status = ? WHERE userId = ? AND friendId = ?').run('accepted', friendId, userId);
-  db.prepare('INSERT OR IGNORE INTO friendships (userId, friendId, status, createdAt) VALUES (?, ?, ?, ?)').run(userId, friendId, 'accepted', Date.now());
+  db.prepare('UPDATE friendships SET status = ? WHERE userId = ? AND friendId = ?').run('accepted', userId, friendId);
+  db.prepare('INSERT OR IGNORE INTO friendships (userId, friendId, status, createdAt) VALUES (?, ?, ?, ?)').run(friendId, userId, 'accepted', Date.now());
 
   const acceptor = db.prepare('SELECT name FROM users WHERE id = ?').get(userId);
   const recipient = db.prepare('SELECT fcmToken FROM users WHERE id = ?').get(friendId);
@@ -228,6 +278,13 @@ app.post('/friends/accept', (req, res) => {
         body: `${acceptor?.name || 'Someone'} accepted your friend request!`,
       },
       data: { type: 'friend_accepted', fromUserName: acceptor?.name || '' },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'kinetic_notifications',
+          priority: 'max',
+        },
+      },
     }).catch(e => console.log('FCM error:', e.message));
   }
 
@@ -320,6 +377,14 @@ app.get('/posts/:postId/likes/count', (req, res) => {
   const postId = parseInt(req.params.postId);
   const row = db.prepare('SELECT COUNT(*) as count FROM likes WHERE postId = ?').get(postId);
   res.json({ count: row.count });
+});
+
+app.get('/posts/:postId/liked/:userId', (req, res) => {
+  const postId = parseInt(req.params.postId);
+  const userId = req.params.userId;
+  if (!userId) return res.status(400).json({ error: 'userId required' });
+  const liked = db.prepare('SELECT 1 FROM likes WHERE postId = ? AND userId = ?').get(postId, userId);
+  res.json({ liked: !!liked });
 });
 
 // =============================================

@@ -124,4 +124,11 @@ class BiometricReminderReceiver : BroadcastReceiver() {
         )
         alarmManager.cancel(pendingIntent)
     }
+
+    fun scheduleIfEnabled(context: Context) {
+        val prefsManager = PreferencesManager(context)
+        if (prefsManager.isBiometricReminderEnabled()) {
+            scheduleWeekly(context)
+        }
+    }
 }
