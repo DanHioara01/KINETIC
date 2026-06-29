@@ -4,7 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 
-class FoodManager(private val db: AppDatabase) {
+class FoodManager(private val db: AppDatabase, private val syncRepo: SyncRepository? = null) {
     private val dao = db.foodDao()
 
     suspend fun addFood(
@@ -21,22 +21,25 @@ class FoodManager(private val db: AppDatabase) {
         fatG: Double,
         fiberG: Double
     ): Long = withContext(Dispatchers.IO) {
-        dao.insert(
-            FoodEntity(
-                userId = userId,
-                barcode = barcode,
-                name = name,
-                brand = brand,
-                mealType = mealType,
-                servingSize = servingSize,
-                servingUnit = servingUnit,
-                calories = calories,
-                proteinG = proteinG,
-                carbsG = carbsG,
-                fatG = fatG,
-                fiberG = fiberG
-            )
+        val entry = FoodEntity(
+            userId = userId,
+            barcode = barcode,
+            name = name,
+            brand = brand,
+            mealType = mealType,
+            servingSize = servingSize,
+            servingUnit = servingUnit,
+            calories = calories,
+            proteinG = proteinG,
+            carbsG = carbsG,
+            fatG = fatG,
+            fiberG = fiberG
         )
+        if (syncRepo != null) {
+            syncRepo.saveFoodEntry(entry)
+        } else {
+            dao.insert(entry)
+        }
     }
 
     suspend fun getTodayEntries(userId: String): List<FoodEntity> = withContext(Dispatchers.IO) {
@@ -53,6 +56,10 @@ class FoodManager(private val db: AppDatabase) {
 
     suspend fun getAll(userId: String): List<FoodEntity> = withContext(Dispatchers.IO) {
         dao.getRecent(userId, 500)
+    }
+
+    suspend fun getRecent(userId: String, limit: Int = 100): List<FoodEntity> = withContext(Dispatchers.IO) {
+        dao.getRecent(userId, limit)
     }
 
     suspend fun getDailyMacros(userId: String): DailyMacros = withContext(Dispatchers.IO) {

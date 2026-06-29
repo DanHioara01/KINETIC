@@ -3,7 +3,7 @@ package com.example.gymlog2
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class BiometricManager(private val db: AppDatabase) {
+class BiometricManager(private val db: AppDatabase, private val syncRepo: SyncRepository? = null) {
     private val dao = db.biometricDao()
 
     suspend fun saveEntry(
@@ -17,19 +17,22 @@ class BiometricManager(private val db: AppDatabase) {
         armsCm: Double,
         notes: String = ""
     ): Long = withContext(Dispatchers.IO) {
-        dao.insert(
-            BiometricEntity(
-                userId = userId,
-                weightKg = weightKg,
-                bodyFatPercent = bodyFatPercent,
-                waistCm = waistCm,
-                hipsCm = hipsCm,
-                thighsCm = thighsCm,
-                chestCm = chestCm,
-                armsCm = armsCm,
-                notes = notes
-            )
+        val entry = BiometricEntity(
+            userId = userId,
+            weightKg = weightKg,
+            bodyFatPercent = bodyFatPercent,
+            waistCm = waistCm,
+            hipsCm = hipsCm,
+            thighsCm = thighsCm,
+            chestCm = chestCm,
+            armsCm = armsCm,
+            notes = notes
         )
+        if (syncRepo != null) {
+            syncRepo.saveBiometricEntry(entry)
+        } else {
+            dao.insert(entry)
+        }
     }
 
     suspend fun getLatest(userId: String): BiometricEntity? = withContext(Dispatchers.IO) {

@@ -82,7 +82,6 @@ dependencies {
 
     // Coil (image loading)
     implementation(libs.coil.compose)
-    implementation(libs.coil.gif)
 
     // Retrofit (networking)
     implementation(libs.retrofit)
@@ -96,6 +95,9 @@ dependencies {
 
     // OSMDroid (satellite map)
     implementation("org.osmdroid:osmdroid-android:6.1.18")
+
+    // WorkManager (background sync)
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     // Google Play Services Location (GPS tracking)
     implementation("com.google.android.gms:play-services-location:21.3.0")

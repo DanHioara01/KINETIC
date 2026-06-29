@@ -10,7 +10,8 @@ import java.util.*
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getDatabase(application)
-    private val antrenamentRepo = AntrenamentRepository(db)
+    private val syncRepo = SyncRepository(db, NetworkClient.api, PreferencesManager(application))
+    private val antrenamentRepo = AntrenamentRepository(db, syncRepo)
     private val socialRepo = SocialRepository(db)
     private val streakManager = StreakManager(db)
     private val badgeEngine = BadgeEngine(db)
@@ -132,9 +133,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val monthEnd = cal.timeInMillis
 
             _dailyVolume.value = antrenamentRepo.getTotalVolume(userId, dayStart, dayEnd)
-            _weeklyVolume.value = antrenamentRepo.getTotalVolume(userId, weekStart, weekEnd)
+            val weeklyVol = antrenamentRepo.getTotalVolume(userId, weekStart, weekEnd)
+            _weeklyVolume.value = weeklyVol
+            _weeklyTotalWeight.value = weeklyVol
             _monthlyVolume.value = antrenamentRepo.getTotalVolume(userId, monthStart, monthEnd)
-            _weeklyTotalWeight.value = antrenamentRepo.getTotalVolume(userId, weekStart, weekEnd)
 
             val mostFrequent = antrenamentRepo.getMostFrequentExercise(userId, weekStart, weekEnd)
             _mostFrequentExercise.value = mostFrequent?.numeExercitiu

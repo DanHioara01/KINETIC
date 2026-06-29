@@ -135,11 +135,11 @@ class SocialRepository(private val db: AppDatabase) {
         }
     }
 
+    @Deprecated("Use syncUserProfile suspend function instead")
     fun syncUserProfileBlocking(userId: String, name: String, photoUri: String = "") {
         try {
             kotlinx.coroutines.runBlocking {
-                val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
-                api.upsertUser(mapOf("id" to userId, "name" to name, "photoUri" to photoUri, "fcmToken" to (token ?: "")))
+                syncUserProfile(userId, name, photoUri)
             }
         } catch (e: Exception) { e.printStackTrace() }
     }

@@ -51,7 +51,7 @@ fun StatsScreen(
     lastPR: PersonalRecordEntity?,
     paddingValues: PaddingValues = PaddingValues(0.dp),
     onExerciseHistoryClick: (String) -> Unit = {},
-    userId: String = "simple",
+    userId: String = AppConstants.DEFAULT_USER_ID,
     currentStreak: Int = 0,
     bestStreak: Int = 0,
     badgeCount: Int = 0,

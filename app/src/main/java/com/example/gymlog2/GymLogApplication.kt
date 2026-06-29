@@ -2,20 +2,15 @@ package com.example.gymlog2
 
 import android.app.Application
 import android.content.Context
+import androidx.work.*
 import coil.ImageLoader
 import coil.ImageLoaderFactory
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class GymLogApplication : Application(), ImageLoaderFactory {
     override fun newImageLoader(): ImageLoader {
-        return ImageLoader.Builder(this)
-            .components {
-                add(GifDecoder.Factory())
-                add(ImageDecoderDecoder.Factory())
-            }
-            .build()
+        return ImageLoader.Builder(this).build()
     }
 
     override fun onCreate() {
@@ -23,6 +18,26 @@ class GymLogApplication : Application(), ImageLoaderFactory {
         org.osmdroid.config.Configuration.getInstance().load(this, getSharedPreferences("osmdroid", MODE_PRIVATE))
         org.osmdroid.config.Configuration.getInstance().userAgentValue = packageName
         backgroundSync(this)
+        schedulePeriodicSync()
+    }
+
+    private fun schedulePeriodicSync() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
+            30, TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 5, TimeUnit.MINUTES)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "kinetic_background_sync",
+            ExistingPeriodicWorkPolicy.KEEP,
+            syncRequest
+        )
     }
 
     private fun backgroundSync(context: Context) {
@@ -40,6 +55,10 @@ class GymLogApplication : Application(), ImageLoaderFactory {
 
                 val db = AppDatabase.getDatabase(context)
                 SocialRepository(db).syncUserProfileBlocking(userId, name, photo)
+
+                val preferencesManager = PreferencesManager(context)
+                val syncRepo = SyncRepository(db, NetworkClient.api, preferencesManager)
+                kotlinx.coroutines.runBlocking { syncRepo.initialSync(userId) }
             } catch (_: Exception) {}
         }
     }

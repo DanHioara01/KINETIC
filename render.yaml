@@ -8,8 +8,14 @@ services:
         value: groq
       - key: GROQ_API_KEY
         sync: false
+      - key: API_KEY
+        sync: false
       - key: MODEL
         value: llama-3.1-8b-instant
+      - key: MAX_MESSAGE_LENGTH
+        value: "4000"
+      - key: CACHE_TTL_SECONDS
+        value: "3600"
 
   - type: web
     name: kinetic-backend
@@ -17,4 +23,4 @@ services:
     dockerfilePath: ./Dockerfile.backend
     envVars:
       - key: PORT
-        value: 4242
+        value: "4242"

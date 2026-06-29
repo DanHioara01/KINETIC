@@ -64,7 +64,9 @@ fun AiTrainerScreen(
         scope.launch {
             withContext(Dispatchers.IO) {
                 val db = AppDatabase.getDatabase(context)
-                db.aiChatHistoryDao().insert(
+                val prefs = PreferencesManager(context)
+                val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                syncRepo.saveAiChatMessage(
                     AiChatHistoryEntity(
                         userId = userId,
                         sessionId = currentSessionId,

@@ -304,6 +304,8 @@ fun RestDayScreen(
                         scope.launch {
                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                 val db = AppDatabase.getDatabase(context)
+                                val prefs = PreferencesManager(context)
+                                val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
                                 val restDay = RestDayEntity(
                                     userId = userId,
                                     date = selectedDate,
@@ -312,7 +314,7 @@ fun RestDayScreen(
                                     activities = stretchingExercises.filter { it.category == selectedType || selectedType == "rest" }
                                         .joinToString(",") { it.name }
                                 )
-                                db.restDayDao().insert(restDay)
+                                syncRepo.saveRestDay(restDay)
                                 restDays = db.restDayDao().getAllForUser(userId)
                                 nextRestDay = db.restDayDao().getNextRestDay(userId, System.currentTimeMillis())
                             }

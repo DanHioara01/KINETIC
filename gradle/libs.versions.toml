@@ -56,7 +56,6 @@ facebook-login = { group = "com.facebook.android", name = "facebook-login", vers
 
 # Coil (image loading)
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
-coil-gif = { group = "io.coil-kt", name = "coil-gif", version.ref = "coil" }
 
 # Retrofit (networking)
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }

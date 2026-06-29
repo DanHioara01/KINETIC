@@ -213,4 +213,10 @@ class PreferencesManager(context: Context) {
 
     fun getServerUrl(): String = prefs.getString("server_url", "") ?: ""
     fun setServerUrl(url: String) { prefs.edit().putString("server_url", url).apply() }
+
+    fun getAiApiKey(): String = prefs.getString("ai_api_key", "") ?: ""
+    fun setAiApiKey(key: String) { prefs.edit().putString("ai_api_key", key).apply() }
+
+    fun getLastSyncTimestamp(table: String): Long = prefs.getLong("sync_ts_$table", 0L)
+    fun setLastSyncTimestamp(table: String, ts: Long) { prefs.edit().putLong("sync_ts_$table", ts).apply() }
 }

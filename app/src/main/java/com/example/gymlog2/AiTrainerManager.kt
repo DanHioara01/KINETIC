@@ -19,8 +19,8 @@ class AiTrainerManager(private val db: AppDatabase) {
     }
 
     private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
     suspend fun getWorkoutContext(userId: String, preferencesManager: PreferencesManager): String = withContext(Dispatchers.IO) {
@@ -148,23 +148,38 @@ $context"""
                 put("history", historyArray)
             }
 
-            val request = Request.Builder()
+            val apiKey = preferencesManager.getAiApiKey()
+
+            val requestBuilder = Request.Builder()
                 .url("$serverUrl/chat")
                 .post(body.toString().toRequestBody("application/json".toMediaType()))
-                .build()
 
-            val response = client.newCall(request).execute()
+            if (apiKey.isNotBlank()) {
+                requestBuilder.addHeader("X-API-Key", apiKey)
+            }
+
+            val response = client.newCall(requestBuilder.build()).execute()
             val responseBody = response.body?.string()
 
             if (response.isSuccessful && responseBody != null) {
                 val json = JSONObject(responseBody)
                 json.getString("reply")
             } else {
-                "Error: Server returned ${response.code}. Check your server URL and API key."
+                when (response.code) {
+                    401 -> "Authentication failed. Check your AI API key in Settings."
+                    429 -> "AI provider rate limited. Please wait a moment and try again."
+                    502, 504 -> "AI provider is unavailable. Please try again later."
+                    503 -> "Service temporarily unavailable. Please try again later."
+                    else -> "Error: Server returned ${response.code}. Check your server URL and API key."
+                }
             }
+        } catch (e: java.net.SocketTimeoutException) {
+            "Error: AI server timed out. The request took too long."
+        } catch (e: java.net.ConnectException) {
+            "Error: Cannot connect to AI server at $serverUrl"
         } catch (e: Exception) {
             e.printStackTrace()
-            "Error: ${e.message ?: "Cannot connect to server"}. Make sure the AI server is running at $serverUrl"
+            "Error: ${e.message ?: "Unknown error"}. Make sure the AI server is running at $serverUrl"
         }
     }
 }

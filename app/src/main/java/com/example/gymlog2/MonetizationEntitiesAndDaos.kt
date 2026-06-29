@@ -11,7 +11,9 @@ data class SubscriptionEntity(
     val planId: String = "",
     val status: String = "inactive",
     val currentPeriodEnd: Long = 0,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "feature_flags")
@@ -51,6 +53,12 @@ interface UserProfileDao {
 interface SubscriptionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(subscription: SubscriptionEntity)
+
+    @Query("SELECT * FROM subscriptions WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): SubscriptionEntity?
+
+    @Query("SELECT * FROM subscriptions WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<SubscriptionEntity>
 
     @Query("SELECT * FROM subscriptions WHERE userId = :userId ORDER BY createdAt DESC LIMIT 1")
     suspend fun getForUser(userId: String): SubscriptionEntity?

@@ -33,7 +33,7 @@ import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CalendarWorkoutScreen(onBackClick: () -> Unit, onWorkoutDeleted: () -> Unit = {}, userId: String = "simple") {
+fun CalendarWorkoutScreen(onBackClick: () -> Unit, onWorkoutDeleted: () -> Unit = {}, userId: String = AppConstants.DEFAULT_USER_ID) {
     val context = LocalContext.current
     val db = AppDatabase.getDatabase(context)
     val strings = LanguageManager.getStrings(context)

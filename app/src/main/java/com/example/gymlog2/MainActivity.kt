@@ -8,6 +8,8 @@ import android.os.Bundle
 import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
 import kotlinx.coroutines.tasks.await
@@ -42,7 +44,6 @@ import androidx.compose.runtime.mutableDoubleStateOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.runBlocking
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -259,6 +260,14 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
+                    try {
+                        val db = AppDatabase.getDatabase(context)
+                        val prefs = PreferencesManager(context)
+                        val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                        syncRepo.initialSync(userId)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
         }
@@ -300,6 +309,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
     var pendingRequestsCount by remember { mutableIntStateOf(0) }
     var showLeaderboard by remember { mutableStateOf(false) }
     var showServerDialog by remember { mutableStateOf(false) }
+    var showPlateCalculator by remember { mutableStateOf(false) }
+    var showOneRMCalculator by remember { mutableStateOf(false) }
+    var showWorkoutAnalytics by remember { mutableStateOf(false) }
     var todayCardioDistance by remember { mutableDoubleStateOf(0.0) }
     var todayCardioDuration by remember { mutableLongStateOf(0L) }
     var todayCardioCalories by remember { mutableDoubleStateOf(0.0) }
@@ -307,7 +319,14 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
     var pedometerSteps by remember { mutableIntStateOf(0) }
     var manualSteps by remember { mutableIntStateOf(0) }
 
-    val onDashboard = selectedGroup == null && !showCalendar && !showTemplates && !showBiometricInput && !showBiometricCharts && !showFoodJournal && !showBarcodeScanner && !showAddFood && !showAiTrainer && currentPage != DrawerPage.GPS_CARDIO && currentPage != DrawerPage.REST_DAYS
+    val onDashboard by remember {
+        derivedStateOf {
+            selectedGroup == null && !showCalendar && !showTemplates && !showBiometricInput &&
+                !showBiometricCharts && !showFoodJournal && !showBarcodeScanner && !showAddFood &&
+                !showAiTrainer && !showPlateCalculator && !showOneRMCalculator && !showWorkoutAnalytics &&
+                currentPage != DrawerPage.GPS_CARDIO && currentPage != DrawerPage.REST_DAYS
+        }
+    }
 
     DisposableEffect(Unit) {
         val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
@@ -336,7 +355,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
         }
     }
 
-    val totalSteps = (todayStepsEstimate + pedometerSteps + manualSteps).coerceIn(0, 99999)
+    val totalSteps by remember(todayStepsEstimate, pedometerSteps, manualSteps) {
+        derivedStateOf { (todayStepsEstimate + pedometerSteps + manualSteps).coerceIn(0, 99999) }
+    }
 
     LaunchedEffect(isLoggedIn, userId) {
         if (isLoggedIn && userId != "local_user") {
@@ -387,92 +408,92 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 val db = AppDatabase.getDatabase(context)
-                val bm = BiometricManager(db)
-                lastBiometric = bm.getLatest(userId)
+                val prefs = PreferencesManager(context)
+                val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                val bm = BiometricManager(db, syncRepo)
+                val latest = bm.getLatest(userId)
+                lastBiometric = latest
                 allBiometrics = bm.getAll(userId)
-                weeksSinceMeasurement = bm.getWeeksSinceLastMeasurement(userId)
-                val fm = FoodManager(db)
-                foodEntries = fm.getAll(userId)
+                weeksSinceMeasurement = if (latest != null) {
+                    val diffMs = System.currentTimeMillis() - latest.timestamp
+                    (diffMs / (7L * 24 * 60 * 60 * 1000)).toInt()
+                } else -1
+                val fm = FoodManager(db, syncRepo)
+                foodEntries = fm.getRecent(userId, 100)
             } catch (_: Exception) { }
         }
     }
 
     LaunchedEffect(reloadToken, onDashboard) {
-        kotlinx.coroutines.Dispatchers.IO.let { dispatcher ->
-            kotlinx.coroutines.withContext(dispatcher) {
-                val db = AppDatabase.getDatabase(context)
-                val cal = java.util.Calendar.getInstance()
-                cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
-                cal.set(java.util.Calendar.MINUTE, 0)
-                cal.set(java.util.Calendar.SECOND, 0)
-                cal.set(java.util.Calendar.MILLISECOND, 0)
-                val dayStart = cal.timeInMillis
-                val dayEnd = System.currentTimeMillis()
-                cal.timeInMillis = dayStart
-                cal.set(java.util.Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
-                val weekStart = cal.timeInMillis
-                cal.add(java.util.Calendar.WEEK_OF_YEAR, 1)
-                val weekEnd = cal.timeInMillis
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val db = AppDatabase.getDatabase(context)
+            val cal = java.util.Calendar.getInstance()
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+            cal.set(java.util.Calendar.MINUTE, 0)
+            cal.set(java.util.Calendar.SECOND, 0)
+            cal.set(java.util.Calendar.MILLISECOND, 0)
+            val dayStart = cal.timeInMillis
+            val dayEnd = System.currentTimeMillis()
+            cal.timeInMillis = dayStart
+            cal.set(java.util.Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
+            val weekStart = cal.timeInMillis
+            cal.add(java.util.Calendar.WEEK_OF_YEAR, 1)
+            val weekEnd = cal.timeInMillis
 
-                weeklyTotalKg = db.antrenamentDao().getTotalVolume("simple", weekStart, weekEnd) ?: 0.0
-                val mostFrequent = db.exercitiuDao().getMostFrequentExercise("simple", weekStart, weekEnd)
-                weeklyTopExercise = mostFrequent?.numeExercitiu
+            weeklyTotalKg = db.antrenamentDao().getTotalVolume(AppConstants.DEFAULT_USER_ID, weekStart, weekEnd) ?: 0.0
+            val mostFrequent = db.exercitiuDao().getMostFrequentExercise(AppConstants.DEFAULT_USER_ID, weekStart, weekEnd)
+            weeklyTopExercise = mostFrequent?.numeExercitiu
 
-                val weekWorkouts = db.antrenamentDao().getWorkoutsInPeriod("simple", weekStart, weekEnd)
-                weekWorkoutCount = weekWorkouts.size
-                weekVolume = weekWorkouts.sumOf { it.totalWeight }
+            val weekWorkouts = db.antrenamentDao().getWorkoutsInPeriod(AppConstants.DEFAULT_USER_ID, weekStart, weekEnd)
+            weekWorkoutCount = weekWorkouts.size
+            weekVolume = weekWorkouts.sumOf { it.totalWeight }
 
-                // Last week
-                val lastWeekStart = weekStart - 7L * 24 * 60 * 60 * 1000
-                val lastWeekEnd = weekStart
-                val lastWeekWorkouts = db.antrenamentDao().getWorkoutsInPeriod("simple", lastWeekStart, lastWeekEnd)
-                lastWeekWorkoutCount = lastWeekWorkouts.size
-                lastWeekVolume = lastWeekWorkouts.sumOf { it.totalWeight }
+            val lastWeekStart = weekStart - 7L * 24 * 60 * 60 * 1000
+            val lastWeekEnd = weekStart
+            val lastWeekWorkouts = db.antrenamentDao().getWorkoutsInPeriod(AppConstants.DEFAULT_USER_ID, lastWeekStart, lastWeekEnd)
+            lastWeekWorkoutCount = lastWeekWorkouts.size
+            lastWeekVolume = lastWeekWorkouts.sumOf { it.totalWeight }
 
-                val todayWorkouts = db.antrenamentDao().getWorkoutsInPeriod("simple", dayStart, dayEnd)
-                todayVolume = todayWorkouts.sumOf { it.totalWeight }
-                val exerciseNames = mutableListOf<String>()
-                for (w in todayWorkouts) {
-                    val exercises = db.exercitiuDao().getForAntrenament(w.id)
-                    exercises.forEach { if (it.numeExercitiu !in exerciseNames) exerciseNames.add(it.numeExercitiu) }
-                }
-                todayExercises = exerciseNames
-
-                val prs = db.personalRecordDao().getAllForUser("simple")
-                lastPR = prs.firstOrNull()
-                allRecentPRs = prs.take(5)
-
-                val cal3 = java.util.Calendar.getInstance()
-                cal3.timeInMillis = System.currentTimeMillis()
-                cal3.add(java.util.Calendar.DAY_OF_YEAR, -365)
-                val yearAgo = cal3.timeInMillis
-                allExerciseNames = db.exercitiuDao().getDistinctExerciseNames("simple", yearAgo, System.currentTimeMillis())
-
-                val antrenamentRepo = AntrenamentRepository(db)
-                recoveryMap = antrenamentRepo.getToateRecuperarile().toMap()
-
-                val streakEntity = db.streakDao().getForUser(userId)
-                currentStreak = streakEntity?.currentStreak ?: 0
-                bestStreak = streakEntity?.bestStreak ?: 0
-
-                val userBadges = db.userBadgeDao().getForUser(userId)
-                badgeCount = userBadges.size
-                val allBadges = db.badgeDao().getAll()
-                val badgeMap = allBadges.associateBy { it.key }
-                recentBadges = userBadges.mapNotNull { badgeMap[it.badgeKey] }
-
-                val allWorkouts = db.antrenamentDao().getAllForUser(userId)
-                totalAllWorkouts = allWorkouts.size
-                totalAllVolume = allWorkouts.sumOf { it.totalWeight }
-
-                // Today's GPS cardio data
-                val todayCardioStart = dayStart
-                val todayCardioEnd = dayEnd
-                todayCardioDistance = db.cardioRouteDao().getTotalDistanceBetween(userId, todayCardioStart, todayCardioEnd) ?: 0.0
-                todayCardioDuration = db.cardioRouteDao().getTotalDurationBetween(userId, todayCardioStart, todayCardioEnd) ?: 0L
-                todayCardioCalories = db.cardioRouteDao().getTotalCaloriesBetween(userId, todayCardioStart, todayCardioEnd) ?: 0.0
-                todayStepsEstimate = (todayCardioDistance * 1312).toInt().coerceIn(0, 99999)
+            val todayWorkouts = db.antrenamentDao().getWorkoutsInPeriod(AppConstants.DEFAULT_USER_ID, dayStart, dayEnd)
+            todayVolume = todayWorkouts.sumOf { it.totalWeight }
+            if (todayWorkouts.isNotEmpty()) {
+                val allTodayExercises = db.exercitiuDao().getForAntrenaments(todayWorkouts.map { it.id })
+                todayExercises = allTodayExercises.map { it.numeExercitiu }.distinct()
+            } else {
+                todayExercises = emptyList()
             }
+
+            val prs = db.personalRecordDao().getAllForUser(AppConstants.DEFAULT_USER_ID)
+            lastPR = prs.firstOrNull()
+            allRecentPRs = prs.take(5)
+
+            val cal3 = java.util.Calendar.getInstance()
+            cal3.timeInMillis = System.currentTimeMillis()
+            cal3.add(java.util.Calendar.DAY_OF_YEAR, -365)
+            val yearAgo = cal3.timeInMillis
+            allExerciseNames = db.exercitiuDao().getDistinctExerciseNames(AppConstants.DEFAULT_USER_ID, yearAgo, System.currentTimeMillis())
+
+            recoveryMap = AntrenamentRepository(db).getToateRecuperarile().toMap()
+
+            val streakEntity = db.streakDao().getForUser(userId)
+            currentStreak = streakEntity?.currentStreak ?: 0
+            bestStreak = streakEntity?.bestStreak ?: 0
+
+            val userBadges = db.userBadgeDao().getForUser(userId)
+            badgeCount = userBadges.size
+            val allBadges = db.badgeDao().getAll()
+            val badgeMap = allBadges.associateBy { it.key }
+            recentBadges = userBadges.mapNotNull { badgeMap[it.badgeKey] }
+
+            val allWorkouts = db.antrenamentDao().getAllForUser(userId)
+            totalAllWorkouts = allWorkouts.size
+            totalAllVolume = allWorkouts.sumOf { it.totalWeight }
+
+            val cardioSummary = db.cardioRouteDao().getTodaySummary(userId, dayStart, dayEnd)
+            todayCardioDistance = cardioSummary?.totalDistance ?: 0.0
+            todayCardioDuration = cardioSummary?.totalDuration ?: 0L
+            todayCardioCalories = cardioSummary?.totalCalories ?: 0.0
+            todayStepsEstimate = (todayCardioDistance * 1312).toInt().coerceIn(0, 99999)
         }
     }
 
@@ -503,21 +524,23 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
     ) { uri ->
         uri?.let {
             context.contentResolver.openOutputStream(it)?.use { os ->
-                val db = AppDatabase.getDatabase(context)
-                val workouts = kotlinx.coroutines.runBlocking { db.antrenamentDao().getAllForUser("simple") }
-                val exercises = mutableMapOf<Long, List<ExercitiuEntity>>()
-                for (w in workouts) {
-                    exercises[w.id] = kotlinx.coroutines.runBlocking { db.exercitiuDao().getForAntrenament(w.id) }
-                }
-                os.bufferedWriter().use { w ->
-                    w.write("Date,Group,Exercise,Set,WeightKg,Reps")
-                    w.newLine()
-                    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
-                    for (aw in workouts) {
-                        val exList = exercises[aw.id] ?: emptyList()
-                        for (ex in exList) {
-                            w.write("${sdf.format(java.util.Date(aw.data))},${aw.grupaMusculara},${ex.numeExercitiu},${ex.setIndex + 1},${ex.greutateKg},${ex.repetari}")
-                            w.newLine()
+                scope.launch {
+                    val db = AppDatabase.getDatabase(context)
+                    val workouts = db.antrenamentDao().getAllForUser(AppConstants.DEFAULT_USER_ID)
+                    val exercises = mutableMapOf<Long, List<ExercitiuEntity>>()
+                    for (w in workouts) {
+                        exercises[w.id] = db.exercitiuDao().getForAntrenament(w.id)
+                    }
+                    os.bufferedWriter().use { w ->
+                        w.write("Date,Group,Exercise,Set,WeightKg,Reps")
+                        w.newLine()
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+                        for (aw in workouts) {
+                            val exList = exercises[aw.id] ?: emptyList()
+                            for (ex in exList) {
+                                w.write("${sdf.format(java.util.Date(aw.data))},${aw.grupaMusculara},${ex.numeExercitiu},${ex.setIndex + 1},${ex.greutateKg},${ex.repetari}")
+                                w.newLine()
+                            }
                         }
                     }
                 }
@@ -532,7 +555,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
             val importer = CsvImporter(context)
             val sessions = importer.importWorkouts(it)
             val repo = AntrenamentRepository(AppDatabase.getDatabase(context))
-            kotlinx.coroutines.runBlocking {
+            scope.launch {
                 for (session in sessions) {
                     for (ex in session.exercitii) {
                         repo.salveazaAntrenamentSimple(session.grupaMusculara, ex.numeExercitiu, ex.seturi, "")
@@ -544,11 +567,12 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
     }
 
     val authManager = remember { AuthManager(context) }
+    val loginHandler = remember { LoginHandler(context, preferencesManager, userProfileManager, authManager, scope) }
     var googleSignInError by remember { mutableStateOf<String?>(null) }
 
     val googleSignInClient = remember {
         val gso = com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken("580154418325-8a0fc9d2icragaf7da62oqdvtk2hjiis.apps.googleusercontent.com")
+            .requestIdToken(preferencesManager.getGoogleOAuthClientId())
             .requestEmail()
             .build()
         com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso)
@@ -563,47 +587,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
             val idToken = account?.idToken
             if (idToken != null) {
                 kotlinx.coroutines.MainScope().launch {
-                    val authResult = authManager.signInWithGoogle(idToken)
-                    authResult.onSuccess { firebaseUser ->
-                        val db = AppDatabase.getDatabase(context)
-                        val firebaseUid = firebaseUser.uid
-                        val prefs = context.getSharedPreferences("user_profiles", android.content.Context.MODE_PRIVATE)
-                        val userId = kotlinx.coroutines.withContext(Dispatchers.IO) {
-                            val savedId = prefs.getString("uid_map_$firebaseUid", null)
-                            if (savedId != null) {
-                                savedId
-                            } else {
-                                val existing = db.userProfileDao().getByLoginKey(firebaseUid)
-                                if (existing != null) {
-                                    prefs.edit().putString("uid_map_$firebaseUid", existing.userId).apply()
-                                    existing.userId
-                                } else {
-                                    var newId: String
-                                    while (true) {
-                                        newId = (100000..999999).random().toString()
-                                        if (db.userProfileDao().getByUserId(newId) == null) break
-                                    }
-                                    db.userProfileDao().upsert(UserProfileEntity(
-                                        userId = newId, loginKey = firebaseUid,
-                                        name = firebaseUser.displayName ?: "Google User",
-                                        photoUri = firebaseUser.photoUrl?.toString() ?: ""
-                                    ))
-                                    prefs.edit().putString("uid_map_$firebaseUid", newId).apply()
-                                    newId
-                                }
-                            }
-                        }
-                        preferencesManager.setLoggedIn(true)
-                        preferencesManager.setLoginMethod("google")
-                        userProfileManager.createOrUpdateProfile(
-                            name = firebaseUser.displayName ?: "Google User",
-                            photoUri = firebaseUser.photoUrl?.toString() ?: "",
-                            userId = userId
-                        )
+                    val authResult = loginHandler.loginWithGoogle(idToken)
+                    authResult.onSuccess {
                         isLoggedIn = true
-                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                            try { SocialRepository(AppDatabase.getDatabase(context)).syncUserProfile(userId, firebaseUser.displayName ?: "Google User", firebaseUser.photoUrl?.toString() ?: "") } catch (_: Exception) {}
-                        }
                     }.onFailure {
                         googleSignInError = it.message
                     }
@@ -631,43 +617,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
             isDark = isDark,
             error = googleSignInError,
             onEmailLogin = { email, _ ->
-                val db = AppDatabase.getDatabase(context)
-                val prefs = context.getSharedPreferences("user_profiles", android.content.Context.MODE_PRIVATE)
-                val loginKey = "email:$email"
-                val userId = runBlocking(Dispatchers.IO) {
-                    val savedId = prefs.getString("uid_map_$loginKey", null)
-                    if (savedId != null) {
-                        savedId
-                    } else {
-                        val existing = db.userProfileDao().getByLoginKey(loginKey)
-                        if (existing != null) {
-                            prefs.edit().putString("uid_map_$loginKey", existing.userId).apply()
-                            existing.userId
-                        } else {
-                            var newId: String
-                            while (true) {
-                                newId = (100000..999999).random().toString()
-                                if (db.userProfileDao().getByUserId(newId) == null) break
-                            }
-                            db.userProfileDao().upsert(UserProfileEntity(
-                                userId = newId, loginKey = loginKey,
-                                name = email.substringBefore("@"), photoUri = ""
-                            ))
-                            prefs.edit().putString("uid_map_$loginKey", newId).apply()
-                            newId
-                        }
-                    }
-                }
-                preferencesManager.setLoggedIn(true)
-                preferencesManager.setLoginMethod("email")
-                userProfileManager.createOrUpdateProfile(
-                    name = email.substringBefore("@"),
-                    photoUri = "",
-                    userId = userId
-                )
-                isLoggedIn = true
-                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                    try { SocialRepository(AppDatabase.getDatabase(context)).syncUserProfile(userId, email.substringBefore("@"), "") } catch (_: Exception) {}
+                kotlinx.coroutines.MainScope().launch {
+                    val result = loginHandler.loginWithEmail(email)
+                    isLoggedIn = true
                 }
             },
             onGoogleLogin = {
@@ -675,77 +627,15 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                 googleSignInLauncher.launch(googleSignInClient.signInIntent)
             },
             onFacebookLogin = {
-                val db = AppDatabase.getDatabase(context)
-                val prefs = context.getSharedPreferences("user_profiles", android.content.Context.MODE_PRIVATE)
-                val loginKey = "facebook"
-                val userId = runBlocking(Dispatchers.IO) {
-                    val savedId = prefs.getString("uid_map_$loginKey", null)
-                    if (savedId != null) {
-                        savedId
-                    } else {
-                        val existing = db.userProfileDao().getByLoginKey(loginKey)
-                        if (existing != null) {
-                            prefs.edit().putString("uid_map_$loginKey", existing.userId).apply()
-                            existing.userId
-                        } else {
-                            var newId: String
-                            while (true) {
-                                newId = (100000..999999).random().toString()
-                                if (db.userProfileDao().getByUserId(newId) == null) break
-                            }
-                            db.userProfileDao().upsert(UserProfileEntity(
-                                userId = newId, loginKey = loginKey,
-                                name = "Facebook User", photoUri = ""
-                            ))
-                            prefs.edit().putString("uid_map_$loginKey", newId).apply()
-                            newId
-                        }
-                    }
-                }
-                preferencesManager.setLoggedIn(true)
-                preferencesManager.setLoginMethod("facebook")
-                userProfileManager.createOrUpdateProfile(
-                    name = "Facebook User",
-                    photoUri = "",
-                    userId = userId
-                )
-                isLoggedIn = true
-                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                    try { SocialRepository(AppDatabase.getDatabase(context)).syncUserProfile(userId, "Facebook User", "") } catch (_: Exception) {}
+                kotlinx.coroutines.MainScope().launch {
+                    loginHandler.loginWithFacebook()
+                    isLoggedIn = true
                 }
             },
             onGuestLogin = {
-                val db = AppDatabase.getDatabase(context)
-                val guestKey = preferencesManager.getGuestKey().ifEmpty {
-                    val key = "guest_${(100000..999999).random()}"
-                    preferencesManager.setGuestKey(key)
-                    key
-                }
-                val userId = runBlocking(Dispatchers.IO) {
-                    val existing = db.userProfileDao().getByLoginKey(guestKey)
-                    existing?.userId ?: run {
-                        var newId: String
-                        while (true) {
-                            newId = (100000..999999).random().toString()
-                            if (db.userProfileDao().getByUserId(newId) == null) break
-                        }
-                        db.userProfileDao().upsert(UserProfileEntity(
-                            userId = newId, loginKey = guestKey,
-                            name = "Guest", photoUri = ""
-                        ))
-                        newId
-                    }
-                }
-                preferencesManager.setLoggedIn(true)
-                preferencesManager.setLoginMethod("guest")
-                userProfileManager.createOrUpdateProfile(
-                    name = "Guest",
-                    photoUri = "",
-                    userId = userId
-                )
-                isLoggedIn = true
-                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                    try { SocialRepository(AppDatabase.getDatabase(context)).syncUserProfile(userId, "Guest", "") } catch (_: Exception) {}
+                kotlinx.coroutines.MainScope().launch {
+                    loginHandler.loginAsGuest()
+                    isLoggedIn = true
                 }
             },
             onSignUpClick = { showSignUp = true }
@@ -761,24 +651,10 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                 strings = strings,
                 isDark = isDark2,
                 onSignUp = { name, email, password, _, _ ->
-                    val db = AppDatabase.getDatabase(context)
-                    val loginKey = "email:$email"
-                    val userId = runBlocking(Dispatchers.IO) {
-                        var newId: String
-                        while (true) {
-                            newId = (100000..999999).random().toString()
-                            if (db.userProfileDao().getByUserId(newId) == null) break
-                        }
-                        db.userProfileDao().upsert(UserProfileEntity(
-                            userId = newId, loginKey = loginKey,
-                            name = name, photoUri = ""
-                        ))
-                        newId
+                    kotlinx.coroutines.MainScope().launch {
+                        val result = loginHandler.loginWithEmail(email)
+                        isLoggedIn = true
                     }
-                    preferencesManager.setLoggedIn(true)
-                    preferencesManager.setLoginMethod("email")
-                    userProfileManager.createOrUpdateProfile(name = name, photoUri = "", userId = userId)
-                    isLoggedIn = true
                 },
                 onGoogleSignUp = {},
                 onFacebookSignUp = {},
@@ -812,7 +688,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                     )
                     preferencesManager.setOnboardingComplete(true)
                     showProfileSetup = false
-                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.Job()).launch {
                         try { SocialRepository(AppDatabase.getDatabase(context)).syncUserProfile(uid, name, photoUri) } catch (_: Exception) {}
                     }
                 }
@@ -828,6 +704,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
             selectedGroup != null -> selectedGroup = null
             showCalendar -> { showCalendar = false; currentPage = null }
             showTemplates -> { showTemplates = false; currentPage = null }
+            showPlateCalculator -> { showPlateCalculator = false; currentPage = null }
+            showOneRMCalculator -> { showOneRMCalculator = false; currentPage = null }
+            showWorkoutAnalytics -> { showWorkoutAnalytics = false; currentPage = null }
             currentPage != null -> currentPage = null
             currentDashboardTab != 0 -> currentDashboardTab = 0
             drawerState.isOpen -> { /* let drawer close itself */ }
@@ -851,13 +730,16 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                     onNavigate = { page ->
                         currentPage = page
                         when (page) {
-                            null -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
-                            DrawerPage.CALENDAR -> { showCalendar = true; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
-                            DrawerPage.FOOD_JOURNAL -> { showCalendar = false; showTemplates = false; showFoodJournal = true; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
-                            DrawerPage.AI_TRAINER -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = true; showFriends = false; showLeaderboard = false; selectedGroup = null }
-                            DrawerPage.FRIENDS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = true; showLeaderboard = false; selectedGroup = null }
-                            DrawerPage.GPS_CARDIO -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
-                            DrawerPage.REST_DAYS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; selectedGroup = null }
+                            null -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; selectedGroup = null }
+                            DrawerPage.CALENDAR -> { showCalendar = true; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; selectedGroup = null }
+                            DrawerPage.FOOD_JOURNAL -> { showCalendar = false; showTemplates = false; showFoodJournal = true; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; selectedGroup = null }
+                            DrawerPage.AI_TRAINER -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = true; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; selectedGroup = null }
+                            DrawerPage.FRIENDS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = true; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; selectedGroup = null }
+                            DrawerPage.GPS_CARDIO -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; selectedGroup = null }
+                            DrawerPage.REST_DAYS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; selectedGroup = null }
+                            DrawerPage.PLATE_CALCULATOR -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = true; showOneRMCalculator = false; showWorkoutAnalytics = false; selectedGroup = null }
+                            DrawerPage.ONE_RM_CALCULATOR -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = true; showWorkoutAnalytics = false; selectedGroup = null }
+                            DrawerPage.WORKOUT_ANALYTICS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = true; selectedGroup = null }
                         }
                     },
                     onExportCsv = {
@@ -1133,10 +1015,12 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                         strings = strings,
                         latestEntry = lastBiometric,
                         onSave = { weight, bf, waist, hips, thighs, chest, arms ->
-                            kotlinx.coroutines.runBlocking {
+                            scope.launch {
                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                     val db = AppDatabase.getDatabase(context)
-                                    val bm = BiometricManager(db)
+                                    val prefs = PreferencesManager(context)
+                                    val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                                    val bm = BiometricManager(db, syncRepo)
                                     bm.saveEntry(userId, weight, bf, waist, hips, thighs, chest, arms)
                                     lastBiometric = bm.getLatest(userId)
                                     allBiometrics = bm.getAll(userId)
@@ -1154,10 +1038,12 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                         strings = strings,
                         entries = allBiometrics,
                         onDelete = { entry ->
-                            kotlinx.coroutines.runBlocking {
+                            scope.launch {
                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                     val db = AppDatabase.getDatabase(context)
-                                    val bm = BiometricManager(db)
+                                    val prefs = PreferencesManager(context)
+                                    val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                                    val bm = BiometricManager(db, syncRepo)
                                     bm.delete(entry)
                                     lastBiometric = bm.getLatest(userId)
                                     allBiometrics = bm.getAll(userId)
@@ -1173,7 +1059,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                         strings = strings,
                         entries = foodEntries,
                         onDelete = { entry ->
-                            kotlinx.coroutines.runBlocking {
+                            scope.launch {
                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                     val db = AppDatabase.getDatabase(context)
                                     val fm = FoodManager(db)
@@ -1217,10 +1103,12 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                         strings = strings,
                         prefilledProduct = pendingFoodProduct,
                         onSave = { name, brand, mealType, servingSize, calories, protein, carbs, fat, fiber ->
-                            kotlinx.coroutines.runBlocking {
+                            scope.launch {
                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                     val db = AppDatabase.getDatabase(context)
-                                    val fm = FoodManager(db)
+                                    val prefs = PreferencesManager(context)
+                                    val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                                    val fm = FoodManager(db, syncRepo)
                                     fm.addFood(
                                         userId = userId,
                                         barcode = pendingFoodProduct?.barcode ?: "",
@@ -1268,6 +1156,27 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                         strings = strings,
                         onBackClick = { showFriends = false; currentPage = null },
                         onOpenLeaderboard = { showFriends = false; showLeaderboard = true }
+                    )
+                } else if (showPlateCalculator) {
+                    PlateCalculatorScreen(
+                        isDark = isDark,
+                        strings = strings,
+                        onBack = { showPlateCalculator = false; currentPage = null }
+                    )
+                } else if (showOneRMCalculator) {
+                    OneRMCalculatorScreen(
+                        isDark = isDark,
+                        strings = strings,
+                        onBack = { showOneRMCalculator = false; currentPage = null }
+                    )
+                } else if (showWorkoutAnalytics) {
+                    val analyticsDb = AppDatabase.getDatabase(context)
+                    WorkoutAnalyticsScreen(
+                        isDark = isDark,
+                        strings = strings,
+                        db = analyticsDb,
+                        userId = userId,
+                        onBack = { showWorkoutAnalytics = false; currentPage = null }
                     )
                 } else if (currentPage == DrawerPage.GPS_CARDIO) {
                     GpsCardioScreen(
@@ -2472,8 +2381,10 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
         ServerUrlDialog(
             isDark = isDark,
             currentUrl = preferencesManager.getServerUrl(),
-            onSave = { url ->
+            currentApiKey = preferencesManager.getAiApiKey(),
+            onSave = { url, apiKey ->
                 preferencesManager.setServerUrl(url)
+                preferencesManager.setAiApiKey(apiKey)
                 NetworkClient.getApi(url)
                 showServerDialog = false
             },
@@ -2510,9 +2421,13 @@ fun ExerciseListScreen(grupaMusculara: String, isLbs: Boolean = false, isDark: B
     }
 
     val equipmentTypes = remember { listOf("Dumbbells", "Barbell", "Machine", "Cable", "Bodyweight", "EZ Bar", "Smith Machine", "Kettlebell", "Stability Ball", "Sled Machine", "Band") }
-    val filteredExercises = exercitii.filter { item ->
-        (searchQuery.isBlank() || item.exercise.nume.contains(searchQuery, ignoreCase = true)) &&
-        (selectedEquipment == null || item.equipment == selectedEquipment)
+    val filteredExercises by remember(exercitii, searchQuery, selectedEquipment) {
+        derivedStateOf {
+            exercitii.filter { item ->
+                (searchQuery.isBlank() || item.exercise.nume.contains(searchQuery, ignoreCase = true)) &&
+                (selectedEquipment == null || item.equipment == selectedEquipment)
+            }
+        }
     }
 
     BackHandler {
@@ -5357,7 +5272,7 @@ fun ProfileScreen(
                                     )
                                     val uid = userProfileManager.getOwnUserId()
                                     if (uid != "local_user") {
-                                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.Job()).launch {
                                             try {
                                                 FirestoreHelper().saveUserProfile(uid, newName, profile?.photoUri ?: "")
                                             } catch (_: Exception) {}

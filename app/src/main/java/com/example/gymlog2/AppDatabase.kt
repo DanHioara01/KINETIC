@@ -15,7 +15,9 @@ data class AntrenamentEntity(
     val grupaMusculara: String,
     val data: Long = System.currentTimeMillis(),
     val notes: String = "",
-    val totalWeight: Double = 0.0
+    val totalWeight: Double = 0.0,
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "exercitii", foreignKeys = [ForeignKey(
@@ -31,7 +33,14 @@ data class ExercitiuEntity(
     val setIndex: Int = 0,
     val greutateKg: Double = 0.0,
     val repetari: Int = 0,
-    val notes: String = ""
+    val notes: String = "",
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
+data class ExerciseWithDate(
+    @Embedded val exercise: ExercitiuEntity,
+    @ColumnInfo(name = "antrenamentData") val antrenamentData: Long
 )
 
 @Entity(tableName = "exercises")
@@ -42,14 +51,18 @@ data class ExerciseDefinitionEntity(
     val equipment: String = "",
     val isDefault: Boolean = true,
     val isFavorite: Boolean = false,
-    val usageCount: Int = 0
+    val usageCount: Int = 0,
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "templates")
 data class TemplateEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val userId: String,
-    val name: String
+    val name: String,
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "template_exercises", foreignKeys = [ForeignKey(
@@ -62,7 +75,9 @@ data class TemplateExerciseEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val templateId: Long,
     val exerciseName: String,
-    val group: String
+    val group: String,
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "personal_records")
@@ -73,14 +88,18 @@ data class PersonalRecordEntity(
     val weight: Double,
     val reps: Int,
     val volume: Double = 0.0,
-    val date: Long = System.currentTimeMillis()
+    val date: Long = System.currentTimeMillis(),
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "muscle_recovery")
 data class MuscleRecoveryEntity(
     @PrimaryKey val grupaMusculara: String,
     val level: Double = 0.0,
-    val lastUpdated: Long = System.currentTimeMillis()
+    val lastUpdated: Long = System.currentTimeMillis(),
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "exercise_metadata")
@@ -88,7 +107,9 @@ data class ExerciseMetadataEntity(
     @PrimaryKey val exerciseName: String,
     val grupaMusculara: String,
     val isFavorite: Boolean = false,
-    val isCustom: Boolean = false
+    val isCustom: Boolean = false,
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "biometric_entries")
@@ -103,7 +124,9 @@ data class BiometricEntity(
     val thighsCm: Double = 0.0,
     val chestCm: Double = 0.0,
     val armsCm: Double = 0.0,
-    val notes: String = ""
+    val notes: String = "",
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "food_entries")
@@ -121,7 +144,9 @@ data class FoodEntity(
     val carbsG: Double = 0.0,
     val fatG: Double = 0.0,
     val fiberG: Double = 0.0,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "cardio_routes")
@@ -137,7 +162,15 @@ data class CardioRouteEntity(
     val caloriesBurned: Double = 0.0,
     val startTime: Long = System.currentTimeMillis(),
     val endTime: Long = 0,
-    val activityType: String = "running"
+    val activityType: String = "running",
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
+data class CardioSummary(
+    val totalDistance: Double?,
+    val totalDuration: Long?,
+    val totalCalories: Double?
 )
 
 @Entity(tableName = "rest_days")
@@ -148,7 +181,9 @@ data class RestDayEntity(
     val type: String = "rest",
     val notes: String = "",
     val activities: String = "",
-    val completed: Boolean = false
+    val completed: Boolean = false,
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "ai_chat_history")
@@ -158,7 +193,9 @@ data class AiChatHistoryEntity(
     val sessionId: Long = 0,
     val role: String,
     val message: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 data class MostFrequentExercise(
@@ -171,6 +208,9 @@ interface AntrenamentDao {
     @Insert
     suspend fun insert(antrenament: AntrenamentEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertByUuid(antrenament: AntrenamentEntity)
+
     @Update
     suspend fun update(antrenament: AntrenamentEntity)
 
@@ -182,6 +222,12 @@ interface AntrenamentDao {
 
     @Query("SELECT * FROM antrenamente WHERE id = :id")
     suspend fun getById(id: Long): AntrenamentEntity?
+
+    @Query("SELECT * FROM antrenamente WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): AntrenamentEntity?
+
+    @Query("SELECT * FROM antrenamente WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<AntrenamentEntity>
 
     @Query("DELETE FROM antrenamente WHERE id = :id")
     suspend fun deleteById(id: Long)
@@ -201,6 +247,9 @@ interface ExercitiuDao {
     @Insert
     suspend fun insertAll(list: List<ExercitiuEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertByUuid(exercitiu: ExercitiuEntity)
+
     @Update
     suspend fun update(exercitiu: ExercitiuEntity)
 
@@ -209,6 +258,15 @@ interface ExercitiuDao {
 
     @Query("SELECT * FROM exercitii WHERE antrenamentId = :antrenamentId ORDER BY setIndex")
     suspend fun getForAntrenament(antrenamentId: Long): List<ExercitiuEntity>
+
+    @Query("SELECT * FROM exercitii WHERE antrenamentId IN (:antrenamentIds) ORDER BY antrenamentId, setIndex")
+    suspend fun getForAntrenaments(antrenamentIds: List<Long>): List<ExercitiuEntity>
+
+    @Query("SELECT * FROM exercitii WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): ExercitiuEntity?
+
+    @Query("SELECT * FROM exercitii WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<ExercitiuEntity>
 
     @Query("DELETE FROM exercitii WHERE antrenamentId = :antrenamentId")
     suspend fun deleteForAntrenament(antrenamentId: Long)
@@ -239,6 +297,14 @@ interface ExercitiuDao {
         ORDER BY a.data DESC
     """)
     suspend fun getHistoryForExerciseSimple(exerciseName: String): List<ExercitiuEntity>
+
+    @Query("""
+        SELECT e.*, a.data as antrenamentData FROM exercitii e
+        INNER JOIN antrenamente a ON e.antrenamentId = a.id
+        WHERE a.userId = 'simple' AND e.numeExercitiu = :exerciseName
+        ORDER BY a.data DESC
+    """)
+    suspend fun getHistoryWithDates(exerciseName: String): List<ExerciseWithDate>
 
     @Query("""
         SELECT e.* FROM exercitii e
@@ -295,6 +361,12 @@ interface ExerciseDefinitionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(exercises: List<ExerciseDefinitionEntity>)
 
+    @Query("SELECT * FROM exercises WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): ExerciseDefinitionEntity?
+
+    @Query("SELECT * FROM exercises WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<ExerciseDefinitionEntity>
+
     @Query("SELECT * FROM exercises ORDER BY isFavorite DESC, usageCount DESC, `group`, name")
     suspend fun getAll(): List<ExerciseDefinitionEntity>
 
@@ -319,8 +391,17 @@ interface TemplateDao {
     @Insert
     suspend fun insert(template: TemplateEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertByUuid(template: TemplateEntity)
+
     @Query("SELECT * FROM templates WHERE userId = :userId")
     suspend fun getAllForUser(userId: String): List<TemplateEntity>
+
+    @Query("SELECT * FROM templates WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): TemplateEntity?
+
+    @Query("SELECT * FROM templates WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<TemplateEntity>
 
     @Delete
     suspend fun delete(template: TemplateEntity)
@@ -331,14 +412,29 @@ interface TemplateExerciseDao {
     @Insert
     suspend fun insert(exercise: TemplateExerciseEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertByUuid(exercise: TemplateExerciseEntity)
+
     @Query("SELECT * FROM template_exercises WHERE templateId = :templateId")
     suspend fun getForTemplate(templateId: Long): List<TemplateExerciseEntity>
+
+    @Query("SELECT * FROM template_exercises WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): TemplateExerciseEntity?
+
+    @Query("SELECT * FROM template_exercises WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<TemplateExerciseEntity>
 }
 
 @Dao
 interface PersonalRecordDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(pr: PersonalRecordEntity)
+
+    @Query("SELECT * FROM personal_records WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): PersonalRecordEntity?
+
+    @Query("SELECT * FROM personal_records WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<PersonalRecordEntity>
 
     @Query("SELECT * FROM personal_records WHERE userId = :userId AND exerciseName = :exerciseName ORDER BY weight DESC LIMIT 1")
     suspend fun getBest(userId: String, exerciseName: String): PersonalRecordEntity?
@@ -355,6 +451,12 @@ interface MuscleRecoveryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(recovery: MuscleRecoveryEntity)
 
+    @Query("SELECT * FROM muscle_recovery WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): MuscleRecoveryEntity?
+
+    @Query("SELECT * FROM muscle_recovery WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<MuscleRecoveryEntity>
+
     @Query("SELECT * FROM muscle_recovery WHERE grupaMusculara = :grupa")
     suspend fun getByGroup(grupa: String): MuscleRecoveryEntity?
 
@@ -367,6 +469,9 @@ interface BiometricDao {
     @Insert
     suspend fun insert(entry: BiometricEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertByUuid(entry: BiometricEntity)
+
     @Update
     suspend fun update(entry: BiometricEntity)
 
@@ -375,6 +480,12 @@ interface BiometricDao {
 
     @Query("DELETE FROM biometric_entries WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM biometric_entries WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): BiometricEntity?
+
+    @Query("SELECT * FROM biometric_entries WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<BiometricEntity>
 
     @Query("SELECT * FROM biometric_entries WHERE userId = :userId ORDER BY timestamp DESC")
     suspend fun getAllForUser(userId: String): List<BiometricEntity>
@@ -391,6 +502,9 @@ interface FoodDao {
     @Insert
     suspend fun insert(entry: FoodEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertByUuid(entry: FoodEntity)
+
     @Update
     suspend fun update(entry: FoodEntity)
 
@@ -399,6 +513,12 @@ interface FoodDao {
 
     @Query("DELETE FROM food_entries WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM food_entries WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): FoodEntity?
+
+    @Query("SELECT * FROM food_entries WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<FoodEntity>
 
     @Query("SELECT * FROM food_entries WHERE userId = :userId AND timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
     suspend fun getForDay(userId: String, start: Long, end: Long): List<FoodEntity>
@@ -424,6 +544,9 @@ interface CardioRouteDao {
     @Insert
     suspend fun insert(route: CardioRouteEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertByUuid(route: CardioRouteEntity)
+
     @Update
     suspend fun update(route: CardioRouteEntity)
 
@@ -432,6 +555,12 @@ interface CardioRouteDao {
 
     @Query("DELETE FROM cardio_routes WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM cardio_routes WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): CardioRouteEntity?
+
+    @Query("SELECT * FROM cardio_routes WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<CardioRouteEntity>
 
     @Query("SELECT * FROM cardio_routes WHERE userId = :userId ORDER BY startTime DESC")
     suspend fun getAllForUser(userId: String): List<CardioRouteEntity>
@@ -456,12 +585,21 @@ interface CardioRouteDao {
 
     @Query("SELECT SUM(caloriesBurned) FROM cardio_routes WHERE userId = :userId AND startTime BETWEEN :start AND :end")
     suspend fun getTotalCaloriesBetween(userId: String, start: Long, end: Long): Double?
+
+    @Query("""
+        SELECT SUM(distanceKm) as totalDistance, SUM(durationMs) as totalDuration, SUM(caloriesBurned) as totalCalories
+        FROM cardio_routes WHERE userId = :userId AND startTime BETWEEN :start AND :end
+    """)
+    suspend fun getTodaySummary(userId: String, start: Long, end: Long): CardioSummary?
 }
 
 @Dao
 interface RestDayDao {
     @Insert
     suspend fun insert(restDay: RestDayEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertByUuid(restDay: RestDayEntity)
 
     @Update
     suspend fun update(restDay: RestDayEntity)
@@ -471,6 +609,12 @@ interface RestDayDao {
 
     @Query("DELETE FROM rest_days WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM rest_days WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): RestDayEntity?
+
+    @Query("SELECT * FROM rest_days WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<RestDayEntity>
 
     @Query("SELECT * FROM rest_days WHERE userId = :userId ORDER BY date DESC")
     suspend fun getAllForUser(userId: String): List<RestDayEntity>
@@ -489,6 +633,15 @@ interface RestDayDao {
 interface AiChatHistoryDao {
     @Insert
     suspend fun insert(message: AiChatHistoryEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertByUuid(message: AiChatHistoryEntity)
+
+    @Query("SELECT * FROM ai_chat_history WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): AiChatHistoryEntity?
+
+    @Query("SELECT * FROM ai_chat_history WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<AiChatHistoryEntity>
 
     @Query("SELECT * FROM ai_chat_history WHERE userId = :userId ORDER BY timestamp ASC")
     suspend fun getAllForUser(userId: String): List<AiChatHistoryEntity>
@@ -510,6 +663,12 @@ interface AiChatHistoryDao {
 interface ExerciseMetadataDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(metadata: ExerciseMetadataEntity)
+
+    @Query("SELECT * FROM exercise_metadata WHERE syncUuid = :uuid LIMIT 1")
+    suspend fun getByUuid(uuid: String): ExerciseMetadataEntity?
+
+    @Query("SELECT * FROM exercise_metadata WHERE syncUuid = ''")
+    suspend fun getUnsynced(): List<ExerciseMetadataEntity>
 
     @Query("SELECT * FROM exercise_metadata WHERE exerciseName = :name LIMIT 1")
     suspend fun getByName(name: String): ExerciseMetadataEntity?
@@ -551,7 +710,7 @@ interface ExerciseMetadataDao {
         RestDayEntity::class,
         AiChatHistoryEntity::class
     ],
-    version = 15,
+    version = 16,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -736,6 +895,33 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val tables = listOf(
+                    "antrenamente",
+                    "exercitii",
+                    "exercises",
+                    "templates",
+                    "template_exercises",
+                    "personal_records",
+                    "biometric_entries",
+                    "food_entries",
+                    "cardio_routes",
+                    "rest_days",
+                    "ai_chat_history",
+                    "subscriptions"
+                )
+                for (table in tables) {
+                    db.execSQL("ALTER TABLE `$table` ADD COLUMN syncUuid TEXT NOT NULL DEFAULT ''")
+                    db.execSQL("ALTER TABLE `$table` ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0")
+                }
+                db.execSQL("ALTER TABLE `muscle_recovery` ADD COLUMN syncUuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `muscle_recovery` ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `exercise_metadata` ADD COLUMN syncUuid TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `exercise_metadata` ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -743,8 +929,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "kinetic.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16)
                     .build()
                 INSTANCE = instance
                 instance

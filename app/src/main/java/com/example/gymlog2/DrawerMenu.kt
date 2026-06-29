@@ -26,7 +26,28 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.gymlog2.ui.theme.*
 
-enum class DrawerPage { CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS, GPS_CARDIO, REST_DAYS }
+enum class DrawerPage { CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS, GPS_CARDIO, REST_DAYS, PLATE_CALCULATOR, ONE_RM_CALCULATOR, WORKOUT_ANALYTICS }
+
+fun DrawerPage.toDrawerScreen(): DrawerScreen = when (this) {
+    DrawerPage.CALENDAR -> DrawerScreen.Calendar
+    DrawerPage.FOOD_JOURNAL -> DrawerScreen.FoodJournal
+    DrawerPage.AI_TRAINER -> DrawerScreen.AiTrainer
+    DrawerPage.FRIENDS -> DrawerScreen.Friends
+    DrawerPage.GPS_CARDIO -> DrawerScreen.GpsCardio
+    DrawerPage.REST_DAYS -> DrawerScreen.RestDays
+    DrawerPage.PLATE_CALCULATOR -> DrawerScreen.Calendar
+    DrawerPage.ONE_RM_CALCULATOR -> DrawerScreen.Calendar
+    DrawerPage.WORKOUT_ANALYTICS -> DrawerScreen.Calendar
+}
+
+fun DrawerScreen.toDrawerPage(): DrawerPage = when (this) {
+    DrawerScreen.Calendar -> DrawerPage.CALENDAR
+    DrawerScreen.FoodJournal -> DrawerPage.FOOD_JOURNAL
+    DrawerScreen.AiTrainer -> DrawerPage.AI_TRAINER
+    DrawerScreen.Friends -> DrawerPage.FRIENDS
+    DrawerScreen.GpsCardio -> DrawerPage.GPS_CARDIO
+    DrawerScreen.RestDays -> DrawerPage.REST_DAYS
+}
 
 data class LanguageOption(
     val code: String,
@@ -229,6 +250,45 @@ fun DrawerMenu(
                 iconBg = iconBg,
                 onClick = { onNavigate(DrawerPage.REST_DAYS); onClose() }
             )
+
+            HorizontalDivider(color = divider, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+
+            // Tools & Calculators
+            DrawerSectionHeader(label = "Tools", textSecondary = textSecondary)
+            DrawerNavItem(
+                icon = Icons.Default.Calculate,
+                label = "Plate Calculator",
+                selected = currentPage == DrawerPage.PLATE_CALCULATOR,
+                accent = accent,
+                selectedBg = selectedBg,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                iconBg = iconBg,
+                onClick = { onNavigate(DrawerPage.PLATE_CALCULATOR); onClose() }
+            )
+            DrawerNavItem(
+                icon = Icons.Default.FitnessCenter,
+                label = "1RM Calculator",
+                selected = currentPage == DrawerPage.ONE_RM_CALCULATOR,
+                accent = accent,
+                selectedBg = selectedBg,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                iconBg = iconBg,
+                onClick = { onNavigate(DrawerPage.ONE_RM_CALCULATOR); onClose() }
+            )
+            DrawerNavItem(
+                icon = Icons.Default.Analytics,
+                label = "Workout Analytics",
+                selected = currentPage == DrawerPage.WORKOUT_ANALYTICS,
+                accent = accent,
+                selectedBg = selectedBg,
+                textPrimary = textPrimary,
+                textSecondary = textSecondary,
+                iconBg = iconBg,
+                onClick = { onNavigate(DrawerPage.WORKOUT_ANALYTICS); onClose() }
+            )
+
             HorizontalDivider(color = divider, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
 
             // Export/Import
@@ -606,7 +666,8 @@ private fun DrawerSettingItem(
 fun ServerUrlDialog(
     isDark: Boolean,
     currentUrl: String,
-    onSave: (String) -> Unit,
+    currentApiKey: String,
+    onSave: (String, String) -> Unit,
     onDismiss: () -> Unit
 ) {
     val cardBg = if (isDark) cardColor() else LightCard
@@ -615,20 +676,21 @@ fun ServerUrlDialog(
     val accent = if (isDark) accentColor() else LightPrimaryRed
 
     var url by remember { mutableStateOf(currentUrl) }
+    var apiKey by remember { mutableStateOf(currentApiKey) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = cardBg,
         titleContentColor = textPrimary,
-        title = { Text("Server URL", fontWeight = FontWeight.Bold) },
+        title = { Text("Server Settings", fontWeight = FontWeight.Bold) },
         text = {
             Column {
                 Text(
-                    "Enter the backend server address:",
+                    "Backend server address:",
                     color = textSecondary,
                     fontSize = 13.sp
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
@@ -644,9 +706,31 @@ fun ServerUrlDialog(
                     ),
                     shape = RoundedCornerShape(10.dp)
                 )
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "AI Trainer API Key (optional):",
+                    color = textSecondary,
+                    fontSize = 13.sp
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = apiKey,
+                    onValueChange = { apiKey = it },
+                    placeholder = { Text("Leave empty if auth is disabled", color = textSecondary.copy(alpha = 0.5f)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = accent,
+                        unfocusedBorderColor = textSecondary.copy(alpha = 0.3f),
+                        cursorColor = accent,
+                        focusedTextColor = textPrimary,
+                        unfocusedTextColor = textPrimary
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Leave empty for default (local network). Tap Save to apply.",
+                    "Leave empty for default server URL. API key only needed if server has auth enabled.",
                     color = textSecondary,
                     fontSize = 11.sp
                 )
@@ -654,7 +738,7 @@ fun ServerUrlDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onSave(url.trim()) },
+                onClick = { onSave(url.trim(), apiKey.trim()) },
                 colors = ButtonDefaults.buttonColors(containerColor = accent),
                 shape = RoundedCornerShape(10.dp)
             ) {

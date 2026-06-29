@@ -655,7 +655,9 @@ fun GpsCardioScreen(
                                         endTime = System.currentTimeMillis(),
                                         activityType = gpsState.activityType
                                     )
-                                    db.cardioRouteDao().insert(route)
+                                    val prefs = PreferencesManager(context)
+                                    val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                                    syncRepo.saveCardioRoute(route)
                                     savedRoutes = db.cardioRouteDao().getAllForUser(userId)
                                 }
                             }
