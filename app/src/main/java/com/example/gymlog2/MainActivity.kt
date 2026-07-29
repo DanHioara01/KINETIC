@@ -7,7 +7,9 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Rational
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.activity.compose.setContent
@@ -20,6 +22,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -82,6 +86,16 @@ import androidx.compose.runtime.mutableLongStateOf
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT
+            )
+        )
         super.onCreate(savedInstanceState)
         val preferencesManager = PreferencesManager(this)
         LanguageManager.loadSavedLanguage(this)
@@ -702,8 +716,16 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
             selectedDirectProgressExercise != null -> { selectedDirectProgressExercise = null }
             selectedDirectExercise != null -> { selectedDirectExercise = null; selectedDirectGroup = null }
             selectedGroup != null -> selectedGroup = null
-            showCalendar -> { showCalendar = false; currentPage = null }
             showTemplates -> { showTemplates = false; currentPage = null }
+            showCalendar -> { showCalendar = false; currentPage = null }
+            showBarcodeScanner -> { showBarcodeScanner = false; showFoodJournal = true }
+            showAddFood -> { showAddFood = false; pendingFoodProduct = null; showFoodJournal = true }
+            showFoodJournal -> { showFoodJournal = false; currentPage = null; pendingFoodProduct = null }
+            showAiTrainer -> { showAiTrainer = false; currentPage = null }
+            showBiometricInput -> { showBiometricInput = false; currentPage = null }
+            showBiometricCharts -> { showBiometricCharts = false; currentPage = null }
+            showFriends -> { showFriends = false; currentPage = null }
+            showLeaderboard -> { showLeaderboard = false; currentPage = null }
             showPlateCalculator -> { showPlateCalculator = false; currentPage = null }
             showOneRMCalculator -> { showOneRMCalculator = false; currentPage = null }
             showWorkoutAnalytics -> { showWorkoutAnalytics = false; currentPage = null }
@@ -787,30 +809,39 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
 
         Scaffold(
             containerColor = surfaceBg,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             bottomBar = {
-                NavigationBar(containerColor = surfaceBg) {
+                NavigationBar(containerColor = surfaceBg, windowInsets = WindowInsets(0, 0, 0, 0)) {
                     NavigationBarItem(
                         selected = currentDashboardTab == 0,
                         onClick = {
                             if (currentDashboardTab == 0) {
                                 when {
+                                    selectedDirectProgressExercise != null -> selectedDirectProgressExercise = null
+                                    selectedDirectExercise != null -> { selectedDirectExercise = null; selectedDirectGroup = null }
                                     selectedGroup != null -> selectedGroup = null
                                     showTemplates -> { showTemplates = false; currentPage = null }
                                     showCalendar -> { showCalendar = false; currentPage = null }
-                                    showFoodJournal -> { showFoodJournal = false; currentPage = null }
+                                    showFoodJournal -> { showFoodJournal = false; currentPage = null; pendingFoodProduct = null }
                                     showAiTrainer -> { showAiTrainer = false; currentPage = null }
                                     showBarcodeScanner -> { showBarcodeScanner = false; currentPage = null }
-                                    showAddFood -> { showAddFood = false; currentPage = null }
+                                    showAddFood -> { showAddFood = false; currentPage = null; pendingFoodProduct = null }
                                     showBiometricInput -> { showBiometricInput = false; currentPage = null }
                                     showBiometricCharts -> { showBiometricCharts = false; currentPage = null }
                                     showFriends -> { showFriends = false; currentPage = null }
                                     showLeaderboard -> { showLeaderboard = false; currentPage = null }
+                                    showPlateCalculator -> { showPlateCalculator = false; currentPage = null }
+                                    showOneRMCalculator -> { showOneRMCalculator = false; currentPage = null }
+                                    showWorkoutAnalytics -> { showWorkoutAnalytics = false; currentPage = null }
                                     currentPage != null -> currentPage = null
                                 }
                             } else {
                                 currentDashboardTab = 0
                                 selectedGroup = null
+                                selectedDirectExercise = null
+                                selectedDirectGroup = null
+                                selectedDirectProgressExercise = null
                                 showCalendar = false
                                 showTemplates = false
                                 showFoodJournal = false
@@ -821,7 +852,11 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 showBiometricCharts = false
                                 showFriends = false
                                 showLeaderboard = false
+                                showPlateCalculator = false
+                                showOneRMCalculator = false
+                                showWorkoutAnalytics = false
                                 currentPage = null
+                                pendingFoodProduct = null
                             }
                         },
                         icon = {
@@ -850,6 +885,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                             } else {
                                 currentDashboardTab = 1
                                 selectedGroup = null
+                                selectedDirectExercise = null
+                                selectedDirectGroup = null
+                                selectedDirectProgressExercise = null
                                 showCalendar = false
                                 showTemplates = false
                                 showFoodJournal = false
@@ -860,7 +898,11 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 showBiometricCharts = false
                                 showFriends = false
                                 showLeaderboard = false
+                                showPlateCalculator = false
+                                showOneRMCalculator = false
+                                showWorkoutAnalytics = false
                                 currentPage = null
+                                pendingFoodProduct = null
                             }
                         },
                         icon = {
@@ -888,6 +930,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                             } else {
                                 currentDashboardTab = 2
                                 selectedGroup = null
+                                selectedDirectExercise = null
+                                selectedDirectGroup = null
+                                selectedDirectProgressExercise = null
                                 showCalendar = false
                                 showTemplates = false
                                 showFoodJournal = false
@@ -898,7 +943,11 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 showBiometricCharts = false
                                 showFriends = false
                                 showLeaderboard = false
+                                showPlateCalculator = false
+                                showOneRMCalculator = false
+                                showWorkoutAnalytics = false
                                 currentPage = null
+                                pendingFoodProduct = null
                             }
                         },
                         icon = {
@@ -926,6 +975,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                             } else {
                                 currentDashboardTab = 3
                                 selectedGroup = null
+                                selectedDirectExercise = null
+                                selectedDirectGroup = null
+                                selectedDirectProgressExercise = null
                                 showCalendar = false
                                 showTemplates = false
                                 showFoodJournal = false
@@ -936,7 +988,11 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 showBiometricCharts = false
                                 showFriends = false
                                 showLeaderboard = false
+                                showPlateCalculator = false
+                                showOneRMCalculator = false
+                                showWorkoutAnalytics = false
                                 currentPage = null
+                                pendingFoodProduct = null
                             }
                         },
                         icon = {
@@ -966,6 +1022,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                             } else {
                                 currentDashboardTab = 4
                                 selectedGroup = null
+                                selectedDirectExercise = null
+                                selectedDirectGroup = null
+                                selectedDirectProgressExercise = null
                                 showCalendar = false
                                 showTemplates = false
                                 showFoodJournal = false
@@ -976,7 +1035,11 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 showBiometricCharts = false
                                 showFriends = false
                                 showLeaderboard = false
+                                showPlateCalculator = false
+                                showOneRMCalculator = false
+                                showWorkoutAnalytics = false
                                 currentPage = null
+                                pendingFoodProduct = null
                             }
                         },
                         icon = {
@@ -1273,7 +1336,17 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                             )
                         }
                     ) { innerPadding ->
-                        if (currentDashboardTab == 0) {
+                        AnimatedContent(
+                            targetState = currentDashboardTab,
+                            transitionSpec = {
+                                val direction = if (targetState > initialState) 1 else -1
+                                slideInHorizontally(tween(300)) { it * direction / 4 } + fadeIn(tween(250)) togetherWith
+                                    slideOutHorizontally(tween(250)) { -it * direction / 4 } + fadeOut(tween(200))
+                            },
+                            label = "tabTransition"
+                        ) { tab ->
+                            when (tab) {
+                            0 -> {
                             var selectedMood by remember { mutableIntStateOf(1) }
                             val onboardingProfile = remember { preferencesManager.getOnboardingProfile() }
                             val generatedWorkout = remember(onboardingProfile, selectedMood) {
@@ -1300,7 +1373,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                             }
 
                             LazyColumn(
-                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = paddingValues.calculateBottomPadding()),
+                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
                                 modifier = Modifier.padding(innerPadding)
                             ) {
@@ -1770,7 +1843,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                     }
                                 }
                             }
-                        } else if (currentDashboardTab == 1) {
+                        } 1 -> {
 
                             if (selectedTemplate != null) {
                                 TemplateDetailScreen(
@@ -1819,7 +1892,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
 
                                     if (muscleGroupsSubTab == 0) {
                                         LazyColumn(
-                                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = paddingValues.calculateBottomPadding()),
+                                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
                                             verticalArrangement = Arrangement.spacedBy(16.dp)
                                         ) {
                                             items(DataProvider.templateuri) { template ->
@@ -1946,7 +2019,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                         var selectedEquipment by remember { mutableStateOf<String?>(null) }
 
                                         LazyColumn(
-                                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = paddingValues.calculateBottomPadding() + 24.dp),
+                                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
                                             verticalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
                                             item {
@@ -2282,7 +2355,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                     }
                                 }
                             }
-                        } else if (currentDashboardTab == 2) {
+                        } 2 -> {
                             StatsScreen(
                                 isDark = isDark,
                                 isLbs = isLbs,
@@ -2301,7 +2374,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 allRecentPRs = allRecentPRs,
                                 allExerciseNames = allExerciseNames
                             )
-                        } else if (currentDashboardTab == 3) {
+                        } 3 -> {
                             WaterTrackingScreen(
                                 preferencesManager = preferencesManager,
                                 strings = strings,
@@ -2312,7 +2385,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 surfaceBg = surfaceBg,
                                 paddingValues = innerPadding
                             )
-                        } else if (currentDashboardTab == 4) {
+                        } 4 -> {
                             ProfileScreen(
                                 isDark = isDark,
                                 preferencesManager = preferencesManager,
@@ -2345,6 +2418,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                 paddingValues = innerPadding
                             )
                         }
+                        else -> {}
                     }
                 }
             }
@@ -2391,6 +2465,8 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
             onDismiss = { showServerDialog = false }
         )
     }
+}
+}
 }
 }
 
@@ -5067,7 +5143,7 @@ fun ProfileScreen(
             start = 16.dp,
             end = 16.dp,
             top = paddingValues.calculateTopPadding() + 4.dp,
-            bottom = paddingValues.calculateBottomPadding() + 16.dp
+            bottom = 16.dp
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -5688,6 +5764,39 @@ fun ProfileScreen(
                             tint = textSecondary
                         )
                     }
+                }
+            }
+        }
+
+        item {
+            Spacer(Modifier.height(4.dp))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = { /* Spotify connect TODO */ }),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF191414)),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_spotify),
+                        contentDescription = "Spotify",
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        "CONNECT SPOTIFY",
+                        color = Color(0xFF1DB954),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
                 }
             }
         }

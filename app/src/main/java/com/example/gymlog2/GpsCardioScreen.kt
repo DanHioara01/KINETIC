@@ -41,10 +41,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -100,6 +98,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -805,7 +804,7 @@ fun GpsCardioScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f)
+                                .height(220.dp)
                                 .padding(horizontal = 16.dp),
                             shape = RoundedCornerShape(mapCornerRadius),
                             colors = CardDefaults.cardColors(containerColor = cardBg)
@@ -863,117 +862,45 @@ fun GpsCardioScreen(
                             }
                         }
 
+                        Spacer(Modifier.height(6.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            CompactStat(
+                                modifier = Modifier.weight(1f),
+                                value = String.format(Locale.US, "%.2f", gpsState.totalDistance),
+                                unit = "km",
+                                label = strings.distance,
+                                icon = painterResource(id = R.drawable.distance)
+                            )
+                            CompactStat(
+                                modifier = Modifier.weight(1f),
+                                value = formatDuration(gpsState.elapsedTime),
+                                unit = "",
+                                label = strings.duration,
+                                icon = Icons.Default.Timer
+                            )
+                            CompactStat(
+                                modifier = Modifier.weight(1f),
+                                value = String.format(Locale.US, "%.1f", gpsState.currentSpeed),
+                                unit = "km/h",
+                                label = strings.speed,
+                                icon = Icons.Default.Speed
+                            )
+                        }
+
                         Spacer(Modifier.height(8.dp))
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            StatCard(
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.Default.Speed,
-                                value = String.format(Locale.US, "%.2f", gpsState.totalDistance),
-                                unit = "km",
-                                label = strings.distance,
-                                cardBg = cardBg,
-                                accent = accent,
-                                textPrimary = textPrimary,
-                                textSecondary = textSecondary,
-                                iconBgColor = accent,
-                                isPrimary = true
-                            )
-                            StatCard(
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.Default.Timer,
-                                value = formatDuration(gpsState.elapsedTime),
-                                unit = "",
-                                label = strings.duration,
-                                cardBg = cardBg,
-                                accent = accent,
-                                textPrimary = textPrimary,
-                                textSecondary = textSecondary,
-                                iconBgColor = accent,
-                                isPrimary = true
-                            )
-                        }
-
-                        Spacer(Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            StatCard(
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.Default.Speed,
-                                value = String.format(Locale.US, "%.1f", gpsState.currentSpeed),
-                                unit = "km/h",
-                                label = strings.speed,
-                                cardBg = cardBg,
-                                accent = accent,
-                                textPrimary = textPrimary,
-                                textSecondary = textSecondary,
-                                iconBgColor = Color(0xFF3B8ADE)
-                            )
-                            StatCard(
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.AutoMirrored.Filled.TrendingUp,
-                                value = formatPace(gpsState.currentSpeed),
-                                unit = "",
-                                label = strings.pace,
-                                cardBg = cardBg,
-                                accent = accent,
-                                textPrimary = textPrimary,
-                                textSecondary = textSecondary,
-                                iconBgColor = Color(0xFF8BC34A)
-                            )
-                        }
-
-                        Spacer(Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            StatCard(
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.Default.LocalFireDepartment,
-                                value = String.format(Locale.US, "%.0f", estimateCalories(gpsState.totalDistance, gpsState.activityType)),
-                                unit = "kcal",
-                                label = strings.caloriesBurned,
-                                cardBg = cardBg,
-                                accent = accent,
-                                textPrimary = textPrimary,
-                                textSecondary = textSecondary,
-                                iconBgColor = Color(0xFFFF9800)
-                            )
-                            StatCard(
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.Default.FitnessCenter,
-                                value = gpsState.routePoints.size.toString(),
-                                unit = "pts",
-                                label = "Points",
-                                cardBg = cardBg,
-                                accent = accent,
-                                textPrimary = textPrimary,
-                                textSecondary = textSecondary,
-                                iconBgColor = Color(0xFFFFC107)
-                            )
-                        }
-
-                        Spacer(Modifier.height(12.dp))
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (gpsState.isTracking) {
                                 Column(
@@ -1069,7 +996,7 @@ fun GpsCardioScreen(
                                     shape = RoundedCornerShape(16.dp),
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(52.dp)
+                                        .height(54.dp)
                                 ) {
                                     Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
                                     Spacer(Modifier.width(8.dp))
@@ -1078,13 +1005,65 @@ fun GpsCardioScreen(
                             }
                         }
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(8.dp))
                     }
                 }
             }
     }
 }
 
+
+@Composable
+private fun CompactStat(
+    modifier: Modifier = Modifier,
+    value: String,
+    unit: String,
+    label: String,
+    icon: androidx.compose.ui.graphics.painter.Painter
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF0D0D0D))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                painter = icon,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.height(2.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    value,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+                if (unit.isNotEmpty()) {
+                    Spacer(Modifier.width(2.dp))
+                    Text(
+                        unit,
+                        fontSize = 9.sp,
+                        color = Color.White.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(bottom = 1.dp)
+                    )
+                }
+            }
+            Text(
+                label,
+                fontSize = 9.sp,
+                color = Color.White.copy(alpha = 0.5f)
+            )
+        }
+    }
+}
 @Composable
 private fun RouteCanvas(
     points: List<GpsPoint>,

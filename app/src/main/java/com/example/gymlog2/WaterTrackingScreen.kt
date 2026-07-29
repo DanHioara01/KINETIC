@@ -2,6 +2,7 @@ package com.example.gymlog2
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,7 +30,9 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -129,96 +132,73 @@ fun WaterTrackingScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Canvas(
+                Box(
                     modifier = Modifier
                         .width(80.dp)
-                        .height(180.dp)
+                        .height(180.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    val bottleWidth = size.width * 0.8f
-                    val bottleHeight = size.height * 0.85f
-                    val neckWidth = bottleWidth * 0.4f
-                    val neckHeight = size.height * 0.05f
-                    val cornerRadius = bottleWidth * 0.12f
-
-                    val bottleLeft = (size.width - bottleWidth) / 2f
-                    val bottleTop = neckHeight + 4.dp.toPx()
-                    val capHeight = 8.dp.toPx()
-
-                    drawRoundRect(
-                        color = textSecondary.copy(alpha = 0.5f),
-                        topLeft = Offset((size.width - neckWidth) / 2f, 0f),
-                        size = Size(neckWidth, capHeight),
-                        cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
+                    Image(
+                        painter = painterResource(id = R.drawable.water_bottle),
+                        contentDescription = "Water bottle",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
                     )
 
-                    val bodyPath = androidx.compose.ui.graphics.Path().apply {
-                        addRoundRect(
-                            RoundRect(
-                                left = bottleLeft,
-                                top = bottleTop,
-                                right = bottleLeft + bottleWidth,
-                                bottom = bottleTop + bottleHeight,
-                                topLeftCornerRadius = CornerRadius(cornerRadius, cornerRadius),
-                                topRightCornerRadius = CornerRadius(cornerRadius, cornerRadius),
-                                bottomLeftCornerRadius = CornerRadius(cornerRadius * 1.5f, cornerRadius * 1.5f),
-                                bottomRightCornerRadius = CornerRadius(cornerRadius * 1.5f, cornerRadius * 1.5f)
-                            )
-                        )
-                    }
-                    drawPath(bodyPath, color = textSecondary.copy(alpha = 0.4f), style = Stroke(width = 1.5.dp.toPx()))
-
                     if (animatedProgress > 0f) {
-                        val waveAmplitude = 1.5.dp.toPx()
-                        val waterTop = bottleTop + bottleHeight * (1f - animatedProgress)
-                        val waterPath = androidx.compose.ui.graphics.Path().apply {
-                            addRoundRect(
-                                RoundRect(
-                                    left = bottleLeft + 2.dp.toPx(),
-                                    top = waterTop - waveAmplitude,
-                                    right = bottleLeft + bottleWidth - 2.dp.toPx(),
-                                    bottom = bottleTop + bottleHeight - 2.dp.toPx(),
-                                    bottomLeftCornerRadius = CornerRadius(cornerRadius, cornerRadius),
-                                    bottomRightCornerRadius = CornerRadius(cornerRadius, cornerRadius),
-                                    topLeftCornerRadius = CornerRadius(0f, 0f),
-                                    topRightCornerRadius = CornerRadius(0f, 0f)
+                        Canvas(modifier = Modifier.fillMaxSize()) {
+                            val bottleWidth = size.width * 0.72f
+                            val bottleHeight = size.height * 0.76f
+                            val bottleLeft = (size.width - bottleWidth) / 2f
+                            val bottleTop = size.height * 0.13f
+                            val cornerRadius = 8.dp.toPx()
+                            val waveAmplitude = 2.dp.toPx()
+
+                            val waterTop = bottleTop + bottleHeight * (1f - animatedProgress)
+                            val waterColor = lerp(Color(0xFF2196F3), Color(0xFF00BCD4), animatedProgress)
+
+                            val innerPath = Path().apply {
+                                addRoundRect(
+                                    RoundRect(
+                                        left = bottleLeft,
+                                        top = bottleTop,
+                                        right = bottleLeft + bottleWidth,
+                                        bottom = bottleTop + bottleHeight,
+                                        topLeftCornerRadius = CornerRadius(cornerRadius, cornerRadius),
+                                        topRightCornerRadius = CornerRadius(cornerRadius, cornerRadius),
+                                        bottomLeftCornerRadius = CornerRadius(cornerRadius * 1.5f, cornerRadius * 1.5f),
+                                        bottomRightCornerRadius = CornerRadius(cornerRadius * 1.5f, cornerRadius * 1.5f)
+                                    )
                                 )
-                            )
-                        }
-
-                        val wavePath = androidx.compose.ui.graphics.Path().apply {
-                            val waveW = bottleWidth - 4.dp.toPx()
-                            val waveL = bottleLeft + 2.dp.toPx()
-                            moveTo(waveL, waterTop)
-                            for (x in 0..100) {
-                                val xR = x / 100f
-                                val xPos = waveL + waveW * xR
-                                val yOff = kotlin.math.sin(
-                                    Math.toRadians((xR * 360 + wavePhase).toDouble())
-                                ).toFloat() * waveAmplitude
-                                lineTo(xPos, waterTop + yOff)
                             }
-                            lineTo(waveL + waveW, waterTop - 20.dp.toPx())
-                            lineTo(waveL, waterTop - 20.dp.toPx())
-                            close()
-                        }
 
-                        val waterColor = lerp(Color(0xFF2196F3), Color(0xFF00BCD4), animatedProgress)
-                        clipPath(bodyPath) {
-                            drawPath(waterPath, color = waterColor.copy(alpha = 0.7f))
-                            drawPath(wavePath, color = cardBg)
-                        }
-                    }
+                            clipPath(innerPath) {
+                                drawRect(
+                                    color = waterColor.copy(alpha = 0.4f),
+                                    topLeft = Offset(bottleLeft, waterTop),
+                                    size = Size(bottleWidth, bottleTop + bottleHeight - waterTop)
+                                )
 
-                    for (i in 1..3) {
-                        val lineY = bottleTop + bottleHeight * (1f - i * 0.25f)
-                        val waterTopLine = if (animatedProgress > 0f) bottleTop + bottleHeight * (1f - animatedProgress) else bottleTop + bottleHeight
-                        val isUnderWater = lineY >= waterTopLine
-                        drawLine(
-                            color = if (isUnderWater) Color.White.copy(alpha = 0.7f) else textSecondary.copy(alpha = 0.4f),
-                            start = Offset(bottleLeft + 3.dp.toPx(), lineY),
-                            end = Offset(bottleLeft + 10.dp.toPx(), lineY),
-                            strokeWidth = 1.dp.toPx()
-                        )
+                                val wavePath = Path().apply {
+                                    val w = bottleWidth
+                                    val l = bottleLeft
+                                    moveTo(l, waterTop)
+                                    for (x in 0..100) {
+                                        val xR = x / 100f
+                                        val xPos = l + w * xR
+                                        val yOff = kotlin.math.sin(
+                                            Math.toRadians((xR * 360 + wavePhase).toDouble())
+                                        ).toFloat() * waveAmplitude
+                                        lineTo(xPos, waterTop + yOff)
+                                    }
+                                    lineTo(l + w, bottleTop + bottleHeight)
+                                    lineTo(l, bottleTop + bottleHeight)
+                                    close()
+                                }
+
+                                drawPath(wavePath, color = waterColor.copy(alpha = 0.55f))
+                            }
+                        }
                     }
                 }
 
