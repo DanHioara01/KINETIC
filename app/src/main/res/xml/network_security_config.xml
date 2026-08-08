@@ -3,7 +3,6 @@
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
-            <certificates src="@xml/trust_anchors" />
         </trust-anchors>
     </base-config>
 </network-security-config>

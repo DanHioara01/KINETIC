@@ -1,0 +1,32 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Fundal -->
+    <path android:pathData="M50,6 A44,44 0 1,1 50,94 A44,44 0 1,1 50,6 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:startX="0" android:startY="0" android:endX="100" android:endY="100" android:type="linear">
+                <item android:offset="0" android:color="#FF90A4AE"/>
+                <item android:offset="1" android:color="#FF37474F"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Highlight -->
+    <path android:pathData="M40,20 A20,12 0 1,1 40,44 A20,12 0 1,1 40,20 Z" android:fillColor="#26FFFFFF"/>
+
+    <!-- Ochii X -->
+    <path android:pathData="M29,35 L41,47" android:strokeColor="#FFECEFF1" android:strokeWidth="3" android:strokeLineCap="round"/>
+    <path android:pathData="M41,35 L29,47" android:strokeColor="#FFECEFF1" android:strokeWidth="3" android:strokeLineCap="round"/>
+    <path android:pathData="M59,35 L71,47" android:strokeColor="#FFECEFF1" android:strokeWidth="3" android:strokeLineCap="round"/>
+    <path android:pathData="M71,35 L59,47" android:strokeColor="#FFECEFF1" android:strokeWidth="3" android:strokeLineCap="round"/>
+
+    <!-- Gura ondulata -->
+    <path android:pathData="M32,64 Q40,58 50,64 Q60,70 68,64" android:strokeColor="#FFECEFF1" android:strokeWidth="2.5" android:strokeLineCap="round" android:fillColor="#00000000"/>
+
+    <!-- Zzz -->
+    <path android:pathData="M74,27 L83,27 L74,19 L83,19" android:strokeColor="#B3ECEFF1" android:strokeWidth="2" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000"/>
+    <path android:pathData="M85,19 L91,19 L85,14 L91,14" android:strokeColor="#80ECEFF1" android:strokeWidth="1.5" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000"/>
+</vector>

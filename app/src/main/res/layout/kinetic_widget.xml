@@ -1,0 +1,77 @@
+<!-- Water Widget Preview (RemoteViews-safe) — circular ring with blue progress arc
+     (48% = 1250/2600, same as the hardcoded value below). Uses a determinate
+     ProgressBar whose ring drawable draws the arc from the progress level. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@drawable/widget_bg"
+        android:padding="12dp">
+
+        <!-- Title: centered KINETIC -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="KINETIC"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <!-- Center content: ring + drop + value + goal -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center">
+
+            <!-- Ring with blue progress arc (48% filled) -->
+            <ProgressBar
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:indeterminate="false"
+                android:max="100"
+                android:progress="48"
+                android:progressDrawable="@drawable/widget_ring_progress" />
+
+            <!-- Water drop + value + goal overlay -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💧"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/widget_water"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="1250"
+                    android:textColor="#FFFFFF"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:maxLines="1" />
+
+                <TextView
+                    android:id="@+id/widget_water_goal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="/ 2600 ml"
+                    android:textColor="#99FFFFFF"
+                    android:textSize="11sp"
+                    android:maxLines="1" />
+            </LinearLayout>
+        </FrameLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

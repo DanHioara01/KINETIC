@@ -7,17 +7,20 @@ plugins {
 }
 
 android {
-    namespace = "com.example.gymlog2"
+    namespace = "com.example.kinetic"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.gymlog2"
+        applicationId = "com.example.kinetic"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // AdMob rewarded ad unit ID (replace with production unit before release)
+        buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"ca-app-pub-3940256099942544/5224354917\"")
     }
 
     buildTypes {
@@ -37,9 +40,12 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // java.time (LocalDate etc.) needs core library desugaring on API < 26
+        isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -67,12 +73,16 @@ dependencies {
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
 
+    // Navigation Compose
+    implementation("androidx.navigation:navigation-compose:2.8.5")
+
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-storage")
 
     // Google Sign-In
     implementation(libs.play.services.auth)
@@ -82,6 +92,7 @@ dependencies {
 
     // Coil (image loading)
     implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
 
     // Retrofit (networking)
     implementation(libs.retrofit)
@@ -99,8 +110,28 @@ dependencies {
     // WorkManager (background sync)
     implementation("androidx.work:work-runtime-ktx:2.10.0")
 
+    // Jetpack Glance (Compose app widgets)
+    implementation(libs.glance.appwidget)
+
+    // Core library desugaring (java.time on API 24/25)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
     // Google Play Services Location (GPS tracking)
     implementation("com.google.android.gms:play-services-location:21.3.0")
+
+    // RevenueCat (Google Play Billing wrapper + UI Paywall/Customers)
+    implementation(libs.revenuecat.purchases)
+    implementation(libs.revenuecat.purchases.ui)
+
+    // AdMob (rewarded ads)
+    implementation(libs.play.services.ads)
+
+    // Firestore coroutines (kotlinx-coroutines-play-services)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+    // Haze (frosted glass blur)
+    implementation("dev.chrisbanes.haze:haze:1.5.4")
+    implementation("dev.chrisbanes.haze:haze-materials:1.5.4")
 
     // Testing
     testImplementation(libs.junit)

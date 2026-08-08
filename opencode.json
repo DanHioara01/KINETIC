@@ -1,0 +1,99 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/mimo-v2.5-free",
+  "provider": {
+    "openrouter": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OpenRouter",
+      "options": {
+        "baseURL": "https://openrouter.ai/api/v1",
+        "apiKey": "{env:OPENROUTER_API_KEY}"
+      },
+      "models": {
+        "inclusionai/ling-3.0-flash:free": {
+          "name": "Ling 3.0 Flash (free)"
+        },
+        "poolside/laguna-s-2.1:free": {
+          "name": "Laguna S 2.1 (free)"
+        },
+        "poolside/laguna-xs-2.1:free": {
+          "name": "Laguna XS 2.1 (free)"
+        },
+        "cohere/north-mini-code:free": {
+          "name": "North Mini Code (free)"
+        },
+        "nvidia/nemotron-3-ultra-550b-a55b:free": {
+          "name": "Nemotron 3 Ultra (free)"
+        },
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free": {
+          "name": "Nemotron 3 Nano Omni (free)"
+        },
+        "poolside/laguna-m.1:free": {
+          "name": "Laguna M.1 (free)"
+        },
+        "google/gemma-4-26b-a4b-it:free": {
+          "name": "Gemma 4 26B A4B (free)"
+        },
+        "google/gemma-4-31b-it:free": {
+          "name": "Gemma 4 31B (free)"
+        },
+        "google/lyria-3-pro-preview": {
+          "name": "Lyria 3 Pro (free)"
+        },
+        "google/lyria-3-clip-preview": {
+          "name": "Lyria 3 Clip (free)"
+        },
+        "nvidia/nemotron-3-super-120b-a12b:free": {
+          "name": "Nemotron 3 Super (free)"
+        },
+        "openrouter/free": {
+          "name": "Free Models Router (free)"
+        },
+        "nvidia/nemotron-3-nano-30b-a3b:free": {
+          "name": "Nemotron 3 Nano 30B (free)"
+        },
+        "nvidia/nemotron-nano-12b-v2-vl:free": {
+          "name": "Nemotron Nano 12B 2 VL (free)"
+        },
+        "nvidia/nemotron-nano-9b-v2:free": {
+          "name": "Nemotron Nano 9B V2 (free)"
+        },
+        "openai/gpt-oss-20b:free": {
+          "name": "GPT OSS 20B (free)"
+        },
+        "nvidia/nemotron-3.5-content-safety:free": {
+          "name": "Nemotron 3.5 Content Safety (free)"
+        }
+      }
+    }
+  },
+  "watcher": {
+    "ignore": [
+      "**/node_modules/**",
+      "**/.gradle/**",
+      "**/build/**",
+      "**/.idea/**",
+      "**/.kotlin/**",
+      "**/.vscode/**",
+      "**/.git/**",
+      "**/docker/**",
+      "**/*.apk",
+      "**/*.dex",
+      "**/*.class",
+      "**/gradle/wrapper/**",
+      "**/app/build/**",
+      "**/backend/node_modules/**",
+      "**/functions/node_modules/**",
+      "**/*.webp",
+      "**/*.png"
+    ]
+  },
+  "agent": {
+    "explore": {
+      "steps": 50
+    },
+    "general": {
+      "steps": 50
+    }
+  }
+}

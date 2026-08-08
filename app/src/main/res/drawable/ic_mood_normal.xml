@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Fundal -->
+    <path android:pathData="M50,6 A44,44 0 1,1 50,94 A44,44 0 1,1 50,6 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:startX="0" android:startY="0" android:endX="100" android:endY="100" android:type="linear">
+                <item android:offset="0" android:color="#FF4DD0E1"/>
+                <item android:offset="1" android:color="#FF0097A7"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Highlight -->
+    <path android:pathData="M40,20 A20,12 0 1,1 40,44 A20,12 0 1,1 40,20 Z" android:fillColor="#33FFFFFF"/>
+
+    <!-- Ochii (puncte ovale) -->
+    <path android:pathData="M36,37.5 A3.5,4.5 0 1,1 36,46.5 A3.5,4.5 0 1,1 36,37.5 Z" android:fillColor="#FF004D40"/>
+    <path android:pathData="M64,37.5 A3.5,4.5 0 1,1 64,46.5 A3.5,4.5 0 1,1 64,37.5 Z" android:fillColor="#FF004D40"/>
+
+    <!-- Zambet subtil -->
+    <path android:pathData="M36,62 Q50,70 64,62" android:strokeColor="#FF004D40" android:strokeWidth="2.5" android:strokeLineCap="round" android:fillColor="#00000000"/>
+</vector>

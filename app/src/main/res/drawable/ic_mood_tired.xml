@@ -1,0 +1,29 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Fundal -->
+    <path android:pathData="M50,6 A44,44 0 1,1 50,94 A44,44 0 1,1 50,6 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:startX="0" android:startY="0" android:endX="100" android:endY="100" android:type="linear">
+                <item android:offset="0" android:color="#FFCE93D8"/>
+                <item android:offset="1" android:color="#FF8E24AA"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Highlight -->
+    <path android:pathData="M40,20 A20,12 0 1,1 40,44 A20,12 0 1,1 40,20 Z" android:fillColor="#33FFFFFF"/>
+
+    <!-- Ochii obositi (pleoape grele) -->
+    <path android:pathData="M26,46 Q36,38 46,46" android:strokeColor="#FF4A148C" android:strokeWidth="3" android:strokeLineCap="round" android:fillColor="#00000000"/>
+    <path android:pathData="M54,46 Q64,38 74,46" android:strokeColor="#FF4A148C" android:strokeWidth="3" android:strokeLineCap="round" android:fillColor="#00000000"/>
+
+    <!-- Gura usor cazuta -->
+    <path android:pathData="M38,68 Q50,62 62,68" android:strokeColor="#FF4A148C" android:strokeWidth="2.5" android:strokeLineCap="round" android:fillColor="#00000000"/>
+
+    <!-- Picatura de transpiratie -->
+    <path android:pathData="M82,20 Q78,30 82,32 Q86,30 82,20 Z" android:fillColor="#D9FFFFFF"/>
+</vector>

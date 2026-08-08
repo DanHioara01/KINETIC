@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GymLOG — Dashboard Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070707;
+    --bg2:#101010;
+    --card:#161616;
+    --card2:#1C1C1C;
+    --stroke:#262626;
+    --stroke2:#2E2E2E;
+    --txt:#F5F3EE;
+    --muted:rgba(245,243,238,.52);
+    --muted2:rgba(245,243,238,.38);
+    --red:#E63030;
+    --red-d:#B71C1C;
+    --orange:#FF3B3B;
+    --amber:#FF5252;
+    --grad:linear-gradient(135deg,#B71C1C 0%,#E63030 50%,#FF3B3B 100%);
+    --grad-soft:linear-gradient(135deg,rgba(230,48,48,.18),rgba(255,59,59,.10));
+    --gold:#FFD23F;
+    --green:#34D399;
+    --blue:#38BDF8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  html,body{height:100%}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 700px at 20% -5%,rgba(230,48,48,.12),transparent 60%),
+      radial-gradient(900px 600px at 95% 10%,rgba(230,48,48,.08),transparent 55%),
+      #0B0B0B;
+    color:var(--txt);
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:28px 16px;
+  }
+  .stage{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .stage .cap{
+    font-family:'Oswald';letter-spacing:3px;text-transform:uppercase;
+    font-size:12px;color:var(--muted);
+  }
+  /* ---------- Phone frame ---------- */
+  .phone{
+    width:394px;height:852px;
+    background:linear-gradient(180deg,var(--bg),#0C0C0C 40%,#0A0A0A);
+    border-radius:50px;
+    border:1px solid #232323;
+    box-shadow:0 40px 90px -20px rgba(0,0,0,.8),0 0 0 10px #0d0d0d,0 0 0 11px #1c1c1c;
+    position:relative;overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  .notch{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:120px;height:30px;background:#000;border-radius:0 0 18px 18px;z-index:30;
+  }
+  .statusbar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 28px 6px;font-size:14px;font-weight:600;height:46px;z-index:5;
+  }
+  .statusbar .icons{display:flex;gap:6px;align-items:center}
+  .statusbar .icons svg{width:16px;height:16px;fill:#fff}
+
+  .scroll{flex:1;overflow-y:auto;padding:4px 18px 110px;scrollbar-width:none}
+  .scroll::-webkit-scrollbar{display:none}
+
+  /* ---------- Header ---------- */
+  .head{display:flex;align-items:center;justify-content:space-between;padding:6px 2px 14px}
+  .head .hi{display:flex;flex-direction:column}
+  .head .hi small{color:var(--muted);font-size:11.5px;letter-spacing:.4px}
+  .head .hi b{font-family:'Oswald';font-size:24px;font-weight:600;letter-spacing:.2px;line-height:1.05}
+  .head .right{display:flex;align-items:center;gap:12px}
+  .flame{
+    display:flex;align-items:center;gap:5px;
+    background:rgba(230,48,48,.12);border:1px solid rgba(230,48,48,.28);
+    padding:7px 11px;border-radius:30px;font-family:'Oswald';font-weight:600;font-size:14px;
+  }
+  .flame .em{font-size:15px}
+  .avatar{
+    width:42px;height:42px;border-radius:50%;
+    background:var(--grad);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Oswald';font-weight:700;font-size:18px;color:#fff;
+    border:2px solid rgba(255,255,255,.12);
+    box-shadow:0 6px 18px -6px rgba(230,48,48,.6);
+  }
+
+  /* ---------- Hero gradient card ---------- */
+  .hero{
+    position:relative;border-radius:24px;overflow:hidden;
+    background:var(--grad);
+    padding:20px 20px 22px;
+    box-shadow:0 22px 40px -18px rgba(230,48,48,.55);
+  }
+  .hero::before{
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(180px 120px at 88% -10%,rgba(255,255,255,.22),transparent 60%),
+      radial-gradient(160px 100px at 10% 120%,rgba(0,0,0,.25),transparent 60%);
+    pointer-events:none;
+  }
+  .hero .row{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}
+  .hero .lbl{font-family:'Oswald';text-transform:uppercase;letter-spacing:1.5px;font-size:11px;color:rgba(255,255,255,.82)}
+  .hero .chip{
+    background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.22);
+    border-radius:30px;padding:5px 11px;font-size:11px;font-weight:600;color:#fff;display:flex;gap:5px;align-items:center;
+  }
+  .hero .ringwrap{display:flex;align-items:center;gap:18px;margin-top:14px;position:relative;z-index:2}
+  .ring{position:relative;width:118px;height:118px}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .ctr{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .ring .ctr .big{font-family:'Oswald';font-weight:700;font-size:30px;line-height:1;color:#fff}
+  .ring .ctr .unit{font-size:10px;color:rgba(255,255,255,.78);letter-spacing:.5px;margin-top:2px}
+  .ring .ctr .pct{font-size:11px;font-weight:700;color:#fff;margin-top:3px;opacity:.9}
+  .hero .side{display:flex;flex-direction:column;gap:12px;flex:1}
+  .mini{display:flex;flex-direction:column;gap:2px}
+  .mini .k{font-size:10.5px;color:rgba(255,255,255,.72);letter-spacing:.3px}
+  .mini .v{font-family:'Oswald';font-weight:600;font-size:18px;color:#fff;display:flex;align-items:baseline;gap:4px}
+  .mini .v span{font-size:11px;color:rgba(255,255,255,.7);font-family:'Inter';font-weight:500}
+  .barthin{height:5px;border-radius:5px;background:rgba(0,0,0,.25);overflow:hidden;margin-top:4px}
+  .barthin i{display:block;height:100%;background:#fff;border-radius:5px}
+
+  /* ---------- Section title ---------- */
+  .sec{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 12px}
+  .sec h3{font-family:'Oswald';font-size:15px;letter-spacing:.5px;text-transform:uppercase;color:var(--txt)}
+  .sec a{color:var(--muted);font-size:12px;text-decoration:none;display:flex;align-items:center;gap:3px}
+
+  /* ---------- Today workout card ---------- */
+  .today{
+    background:linear-gradient(180deg,var(--card2),var(--card));
+    border:1px solid var(--stroke);border-radius:22px;padding:18px;position:relative;overflow:hidden;
+  }
+  .today::after{
+    content:"";position:absolute;right:-40px;top:-40px;width:140px;height:140px;border-radius:50%;
+    background:var(--grad-soft);filter:blur(8px);
+  }
+  .today .top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}
+  .today .tag{
+    font-family:'Oswald';font-size:10px;letter-spacing:1.2px;text-transform:uppercase;
+    color:var(--red);background:rgba(230,48,48,.12);border:1px solid rgba(230,48,48,.30);
+    padding:4px 10px;border-radius:20px;
+  }
+  .today .day{font-size:11px;color:var(--muted)}
+  .today h2{font-family:'Oswald';font-weight:600;font-size:25px;margin-top:10px;position:relative;z-index:2;letter-spacing:.3px}
+  .today .exes{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px;position:relative;z-index:2}
+  .pill{
+    font-size:11px;color:var(--txt);background:#222;border:1px solid var(--stroke2);
+    padding:5px 10px;border-radius:8px;display:flex;align-items:center;gap:5px;
+  }
+  .pill b{font-family:'Oswald';font-weight:600}
+  .today .meta{display:flex;gap:18px;margin-top:13px;position:relative;z-index:2}
+  .today .meta .m{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}
+  .today .meta .m svg{width:14px;height:14px;stroke:var(--orange);fill:none;stroke-width:2}
+  .go{
+    margin-top:16px;width:100%;border:none;cursor:pointer;
+    background:var(--grad);color:#fff;font-family:'Oswald';font-weight:600;
+    letter-spacing:1.5px;font-size:15px;padding:14px;border-radius:14px;
+    box-shadow:0 12px 26px -10px rgba(230,48,48,.7);
+    display:flex;align-items:center;justify-content:center;gap:8px;position:relative;z-index:2;
+    transition:transform .15s;
+  }
+  .go:active{transform:scale(.98)}
+
+  /* ---------- Stat trio ---------- */
+  .trio{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .stat{
+    background:var(--card);border:1px solid var(--stroke);border-radius:16px;padding:14px 12px;text-align:left;
+    position:relative;overflow:hidden;
+  }
+  .stat .ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:10px}
+  .stat .num{font-family:'Oswald';font-weight:700;font-size:22px;line-height:1}
+  .stat .lab{font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.3px;text-transform:uppercase}
+  .stat.s1 .ic{background:rgba(230,48,48,.14);color:#FF5252}
+  .stat.s2 .ic{background:rgba(255,210,63,.14);color:var(--gold)}
+  .stat.s3 .ic{background:rgba(56,189,248,.12);color:var(--blue)}
+  .stat .sub{font-size:10px;color:var(--green);margin-top:6px;font-weight:600}
+  .stat .sub.down{color:#FF7A7A}
+
+  /* ---------- Recovery card ---------- */
+  .recov{background:var(--card);border:1px solid var(--stroke);border-radius:20px;padding:16px}
+  .recov .line{display:flex;align-items:center;gap:12px;margin:11px 0}
+  .recov .line:first-of-type{margin-top:4px}
+  .recov .gn{width:74px;font-size:12px;color:var(--txt);font-weight:500}
+  .recov .track{flex:1;height:8px;background:#232323;border-radius:8px;overflow:hidden;position:relative}
+  .recov .track i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--green),#10B981)}
+  .recov .track i.mid{background:linear-gradient(90deg,#FBBF24,#F59E0B)}
+  .recov .track i.low{background:linear-gradient(90deg,#FF6B6B,#E63030)}
+  .recov .pct{width:40px;text-align:right;font-family:'Oswald';font-weight:600;font-size:13px}
+  .recov .pct.good{color:var(--green)}
+  .recov .pct.mid{color:#FBBF24}
+  .recov .pct.low{color:#FF6B6B}
+
+  /* ---------- Quick actions grid ---------- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .qa{
+    border:1px solid var(--stroke);border-radius:18px;padding:15px;
+    background:linear-gradient(180deg,var(--card2),var(--card));
+    position:relative;overflow:hidden;cursor:pointer;
+  }
+  .qa .glow{position:absolute;right:-26px;top:-26px;width:80px;height:80px;border-radius:50%;filter:blur(6px);opacity:.5}
+  .qa .ic2{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;position:relative;z-index:2}
+  .qa h4{font-family:'Oswald';font-weight:600;font-size:15px;margin-top:11px;position:relative;z-index:2}
+  .qa p{font-size:11px;color:var(--muted);margin-top:3px;position:relative;z-index:2;line-height:1.4}
+  .qa .arrow{position:absolute;right:13px;bottom:13px;color:var(--muted2);font-size:16px;z-index:2}
+  .qa.ai .ic2{background:rgba(230,48,48,.16);color:#FF5252}
+  .qa.ai .glow{background:#E63030}
+  .qa.gps .ic2{background:rgba(56,189,248,.14);color:var(--blue)}
+  .qa.gps .glow{background:#38BDF8}
+  .qa.food .ic2{background:rgba(52,211,153,.14);color:var(--green)}
+  .qa.food .glow{background:#34D399}
+  .qa.water .ic2{background:rgba(99,102,241,.16);color:#818CF8}
+  .qa.water .glow{background:#6366F1}
+  .qa .badge{
+    position:absolute;top:13px;right:13px;font-family:'Oswald';font-size:9px;font-weight:600;
+    background:var(--red);color:#fff;padding:2px 7px;border-radius:20px;z-index:3;
+  }
+
+  /* ---------- Bottom nav ---------- */
+  .nav{
+    position:absolute;left:0;right:0;bottom:0;height:82px;z-index:20;
+    background:rgba(12,12,12,.92);backdrop-filter:blur(18px);
+    border-top:1px solid var(--stroke);
+    display:flex;align-items:flex-start;justify-content:space-around;padding:11px 8px 0;
+  }
+  .nav .n{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;color:var(--muted2)}
+  .nav .n svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8}
+  .nav .n span{font-size:9.5px;font-weight:600;letter-spacing:.3px}
+  .nav .n.active{color:var(--red)}
+  .nav .n.active svg{stroke:var(--red)}
+  .nav .n.active .dot{width:4px;height:4px;border-radius:50%;background:var(--red);margin-top:1px}
+
+  /* small helper for the "new" dot */
+  .newdot{width:6px;height:6px;border-radius:50%;background:var(--red);display:inline-block;margin-left:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="cap">GymLOG · Bold Gradient Athletic · Home / Dashboard</div>
+
+  <div class="phone">
+    <div class="notch"></div>
+
+    <!-- Status bar -->
+    <div class="statusbar">
+      <span>9:41</span>
+      <div class="icons">
+        <svg viewBox="0 0 24 24"><path d="M2 22h2V11H2zm4 0h2V7H6zm4 0h2V3h-2zm4 0h2v-9h-2zm4 0h2V8h-2z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M12 3C7 3 3 7 3 12h3c0-3 3-6 6-6s6 3 6 6h3c0-5-4-9-9-9z" opacity=".4"/><path d="M12 8c-2 0-4 2-4 4h8c0-2-2-4-4-4z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M3 8h14v8H3z" opacity=".5"/><path d="M3 6h14v2H3zm0 10h14v2H3zm15-6h2a2 2 0 012 2v2a2 2 0 01-2 2h-2z"/></svg>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <!-- Header -->
+      <div class="head">
+        <div class="hi">
+          <small>Joi, 2 Iulie</small>
+          <b>Salut, Dan 👊</b>
+        </div>
+        <div class="right">
+          <div class="flame"><span class="em">🔥</span>12</div>
+          <div class="avatar">D</div>
+        </div>
+      </div>
+
+      <!-- HERO: weekly volume goal ring -->
+      <div class="hero">
+        <div class="row">
+          <div class="lbl">Volum Săptămânal</div>
+          <div class="chip">🎯 25.000 kg</div>
+        </div>
+        <div class="ringwrap">
+          <div class="ring">
+            <svg width="118" height="118" viewBox="0 0 118 118">
+              <circle cx="59" cy="59" r="50" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="9"/>
+              <circle cx="59" cy="59" r="50" fill="none" stroke="#fff" stroke-width="9"
+                stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="82"/>
+            </svg>
+            <div class="ctr">
+              <div class="big">18.4<span style="font-size:16px">k</span></div>
+              <div class="unit">kg ridicat</div>
+              <div class="pct">74% din obiectiv</div>
+            </div>
+          </div>
+          <div class="side">
+            <div class="mini">
+              <div class="k">Sesiuni</div>
+              <div class="v">4 <span>/ 5</span></div>
+              <div class="barthin"><i style="width:80%"></i></div>
+            </div>
+            <div class="mini">
+              <div class="k">Seturi totale</div>
+              <div class="v">142 <span>seturi</span></div>
+              <div class="barthin"><i style="width:62%"></i></div>
+            </div>
+            <div class="mini">
+              <div class="k">Calorii arse</div>
+              <div class="v">3.240 <span>kcal</span></div>
+              <div class="barthin"><i style="width:71%"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TODAY workout -->
+      <div class="sec"><h3>Antrenamentul de azi</h3><a>Vezi calendar ›</a></div>
+      <div class="today">
+        <div class="top">
+          <span class="tag">● Zi de antrenament</span>
+          <span class="day">Joi · Sesiune 4/5</span>
+        </div>
+        <h2>Piept + Tricepși</h2>
+        <div class="exes">
+          <span class="pill">🏋️ <b>6</b> exerciții</span>
+          <span class="pill">⏱ ~52 min</span>
+          <span class="pill">🎯 Foc pe forță</span>
+        </div>
+        <div class="meta">
+          <div class="m"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2a8 8 0 110 16 8 8 0 010-16z"/></svg> Ultima: Bench 85kg×5</div>
+          <div class="m"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg> 6 zile recovery</div>
+        </div>
+        <button class="go">ÎNCEPE ANTRENAMENTUL →</button>
+      </div>
+
+      <!-- Stat trio -->
+      <div class="sec"><h3>Rezumat</h3><a>Statistici ›</a></div>
+      <div class="trio">
+        <div class="stat s1">
+          <div class="ic">🔥</div>
+          <div class="num">12</div>
+          <div class="lab">Zile streak</div>
+          <div class="sub">+2 săpt. aceasta</div>
+        </div>
+        <div class="stat s2">
+          <div class="ic">🏆</div>
+          <div class="num">8</div>
+          <div class="lab">Insigne</div>
+          <div class="sub">2 noi</div>
+        </div>
+        <div class="stat s3">
+          <div class="ic">⚡</div>
+          <div class="num">85<span style="font-size:13px">kg</span></div>
+          <div class="lab">Ultimul PR</div>
+          <div class="sub">Bench Press</div>
+        </div>
+      </div>
+
+      <!-- Recovery -->
+      <div class="sec"><h3>Stare recuperare</h3><a>Detalii ›</a></div>
+      <div class="recov">
+        <div class="line">
+          <div class="gn">Piept</div>
+          <div class="track"><i class="mid" style="width:65%"></i></div>
+          <div class="pct mid">65%</div>
+        </div>
+        <div class="line">
+          <div class="gn">Spate</div>
+          <div class="track"><i style="width:88%"></i></div>
+          <div class="pct good">88%</div>
+        </div>
+        <div class="line">
+          <div class="gn">Picioare</div>
+          <div class="track"><i style="width:92%"></i></div>
+          <div class="pct good">92%</div>
+        </div>
+        <div class="line">
+          <div class="gn">Tricepși</div>
+          <div class="track"><i class="low" style="width:34%"></i></div>
+          <div class="pct low">34%</div>
+        </div>
+        <div class="line">
+          <div class="gn">Umeri</div>
+          <div class="track"><i style="width:80%"></i></div>
+          <div class="pct good">80%</div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="sec"><h3>Acces rapid</h3></div>
+      <div class="grid">
+        <div class="qa ai">
+          <div class="glow"></div>
+          <span class="badge">AI</span>
+          <div class="ic2">🤖</div>
+          <h4>Antrenor AI</h4>
+          <p>Plan personalizat & sfaturi instant</p>
+          <div class="arrow">›</div>
+        </div>
+        <div class="qa gps">
+          <div class="glow"></div>
+          <div class="ic2">🏃</div>
+          <h4>Cardio GPS</h4>
+          <p>Pace & dată cardio GPS pentru jogging</p>
+          <div class="arrow">›</div>
+        </div>
+        <div class="qa food">
+          <div class="glow"></div>
+          <div class="ic2">🍎</div>
+          <h4>Jurnal alimentar</h4>
+          <p>Scanează cod de bare & macro</p>
+          <div class="arrow">›</div>
+        </div>
+        <div class="qa water">
+          <div class="glow"></div>
+          <div class="ic2">💧</div>
+          <h4>Hidratare</h4>
+          <p>1,8L / 2,5L consumați azi</p>
+          <div class="arrow">›</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="nav">
+      <div class="n active">
+        <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a2 2 0 01-2 2h-4v-6h-6v6H5a2 2 0 01-2-2z"/></svg>
+        <span>Acasă</span>
+        <div class="dot"></div>
+      </div>
+      <div class="n">
+        <svg viewBox="0 0 24 24"><path d="M6 4h12v4a6 6 0 01-12 0zM12 14v6M8 20h8"/></svg>
+        <span>Antren.</span>
+      </div>
+      <div class="n">
+        <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>
+        <span>Statistici</span>
+      </div>
+      <div class="n">
+        <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7z"/></svg>
+        <span>Apă</span>
+      </div>
+      <div class="n">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+        <span>Profil</span>
+      </div>
+      <div class="n">
+        <svg viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+        <span>+ Adăugă antrenament</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap" style="opacity:.6">Mockup · single-screen high-fidelity concept</div>
+</div>
+</body>
+</html>

@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "GymLOG"
+rootProject.name = "Kinetic"
 include(":app")

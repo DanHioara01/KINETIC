@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Green circular progress ring for the Cardio widget preview (active time metric). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape
+            android:shape="ring"
+            android:innerRadiusRatio="2.6"
+            android:thicknessRatio="12.5"
+            android:useLevel="false">
+            <solid android:color="#26FFFFFF" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <rotate
+            android:fromDegrees="270"
+            android:toDegrees="270"
+            android:pivotX="50%"
+            android:pivotY="50%">
+            <shape
+                android:shape="ring"
+                android:innerRadiusRatio="2.6"
+                android:thicknessRatio="12.5"
+                android:useLevel="true">
+                <solid android:color="#FF34C759" />
+            </shape>
+        </rotate>
+    </item>
+</layer-list>

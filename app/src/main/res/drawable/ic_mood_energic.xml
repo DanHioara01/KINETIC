@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Fundal (gradient radial) -->
+    <path android:pathData="M50,6 A44,44 0 1,1 50,94 A44,44 0 1,1 50,6 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="radial" android:centerX="40" android:centerY="35" android:gradientRadius="65">
+                <item android:offset="0" android:color="#FFFFD54F"/>
+                <item android:offset="1" android:color="#FFFF8F00"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Highlight -->
+    <path android:pathData="M40,20 A20,12 0 1,1 40,44 A20,12 0 1,1 40,20 Z" android:fillColor="#33FFFFFF"/>
+
+    <!-- Ochii fericiti -->
+    <path android:pathData="M30,42 Q37,32 44,42" android:strokeColor="#FF5D4037" android:strokeWidth="3" android:strokeLineCap="round" android:fillColor="#00000000"/>
+    <path android:pathData="M56,42 Q63,32 70,42" android:strokeColor="#FF5D4037" android:strokeWidth="3" android:strokeLineCap="round" android:fillColor="#00000000"/>
+
+    <!-- Zambet larg -->
+    <path android:pathData="M30,58 Q50,76 70,58" android:strokeColor="#FF5D4037" android:strokeWidth="3" android:strokeLineCap="round" android:fillColor="#00000000"/>
+
+    <!-- Raze de soare -->
+    <path android:pathData="M83,14 L90,8" android:strokeColor="#CCFFFFFF" android:strokeWidth="2.5" android:strokeLineCap="round"/>
+    <path android:pathData="M92,24 L98,22" android:strokeColor="#CCFFFFFF" android:strokeWidth="2.5" android:strokeLineCap="round"/>
+    <path android:pathData="M88,36 L95,38" android:strokeColor="#99FFFFFF" android:strokeWidth="2.5" android:strokeLineCap="round"/>
+</vector>

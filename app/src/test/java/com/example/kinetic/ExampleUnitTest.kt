@@ -1,4 +1,4 @@
-package com.example.gymlog2
+package com.example.kinetic
 
 import org.junit.Test
 
