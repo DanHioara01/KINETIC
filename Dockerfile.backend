@@ -27,14 +27,17 @@ RUN chown -R node:node . && chmod -R 755 . && touch logs/server.log
 EXPOSE 4242
 
 # Health check configuration file
-COPY docker/health.json ./
+# (repo root file docker-health.json — the docker/ dir only holds config.dockerfile)
+COPY docker-health.json ./health.json
 
 # Enhanced entry point with health monitoring
-COPY docker/entrypoint.sh ./entrypoint.sh
+# (repo root file docker-entrypoint.sh)
+COPY docker-entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
 # Add startup script for database persistence
-COPY docker/start.sh ./start.sh
+# (repo root file docker-start.sh)
+COPY docker-start.sh ./start.sh
 RUN chmod +x ./start.sh
 
 USER node

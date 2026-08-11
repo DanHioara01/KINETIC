@@ -13,7 +13,7 @@ echo "Logs: ./logs/server.log"
 echo "Shared Data: ./shared-data/db"
 echo "Health Check: http://localhost:4242/health"
 echo "======================================="
-echo "Server starting...
+echo "Server starting..."
 
 echo $! > ./logs/server.pid
 
