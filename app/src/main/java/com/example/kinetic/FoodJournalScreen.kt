@@ -463,6 +463,13 @@ private fun MealSection(
     showDeleteDialog?.let { entry ->
         AlertDialog(
             onDismissRequest = { showDeleteDialog = null },
+            // Culori explicite din paletă: în dark mode card-ul era alb (default-urile
+            // M3 vin din lightColorScheme), iar în light mode textul era invizibil.
+            // p.card = DarkTeal (dark) / alb (light); p.tp / p.ts = text adaptiv.
+            containerColor = p.card,
+            titleContentColor = p.tp,
+            textContentColor = p.ts,
+            iconContentColor = p.ts,
             title = { Text(strings.delete) },
             text = { Text(strings.confirm + "?") },
             confirmButton = {
@@ -470,7 +477,7 @@ private fun MealSection(
                     onDelete(entry)
                     showDeleteDialog = null
                 }) {
-                    Text(strings.delete, color = Color.Red)
+                    Text(strings.delete, color = if (isDark) Color(0xFFFF6B6B) else Color(0xFFDC2626))
                 }
             },
             dismissButton = {

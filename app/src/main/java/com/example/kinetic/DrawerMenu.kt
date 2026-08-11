@@ -719,19 +719,16 @@ private fun AnimatedThemeSwitch(
         animationSpec = tween(400, easing = FastOutSlowInEasing),
         label = "trackFill"
     )
-    val glowColor by animateColorAsState(
-        targetValue = if (isDark) Color(0xFF38BDF8) else Color(0xFFFB923C),
-        animationSpec = tween(400, easing = FastOutSlowInEasing),
-        label = "themeGlow"
-    )
     val iconColor = if (isDark) Color(0xFF0D1226) else Color(0xFF2A1700)
 
-    // ══ Knob — spring bounce ≈ cubic-bezier(0.34, 1.56, 0.64, 1) ══
+    // ══ Knob — spring bounce ≈ cubic-bezier(0.34, 1.56, 0.64, 1), dar RAPID ══
+    // StiffnessMediumLow (200 N/m) lăsa thumb-ul să se târască ~1s → părea lag.
+    // StiffnessMedium (1500 N/m) păstrează bounce-ul dar se așază în ~250ms.
     val knobOffset by animateDpAsState(
         targetValue = if (isDark) 24.dp else 0.dp,
         animationSpec = spring(
-            dampingRatio = 0.38f,          // bounce ușor pronunțat
-            stiffness = Spring.StiffnessMediumLow
+            dampingRatio = 0.5f,           // bounce discret (nu exagerat)
+            stiffness = Spring.StiffnessMedium
         ),
         label = "themeKnob"
     )
@@ -743,14 +740,19 @@ private fun AnimatedThemeSwitch(
 
     val pillShape = RoundedCornerShape(50)
 
+    // Umbra folosește o culoare STATICĂ per mod (nu glowColor animat): altfel umbra
+    // se re-rasterizează la fiecare frame al tranziției → jank. Efectul glow rămâne
+    // vizibil prin border + thumb-ul animat.
+    val shadowColor = if (isDark) Color(0xFF38BDF8) else Color(0xFFFB923C)
+
     Box(
         modifier = Modifier
             .size(width = 58.dp, height = 34.dp)
             .shadow(
                 elevation = 10.dp,
                 shape = pillShape,
-                ambientColor = glowColor.copy(alpha = 0.55f),
-                spotColor = glowColor.copy(alpha = 0.55f)
+                ambientColor = shadowColor.copy(alpha = 0.55f),
+                spotColor = shadowColor.copy(alpha = 0.55f)
             )
             .clip(pillShape)
             .background(trackFill)
@@ -880,25 +882,35 @@ private fun DrawerNavItem(
     )
 
     // ── Pulse animation for selected icon ──
-    val infiniteTransition = rememberInfiniteTransition(label = "iconPulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = if (selected) 1.12f else 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseScale"
-    )
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.15f,
-        targetValue = if (selected) 0.3f else 0.15f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
+    // Rulează DOAR pentru item-ul selectat. Înainte fiecare din cele ~20 de rânduri
+    // din drawer porneau un infiniteTransition cu 2 animații la 60fps, chiar și
+    // neselectate → CPU/GPU încărcate permanent → switch-ul și drawer-ul păreau laggy.
+    val pulseScale: Float
+    val pulseAlpha: Float
+    if (selected) {
+        val infiniteTransition = rememberInfiniteTransition(label = "iconPulse")
+        pulseScale = infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.12f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulseScale"
+        ).value
+        pulseAlpha = infiniteTransition.animateFloat(
+            initialValue = 0.15f,
+            targetValue = 0.3f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulseAlpha"
+        ).value
+    } else {
+        pulseScale = 1f
+        pulseAlpha = 0.15f
+    }
 
     Row(
         modifier = Modifier

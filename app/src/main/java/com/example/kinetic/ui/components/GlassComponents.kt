@@ -279,9 +279,12 @@ fun KineticAppBar(
                 }
             }
         }
-        // Acțiuni — dreapta
+        // Acțiuni — dreapta (într-un Box, copiii stau implicit în TopStart;
+        // fără align(...) acțiunile cădeau în stânga, peste butonul de back)
         Row(
-            modifier = Modifier.fillMaxHeight(),
+            modifier = Modifier
+                .fillMaxHeight()
+                .align(Alignment.CenterEnd),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
