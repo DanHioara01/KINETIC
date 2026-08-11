@@ -53,7 +53,28 @@ class RevenueCatManager(private val appContext: Context) {
     fun initialize(apiKey: String) {
         if (configured || apiKey.isBlank()) return
 
-        Purchases.logLevel = LogLevel.DEBUG  // use WARN in release
+        // ── API key sanity guard ─────────────────────────────────────────
+        // RevenueCat accepts three kinds of keys, and only two belong in the SDK:
+        //   - test_...   sandbox key, ONLY valid in debuggable (debug) builds
+        //   - goog_...   production public key (Android)
+        //   - sk_...     SECRET key for the REST API / backend — NEVER ship it
+        //               in the app; the SDK rejects it and it leaks the account.
+        // In a release build, a test key makes the SDK show the "Wrong API Key"
+        // alert and close the app — so skip initialization entirely instead.
+        val isTestKey = apiKey.startsWith("test_")
+        val isSecretKey = apiKey.startsWith("sk_")
+        if (isSecretKey) {
+            Log.w(TAG, "RevenueCat skipped: sk_... keys are server-side secrets, not SDK keys. " +
+                "Use the public production key (goog_...) from the RevenueCat dashboard.")
+            return
+        }
+        if (isTestKey && !BuildConfig.DEBUG) {
+            Log.w(TAG, "RevenueCat skipped: test key is not allowed in a release build. " +
+                "Add the production key (goog_...) to enable in-app purchases.")
+            return
+        }
+
+        Purchases.logLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.WARN
         Purchases.configure(
             PurchasesConfiguration.Builder(appContext, apiKey).build()
         )
