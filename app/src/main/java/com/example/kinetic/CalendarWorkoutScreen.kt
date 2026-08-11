@@ -372,7 +372,7 @@ fun CalendarWorkoutScreen(
                                 IconButton(onClick = { showDeleteDialog = true }) {
                                     Icon(
                                         Icons.Default.Delete,
-                                        contentDescription = "Delete",
+                                        contentDescription = strings.delete,
                                         tint = AccentRed.copy(alpha = 0.7f),
                                         modifier = Modifier.size(20.dp)
                                     )

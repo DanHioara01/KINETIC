@@ -38,6 +38,12 @@ val DarkBackground = DeepTealBlack
 val DarkCard = DarkTeal
 val DarkSurface = DarkTeal
 val DarkSurfaceVariant = MediumTeal
+
+// Carduri mai luminoase cu tentă roșie pentru vizibilitate pe fundalul întunecat
+val DarkCardElevated = Color(0xFF2A1C1E)
+val DarkCardElevatedSub = Color(0xFF362225)
+val RedBorderSoft = Color(0x3DFF4444)
+val NeutralBorderDark = Color(0x2EFFFFFF)
 val DarkDivider = Color(0xFF2A1E20)
 val DarkDivider2 = Color(0xFF1C1416)
 val DarkDivider3 = Color(0xFF140E10)

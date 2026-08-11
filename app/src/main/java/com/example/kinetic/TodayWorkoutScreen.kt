@@ -336,7 +336,7 @@ private fun CycleWorkoutContent(
                     strings.warmupStretch.uppercase(),
                     fontSize = 13.sp,
                     letterSpacing = 2.sp,
-                    color = Accent,
+                    color = Color(0xFFFFD700),
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
                 )
@@ -466,7 +466,7 @@ private fun CycleWorkoutContent(
                     strings.cooldownStretch.uppercase(),
                     fontSize = 13.sp,
                     letterSpacing = 2.sp,
-                    color = Accent,
+                    color = Color(0xFFFFD700),
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
                 )
@@ -690,7 +690,7 @@ private fun SpotifyWorkoutCard(onOpenSpotify: () -> Unit, strings: LanguageManag
 
             Icon(
                 imageVector = Icons.Filled.PlayArrow,
-                contentDescription = "Play",
+                contentDescription = strings.play,
                 tint = SpotifyGreen,
                 modifier = Modifier.size(28.dp)
             )

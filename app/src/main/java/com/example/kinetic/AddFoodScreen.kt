@@ -407,8 +407,8 @@ fun AddFoodScreen(
                 }
             } else {
                 // ══ MOD MANUAL — fallback complet ══
-                FoodInputCard(p = p, title = strings.foodName, value = name, onValueChange = { name = it }, placeholder = "Ex: Chicken Breast")
-                FoodInputCard(p = p, title = strings.brandLabel, value = brand, onValueChange = { brand = it }, placeholder = "Ex: Farm Foods")
+                FoodInputCard(p = p, title = strings.foodName, value = name, onValueChange = { name = it }, placeholder = strings.foodNamePlaceholder)
+                FoodInputCard(p = p, title = strings.brandLabel, value = brand, onValueChange = { brand = it }, placeholder = strings.brandPlaceholder)
             }
 
             // ── Tipul mesei (comun) ─────────────────────────────

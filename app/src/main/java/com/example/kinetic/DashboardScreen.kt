@@ -49,6 +49,7 @@ import androidx.compose.ui.layout.ContentScale
 import coil.compose.rememberAsyncImagePainter
 import com.example.kinetic.ui.theme.Varien
 import com.example.kinetic.ui.theme.RecoveryOrange
+import com.example.kinetic.ui.theme.RecoveryYellow
 import com.example.kinetic.ui.components.AppGlassCard
 import com.example.kinetic.ui.theme.AppPalette
 import com.example.kinetic.ui.theme.appPalette
@@ -99,7 +100,9 @@ fun DashboardScreen(
     onSetStepGoal: (Int) -> Unit,
     stepGoal: Int = 7000,
     isRefreshing: Boolean = false,
-    onRefresh: () -> Unit = {}
+    onRefresh: () -> Unit = {},
+    deloadDue: Boolean = false,
+    onOpenDeload: () -> Unit = {}
 ) {
     val p = appPalette(isDark)
 
@@ -188,6 +191,22 @@ fun DashboardScreen(
                             cardBg = p.cr,
                             isDark = isDark
                         )
+                    }
+                }
+
+                // ── Deload due banner ─────────────────────────────────────
+                if (deloadDue) {
+                    item {
+                        AnimatedVisibility(
+                            visible = visibleItems > 1,
+                            enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
+                        ) {
+                            DeloadDueBanner(
+                                strings = strings,
+                                p = p,
+                                onClick = onOpenDeload
+                            )
+                        }
                     }
                 }
 
@@ -1197,6 +1216,66 @@ private fun RestDayCard(
                     color = p.ts
                 )
             }
+        }
+    }
+}
+
+// ── DELOAD DUE BANNER ──────────────────────────────────────────────
+
+@Composable
+private fun DeloadDueBanner(
+    strings: LanguageManager.Strings,
+    p: AppPalette,
+    onClick: () -> Unit
+) {
+    val accent = RecoveryYellow // same theme color RestDayScreen uses for the "time for deload" state
+    AppGlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick),
+        p = p,
+        cornerRadius = 14.dp
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .background(accent.copy(alpha = 0.15f), RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = accent,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    strings.timeForDeload,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = p.tp
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    strings.deloadDueBanner,
+                    fontSize = 11.sp,
+                    color = p.ts,
+                    lineHeight = 15.sp
+                )
+            }
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = p.ts,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }

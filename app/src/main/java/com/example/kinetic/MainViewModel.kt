@@ -322,6 +322,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun computeTodayWorkout(preferencesManager: PreferencesManager) {
+        // Auto-expire the deload once its end date passes, so the dashboard/workout
+        // don't stay in deload mode forever if the user never reopens the Rest Days page.
+        if (preferencesManager.isDeloadActive()) {
+            val endDate = preferencesManager.getDeloadEndDate()
+            if (endDate > 0 && System.currentTimeMillis() > endDate) {
+                preferencesManager.setDeloadActive(false)
+                preferencesManager.setDeloadStartDate(0L)
+                preferencesManager.setDeloadEndDate(0L)
+                preferencesManager.setDeloadReason("")
+            }
+        }
         val profile = preferencesManager.getOnboardingProfile()
         val startDate = preferencesManager.getWorkoutStartDate()
         val isDeloadActive = preferencesManager.isDeloadActive()

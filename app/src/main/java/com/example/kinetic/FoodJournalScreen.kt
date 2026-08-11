@@ -218,7 +218,7 @@ private fun MacrosOverviewCard(
                     .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 16.dp)
             ) {
                 Text(
-                    "DAILY INTAKE",
+                    strings.dailyIntake.uppercase(),
                     color = p.ts,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
@@ -235,7 +235,7 @@ private fun MacrosOverviewCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        "KCAL",
+                        strings.kcal,
                         color = p.ac,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
@@ -245,7 +245,7 @@ private fun MacrosOverviewCard(
 
                 if (hasTargets) {
                     Text(
-                        "${String.format("%.1f", remainingCalories)} remaining",
+                        "${String.format("%.1f", remainingCalories)} ${strings.remaining}",
                         color = p.ts,
                         fontSize = 12.sp
                     )

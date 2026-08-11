@@ -335,19 +335,20 @@ class GpsTrackingService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val strings = LanguageManager.getStrings(this)
         val activityLabel = when (GpsTrackingState.activityType) {
-            "running" -> "Running"
-            "cycling" -> "Cycling"
-            "walking" -> "Walking"
+            "running" -> strings.running
+            "cycling" -> strings.cycling
+            "walking" -> strings.walking
             else -> "Cardio"
         }
 
         val distance = String.format(Locale.US, "%.2f", GpsTrackingState.totalDistance)
         val steps = GpsTrackingState.estimatedSteps.toString()
-        val stateLabel = if (GpsTrackingState.isPaused) " (Paused)" else ""
+        val stateLabel = if (GpsTrackingState.isPaused) " (${strings.paused})" else ""
         val title = "$activityLabel$stateLabel | $time"
-        val text = if (GpsTrackingState.isPaused) "Paused — $distance km | $steps steps"
-        else "$speed km/h | $distance km | $steps steps"
+        val text = if (GpsTrackingState.isPaused) "${strings.paused} — $distance km | $steps ${strings.steps}"
+        else "$speed km/h | $distance km | $steps ${strings.steps}"
 
         val pace = if (GpsTrackingState.currentSpeed > 0) {
             val paceMinPerKm = 60.0 / GpsTrackingState.currentSpeed
@@ -359,7 +360,7 @@ class GpsTrackingService : Service() {
         val expandedText = buildString {
             appendLine("Speed: $speed km/h    Distance: $distance km")
             appendLine("Pace: $pace    Steps: $steps")
-            appendLine("Goal: ${GpsTrackingState.stepGoal} steps")
+            appendLine("Goal: ${GpsTrackingState.stepGoal} ${strings.steps}")
         }.trimEnd()
 
         return NotificationCompat.Builder(this, CHANNEL_ID)

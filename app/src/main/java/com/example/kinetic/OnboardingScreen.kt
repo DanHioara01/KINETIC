@@ -424,7 +424,7 @@ private fun BodyStep(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = { if (age > 16) onAgeChange(age - 1) }) {
-            Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = textPrimary)
+            Icon(Icons.Default.Remove, contentDescription = strings.decrease, tint = textPrimary)
         }
         Box(
             modifier = Modifier
@@ -437,7 +437,7 @@ private fun BodyStep(
             Text("$age", fontSize = 28.sp, color = accent, fontWeight = FontWeight.Bold)
         }
         IconButton(onClick = { if (age < 70) onAgeChange(age + 1) }) {
-            Icon(Icons.Default.Add, contentDescription = "Increase", tint = textPrimary)
+            Icon(Icons.Default.Add, contentDescription = strings.increase, tint = textPrimary)
         }
     }
 
@@ -481,7 +481,7 @@ private fun BodyStep(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = { if (weight > 30f) onWeightChange(weight - 1f) }) {
-            Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = textPrimary)
+            Icon(Icons.Default.Remove, contentDescription = strings.decrease, tint = textPrimary)
         }
         Box(
             modifier = Modifier
@@ -494,7 +494,7 @@ private fun BodyStep(
             Text(String.format("%.1f kg", weight), fontSize = 24.sp, color = accent, fontWeight = FontWeight.Bold)
         }
         IconButton(onClick = { if (weight < 200f) onWeightChange(weight + 1f) }) {
-            Icon(Icons.Default.Add, contentDescription = "Increase", tint = textPrimary)
+            Icon(Icons.Default.Add, contentDescription = strings.increase, tint = textPrimary)
         }
     }
 
@@ -508,7 +508,7 @@ private fun BodyStep(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = { if (height > 100f) onHeightChange(height - 1f) }) {
-            Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = textPrimary)
+            Icon(Icons.Default.Remove, contentDescription = strings.decrease, tint = textPrimary)
         }
         Box(
             modifier = Modifier
@@ -521,7 +521,7 @@ private fun BodyStep(
             Text(String.format("%.0f cm", height), fontSize = 24.sp, color = accent, fontWeight = FontWeight.Bold)
         }
         IconButton(onClick = { if (height < 230f) onHeightChange(height + 1f) }) {
-            Icon(Icons.Default.Add, contentDescription = "Increase", tint = textPrimary)
+            Icon(Icons.Default.Add, contentDescription = strings.increase, tint = textPrimary)
         }
     }
 }

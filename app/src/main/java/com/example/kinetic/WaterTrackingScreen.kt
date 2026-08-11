@@ -202,7 +202,7 @@ fun WaterTrackingScreen(
             ) {
             Column {
                 AppSectionLabel(strings.addWater, p)
-                QuickAddRow(p, onAddWater, onResetWater)
+                QuickAddRow(strings, p, onAddWater, onResetWater)
                 Spacer(Modifier.height(8.dp))
                 CustomAddRow(
                     text = customMl,
@@ -378,7 +378,7 @@ fun WaterTrackingScreen(
 }
 
 @Composable
-private fun QuickAddRow(p: AppPalette, onAdd: (Int) -> Unit, onReset: () -> Unit) {
+private fun QuickAddRow(strings: LanguageManager.Strings, p: AppPalette, onAdd: (Int) -> Unit, onReset: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(250, 500).forEach { ml ->
             Box(
@@ -415,7 +415,7 @@ private fun QuickAddRow(p: AppPalette, onAdd: (Int) -> Unit, onReset: () -> Unit
         ) {
             Icon(
                 Icons.Default.Close,
-                contentDescription = "Reset",
+                contentDescription = strings.reset,
                 tint = p.rs,
                 modifier = Modifier.size(18.dp)
             )

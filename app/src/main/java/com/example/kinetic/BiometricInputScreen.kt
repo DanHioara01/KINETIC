@@ -80,7 +80,7 @@ fun BiometricInputScreen(
                 title = strings.weight,
                 value = weight,
                 onValueChange = { weight = it },
-                unit = if (isDark) "kg" else "kg",
+                unit = strings.kg,
                 keyboardType = KeyboardType.Decimal,
                 strings = strings
             )

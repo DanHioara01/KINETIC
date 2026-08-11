@@ -131,7 +131,7 @@ fun WeightGoalScreen(
                         horizontalArrangement = Arrangement.spacedBy(24.dp)
                     ) {
                         Column {
-                            Text("BMI", color = p.ts, fontSize = 12.sp)
+                            Text(strings.bmi, color = p.ts, fontSize = 12.sp)
                             Text(
                                 if (bmi > 0) "${String.format("%.1f", bmi)}" else "--",
                                 color = p.tp,
@@ -442,10 +442,11 @@ fun SetGoalDialog(
     onDismiss: () -> Unit,
     onSave: (Double, Int) -> Unit
 ) {
-    val cardBg = if (isDark) cardColor() else LightCard
-    val textPrimary = if (isDark) textColor() else LightTextPrimary
-    val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
-    val accent = if (isDark) accentColor() else LightPrimaryRed
+    val p = appPalette(isDark)
+    val cardBg = p.card
+    val textPrimary = p.tp
+    val textSecondary = p.ts
+    val accent = p.ac
 
     var targetWeight by remember { mutableStateOf(existingGoal?.targetWeightKg?.let { String.format("%.1f", it) } ?: String.format("%.1f", currentWeight)) }
     var days by remember { mutableStateOf("30") }
@@ -475,7 +476,7 @@ fun SetGoalDialog(
                             Text("${String.format("%.0f", heightCm)} cm", color = textPrimary, fontWeight = FontWeight.Bold)
                         }
                         if (bmi > 0) {
-                            Text("BMI", color = textSecondary, fontSize = 12.sp)
+                            Text(strings.bmi, color = textSecondary, fontSize = 12.sp)
                             Text("${String.format("%.1f", bmi)}", color = textPrimary, fontWeight = FontWeight.Bold)
                         }
                     }

@@ -304,7 +304,7 @@ fun LoginScreen(
                         )
                         Spacer(Modifier.weight(1f))
                         IconButton(onClick = onSignUpSuccessDismiss, modifier = Modifier.size(18.dp)) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color(0xFF4CAF50).copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
+                            Icon(Icons.Default.Close, contentDescription = strings.close, tint = Color(0xFF4CAF50).copy(alpha = 0.7f), modifier = Modifier.size(14.dp))
                         }
                     }
                 }

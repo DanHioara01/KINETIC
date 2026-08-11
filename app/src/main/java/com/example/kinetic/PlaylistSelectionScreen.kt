@@ -39,6 +39,7 @@ import androidx.compose.ui.res.painterResource
 @Composable
 fun PlaylistSelectionScreen(
     isDark: Boolean,
+    strings: LanguageManager.Strings,
     onBack: () -> Unit,
     onPlaylistSelected: (SpotifyPlaylist) -> Unit
 ) {
@@ -91,7 +92,7 @@ fun PlaylistSelectionScreen(
                         isLoading = false
                     }
                 } else {
-                    error = "Authentication failed"
+                    error = strings.authenticationFailed
                 }
             }
         }
@@ -114,7 +115,7 @@ fun PlaylistSelectionScreen(
                         isLoading = false
                     }
                 } else {
-                    error = "Authentication failed"
+                    error = strings.authenticationFailed
                 }
             }
         }
@@ -125,7 +126,7 @@ fun PlaylistSelectionScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Select Playlist",
+                        strings.selectPlaylist,
                         color = textPrimary,
                         fontWeight = FontWeight.Bold
                     )
@@ -134,7 +135,7 @@ fun PlaylistSelectionScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.Default.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = strings.back,
                             tint = textPrimary
                         )
                     }
@@ -166,13 +167,13 @@ fun PlaylistSelectionScreen(
                             modifier = Modifier.size(64.dp)
                         )
                         Text(
-                            "Connect to Spotify",
+                            strings.connectToSpotify,
                             color = textPrimary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 22.sp
                         )
                         Text(
-                            "Access your playlists and set the perfect workout soundtrack",
+                            strings.spotifyAccessDescription,
                             color = textSecondary,
                             fontSize = 14.sp
                         )
@@ -197,13 +198,13 @@ fun PlaylistSelectionScreen(
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                "Login with Spotify",
+                                strings.loginWithSpotify,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                         Text(
-                            "You'll be redirected to Spotify to authorize",
+                            strings.spotifyRedirectInfo,
                             color = textSecondary,
                             fontSize = 12.sp
                         )
@@ -245,7 +246,7 @@ fun PlaylistSelectionScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = accent)
                         Spacer(Modifier.height(16.dp))
-                        Text("Loading playlists...", color = textSecondary)
+                        Text(strings.loadingPlaylists, color = textSecondary)
                     }
                 }
             }
@@ -264,9 +265,9 @@ fun PlaylistSelectionScreen(
                             modifier = Modifier.size(48.dp)
                         )
                         Spacer(Modifier.height(16.dp))
-                        Text("Failed to load playlists", color = textPrimary, fontWeight = FontWeight.Bold)
+                        Text(strings.failedToLoadPlaylists, color = textPrimary, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(8.dp))
-                        Text(error ?: "Unknown error", color = textSecondary)
+                        Text(error ?: strings.unknownError, color = textSecondary)
                     }
                 }
             }
@@ -285,9 +286,9 @@ fun PlaylistSelectionScreen(
                             modifier = Modifier.size(48.dp)
                         )
                         Spacer(Modifier.height(16.dp))
-                        Text("No playlists found", color = textPrimary, fontWeight = FontWeight.Bold)
+                        Text(strings.noPlaylistsFound, color = textPrimary, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(8.dp))
-                        Text("Create a playlist on Spotify first", color = textSecondary)
+                        Text(strings.createPlaylistFirst, color = textSecondary)
                     }
                 }
             }
@@ -302,7 +303,7 @@ fun PlaylistSelectionScreen(
                 ) {
                     item {
                         Text(
-                            "Choose a playlist for your workout",
+                            strings.choosePlaylist,
                             color = textSecondary,
                             fontSize = 14.sp,
                             modifier = Modifier.padding(vertical = 8.dp)
@@ -310,7 +311,7 @@ fun PlaylistSelectionScreen(
                     }
 
                     items(playlists) { playlist ->
-                        PlaylistItem(
+                        PlaylistItem(strings = strings,
                             playlist = playlist,
                             isSelected = playlist.id == selectedPlaylistId,
                             cardBg = cardBg,
@@ -330,7 +331,7 @@ fun PlaylistSelectionScreen(
 }
 
 @Composable
-private fun PlaylistItem(
+private fun PlaylistItem(strings: LanguageManager.Strings, 
     playlist: SpotifyPlaylist,
     isSelected: Boolean,
     cardBg: Color,
@@ -397,7 +398,7 @@ private fun PlaylistItem(
                     )
                 }
                 Text(
-                    "${playlist.trackCount} tracks",
+                    "${playlist.trackCount} ${strings.tracks}",
                     color = textSecondary,
                     fontSize = 12.sp
                 )
@@ -406,7 +407,7 @@ private fun PlaylistItem(
             if (isSelected) {
                 Icon(
                     Icons.Default.Check,
-                    contentDescription = "Selected",
+                    contentDescription = strings.selected,
                     tint = accent,
                     modifier = Modifier.size(24.dp)
                 )

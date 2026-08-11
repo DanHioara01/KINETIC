@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.kinetic.ui.theme.*
@@ -150,7 +151,8 @@ private val muscleGroupRegions = listOf(
 fun BodyAnatomyMapSimple(
     recoveryMap: Map<String, Double>,
     onGroupClick: (String) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    strings: LanguageManager.Strings = LanguageManager.getStrings(LocalContext.current)
 ) {
     Box(
         modifier = modifier,
@@ -164,7 +166,7 @@ fun BodyAnatomyMapSimple(
         ) {
             Image(
                 painter = painterResource(R.drawable.body_anatomy),
-                contentDescription = "Body anatomy",
+                contentDescription = strings.bodyAnatomy,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds
             )

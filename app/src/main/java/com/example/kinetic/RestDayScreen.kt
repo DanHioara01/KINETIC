@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,8 +40,15 @@ data class RestActivity(
     val duration: String,
     val description: String,
     val category: String,
-    val targetedGroups: List<String> = emptyList()
+    val targetedGroups: List<String> = emptyList(),
+    val iconRes: Int? = null
 )
+
+/** Convert a local-time millis to the UTC-midnight millis expected by the DatePicker. */
+private fun localToUtcMillis(local: Long): Long = local - TimeZone.getDefault().getOffset(local)
+
+/** Convert the DatePicker's UTC-midnight millis back to local-time millis. */
+private fun utcToLocalMillis(utc: Long): Long = utc + TimeZone.getDefault().getOffset(utc)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,23 +66,30 @@ fun RestDayScreen(
     var restDays by remember { mutableStateOf<List<RestDayEntity>>(emptyList()) }
     var nextRestDay by remember { mutableStateOf<RestDayEntity?>(null) }
     var showScheduleDialog by remember { mutableStateOf(false) }
+    var editingRestDay by remember { mutableStateOf<RestDayEntity?>(null) }
     var activeDeload by remember { mutableStateOf<DeloadWeekEntity?>(null) }
     var weeksSinceDeload by remember { mutableIntStateOf(0) }
     var deloadTrigger by remember { mutableStateOf<DeloadTrigger?>(null) }
     var deloadHistory by remember { mutableStateOf<List<DeloadWeekEntity>>(emptyList()) }
     var autoDeloadEnabled by remember { mutableStateOf(false) }
     var deloadIntervalWeeks by remember { mutableIntStateOf(4) }
-    var showDeloadPreview by remember { mutableStateOf(false) }
+    var showDeloadSetup by remember { mutableStateOf(false) }
     var deloadReductions by remember { mutableStateOf<List<DeloadExerciseReduction>>(emptyList()) }
+    var showWhyDeload by remember { mutableStateOf(false) }
     var showRecoveryGuide by remember { mutableStateOf<RestActivity?>(null) }
     var avgRecoveryPct by remember { mutableIntStateOf(100) }
     var tiredCount by remember { mutableIntStateOf(0) }
+    var weeklyVolumes by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+
+    // Options for the deload setup dialog
+    var deloadDurationWeeks by remember { mutableIntStateOf(1) }
+    var deloadFactorPct by remember { mutableIntStateOf(35) }
 
     val stretchingExercises = remember(strings) { listOf(
         RestActivity(strings.lightYoga, Icons.Default.SelfImprovement, "15 min", strings.yogaDescription, "yoga", listOf("Piept", "Spate", "Umeri", "Picioare")),
-        RestActivity(strings.stretching, Icons.Default.Accessibility, "10-15 min", strings.stretchingDescription, "stretching", emptyList()),
+        RestActivity(strings.stretching, Icons.Default.Accessibility, "10-15 min", strings.stretchingDescription, "stretching", emptyList(), iconRes = R.drawable.ic_stretching),
         RestActivity(strings.lightWalk, Icons.Default.DirectionsWalk, "20-30 min", strings.lissDescription, "active", listOf("Picioare", "Fese", "Gambe")),
-        RestActivity(strings.foamRolling, Icons.Default.Circle, "8 min", strings.foamRollingDescription, "foam", emptyList())
+        RestActivity(strings.foamRolling, Icons.Default.Circle, "8 min", strings.foamRollingDescription, "foam", emptyList(), iconRes = R.drawable.ic_foam_rolling)
     ) }
 
     fun getMusclesNeedingRest(): List<Pair<String, Double>> {
@@ -108,10 +123,6 @@ fun RestDayScreen(
         return sorted.map { it.first }
     }
 
-    fun getMostFatiguedGroup(): String? {
-        return getMusclesNeedingRest().firstOrNull()?.first
-    }
-
     LaunchedEffect(userId) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             val db = AppDatabase.getDatabase(context)
@@ -125,6 +136,18 @@ fun RestDayScreen(
 
             val repo = AntrenamentRepository(db)
             activeDeload = repo.getActiveDeload(userId)
+            // DB is the source of truth — reconcile the prefs cache used by the dashboard
+            if (activeDeload != null) {
+                prefs.setDeloadActive(true)
+                prefs.setDeloadStartDate(activeDeload!!.startDate)
+                prefs.setDeloadEndDate(activeDeload!!.endDate)
+                prefs.setDeloadReason(activeDeload!!.reason)
+                prefs.setLastDeloadTimestamp(activeDeload!!.startDate)
+                weeklyVolumes = repo.getWeeklyVolumeComparison(userId)
+            } else if (prefs.isDeloadActive()) {
+                prefs.setDeloadActive(false)
+                weeklyVolumes = null
+            }
             weeksSinceDeload = repo.weeksSinceLastDeload(userId)
             deloadTrigger = repo.shouldTriggerDeload(userId, deloadIntervalWeeks)
             deloadHistory = repo.getDeloadHistory(userId)
@@ -139,13 +162,17 @@ fun RestDayScreen(
         val activity = showRecoveryGuide!!
         AlertDialog(
             onDismissRequest = { showRecoveryGuide = null },
-            containerColor = p.cr,
+            containerColor = p.bg,
             titleContentColor = p.tp,
             title = { Text(activity.name, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(activity.icon, contentDescription = null, tint = p.ac, modifier = Modifier.size(20.dp))
+                        if (activity.iconRes != null) {
+                            Icon(painterResource(activity.iconRes), contentDescription = null, tint = p.ac, modifier = Modifier.size(20.dp))
+                        } else {
+                            Icon(activity.icon, contentDescription = null, tint = p.ac, modifier = Modifier.size(20.dp))
+                        }
                         Spacer(Modifier.width(8.dp))
                         Text(activity.duration, fontSize = 13.sp, color = p.ac, fontWeight = FontWeight.SemiBold)
                     }
@@ -181,59 +208,150 @@ fun RestDayScreen(
         )
     }
 
-    if (showDeloadPreview) {
+    if (showWhyDeload) {
         AlertDialog(
-            onDismissRequest = { showDeloadPreview = false },
-            containerColor = p.cr,
+            onDismissRequest = { showWhyDeload = false },
+            containerColor = p.bg,
+            titleContentColor = p.tp,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = p.ac, modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text(strings.deloadWhyTitle, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column {
+                    Text(
+                        strings.deloadActiveThisWeek,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = p.ac
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        String.format(Locale.getDefault(), strings.deloadWhyBody, deloadIntervalWeeks),
+                        fontSize = 14.sp,
+                        color = p.tp,
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        strings.deloadPreviewSubtitle,
+                        fontSize = 13.sp,
+                        color = p.ts
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showWhyDeload = false }) {
+                    Text(strings.confirm, color = p.ac)
+                }
+            }
+        )
+    }
+
+    if (showDeloadSetup) {
+        // Recompute the preview whenever the reduction factor changes
+        LaunchedEffect(deloadFactorPct) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val db = AppDatabase.getDatabase(context)
+                deloadReductions = AntrenamentRepository(db).getDeloadPreview(userId, reductionPercent = deloadFactorPct)
+            }
+        }
+        AlertDialog(
+            onDismissRequest = { showDeloadSetup = false },
+            containerColor = p.bg,
             titleContentColor = p.tp,
             title = { Text(strings.deloadPreview, fontWeight = FontWeight.Bold) },
             text = {
-                if (deloadReductions.isEmpty()) {
-                    Text(strings.noDataYet, color = p.ts, fontSize = 13.sp)
-                } else {
-                    LazyColumn {
-                        items(deloadReductions) { reduction ->
-                            AppGlassCard(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                                p = p,
-                                cornerRadius = 10.dp,
-                                contentPadding = PaddingValues(12.dp)
-                            ) {
-                                Column {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(reduction.exerciseName, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = p.tp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                                        if (reduction.isCompound) {
-                                            Surface(
-                                                shape = RoundedCornerShape(4.dp),
-                                                color = RecoveryOrange.copy(alpha = 0.15f)
-                                            ) {
-                                                Text("CMP", fontSize = 9.sp, color = RecoveryOrange, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                Column {
+                    Text(strings.deloadPreviewSubtitle, fontSize = 12.sp, color = p.ts)
+                    Spacer(Modifier.height(10.dp))
+
+                    // Duration selector
+                    Text(strings.deloadDuration.uppercase(), fontSize = 10.sp, letterSpacing = 1.sp, color = p.ac, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(1 to strings.deload1Week, 2 to strings.deload2Weeks).forEach { (weeks, label) ->
+                            FilterChip(
+                                selected = deloadDurationWeeks == weeks,
+                                onClick = { deloadDurationWeeks = weeks },
+                                label = { Text(label, fontSize = 11.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = p.ac.copy(alpha = 0.15f),
+                                    selectedLabelColor = p.ac
+                                ),
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(10.dp))
+
+                    // Reduction factor selector
+                    Text(strings.deloadReduction.uppercase(), fontSize = 10.sp, letterSpacing = 1.sp, color = p.ac, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(30, 35, 40).forEach { pct ->
+                            FilterChip(
+                                selected = deloadFactorPct == pct,
+                                onClick = { deloadFactorPct = pct },
+                                label = { Text("-$pct%", fontSize = 11.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = p.ac.copy(alpha = 0.15f),
+                                    selectedLabelColor = p.ac
+                                ),
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider(color = p.ts.copy(alpha = 0.1f))
+                    Spacer(Modifier.height(8.dp))
+
+                    if (deloadReductions.isEmpty()) {
+                        Text(strings.noDataYet, color = p.ts, fontSize = 13.sp)
+                    } else {
+                        Text(
+                            "${strings.mostTrained}: ${deloadReductions.size} ${strings.exercises}",
+                            fontSize = 11.sp,
+                            color = p.ts,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        LazyColumn(modifier = Modifier.heightIn(max = 280.dp)) {
+                            items(deloadReductions) { reduction ->
+                                AppGlassCard(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    p = p,
+                                    cornerRadius = 10.dp,
+                                    contentPadding = PaddingValues(12.dp)
+                                ) {
+                                    Column {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(reduction.exerciseName, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = p.tp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                            if (reduction.isCompound) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = RecoveryOrange.copy(alpha = 0.15f)
+                                                ) {
+                                                    Text(strings.deloadCompound, fontSize = 9.sp, color = RecoveryOrange, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                                }
                                             }
                                         }
-                                    }
-                                    Spacer(Modifier.height(6.dp))
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Column {
-                                            Text(strings.deloadNormalValue, fontSize = 10.sp, color = p.ts)
-                                            Text("${String.format("%.1f", reduction.originalWeight)} kg x ${reduction.originalSets}", fontSize = 12.sp, color = p.ts)
-                                        }
-                                        Icon(Icons.Default.ArrowForward, contentDescription = null, tint = p.ac, modifier = Modifier.size(16.dp).align(Alignment.CenterVertically))
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text(strings.deloadNewValue, fontSize = 10.sp, color = RecoveryGreen)
-                                            Text("${String.format("%.1f", reduction.newWeight)} kg x ${reduction.newSets}", fontSize = 12.sp, color = RecoveryGreen, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                    Spacer(Modifier.height(4.dp))
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Surface(shape = RoundedCornerShape(4.dp), color = RecoveryRed.copy(alpha = 0.12f)) {
-                                            Text("-${reduction.weightReductionPercent}% ${strings.weight}", fontSize = 9.sp, color = RecoveryRed, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                                        }
-                                        if (reduction.setsReduction > 0) {
-                                            Surface(shape = RoundedCornerShape(4.dp), color = RecoveryOrange.copy(alpha = 0.12f)) {
-                                                Text("-${reduction.setsReduction} ${strings.sets}", fontSize = 9.sp, color = RecoveryOrange, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                        Spacer(Modifier.height(6.dp))
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Column {
+                                                Text(strings.deloadNormalValue, fontSize = 10.sp, color = p.ts)
+                                                Text("${String.format(Locale.getDefault(), "%.1f", reduction.originalWeight)} kg x ${reduction.originalSets}", fontSize = 12.sp, color = p.ts)
+                                            }
+                                            Icon(Icons.Default.ArrowForward, contentDescription = null, tint = p.ac, modifier = Modifier.size(16.dp).align(Alignment.CenterVertically))
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                Text(strings.deloadNewValue, fontSize = 10.sp, color = RecoveryGreen)
+                                                Text("${String.format(Locale.getDefault(), "%.1f", reduction.newWeight)} kg x ${reduction.newSets}", fontSize = 12.sp, color = RecoveryGreen, fontWeight = FontWeight.Bold)
                                             }
                                         }
                                     }
@@ -244,97 +362,157 @@ fun RestDayScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showDeloadPreview = false }) {
-                    Text(strings.confirm, color = p.ac)
+                Button(
+                    onClick = {
+                        scope.launch {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                val db = AppDatabase.getDatabase(context)
+                                val repo = AntrenamentRepository(db)
+                                val prefs = PreferencesManager(context, UserProfileManager(context))
+                                val reason = repo.getDeloadReason(deloadTrigger)
+                                // reductionFactor is the retained fraction (e.g. -30% -> 0.70)
+                                val factor = 1.0 - deloadFactorPct / 100.0
+                                repo.startDeload(userId, reason, factor, deloadDurationWeeks)
+                                val now = System.currentTimeMillis()
+                                prefs.apply {
+                                    setDeloadActive(true)
+                                    setDeloadStartDate(now)
+                                    setDeloadEndDate(now + deloadDurationWeeks * 7L * 24 * 60 * 60 * 1000)
+                                    setDeloadReason(reason)
+                                    setLastDeloadTimestamp(now)
+                                    setDeloadReductionFactor(factor.toFloat())
+                                }
+                                activeDeload = repo.getActiveDeload(userId)
+                                deloadHistory = repo.getDeloadHistory(userId)
+                                deloadTrigger = null
+                                weeklyVolumes = repo.getWeeklyVolumeComparison(userId)
+                            }
+                        }
+                        showDeloadSetup = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = p.ac),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(strings.startDeload, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeloadSetup = false }) {
+                    Text(strings.cancel, color = p.ac)
                 }
             }
         )
     }
 
     if (showScheduleDialog) {
-        var selectedDate by remember { mutableLongStateOf(System.currentTimeMillis()) }
-        var selectedType by remember { mutableStateOf("rest") }
-        var notes by remember { mutableStateOf("") }
+        val editing = editingRestDay
+        var selectedType by remember { mutableStateOf(editing?.type ?: "rest") }
+        var notes by remember { mutableStateOf(editing?.notes ?: "") }
+        val initialDate = editing?.date ?: System.currentTimeMillis()
+        val dateState = rememberDatePickerState(initialSelectedDateMillis = localToUtcMillis(initialDate))
 
-        AlertDialog(
-            onDismissRequest = { showScheduleDialog = false },
-            containerColor = p.cr,
-            titleContentColor = p.tp,
-            title = { Text(strings.restDayRecommendation, fontWeight = FontWeight.Bold) },
-            text = {
-                Column {
-                    Text(strings.selectDay, color = p.ts, fontSize = 13.sp)
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val types = remember(strings) { listOf("rest" to strings.recovery, "deload" to strings.deloadWeek, "stretching" to strings.stretching) }
-                        types.forEach { (type, label) ->
-                            FilterChip(
-                                selected = selectedType == type,
-                                onClick = { selectedType = type },
-                                label = { Text(label, fontSize = 11.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = p.ac.copy(alpha = 0.15f),
-                                    selectedLabelColor = p.ac
-                                ),
-                                shape = RoundedCornerShape(20.dp)
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = notes,
-                        onValueChange = { notes = it },
-                        placeholder = { Text(strings.notes, color = p.ts.copy(alpha = 0.5f)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = p.ac,
-                            unfocusedBorderColor = p.ts.copy(alpha = 0.3f),
-                            cursorColor = p.ac,
-                            focusedTextColor = p.tp,
-                            unfocusedTextColor = p.tp
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                }
-            },
+        DatePickerDialog(
+            onDismissRequest = { showScheduleDialog = false; editingRestDay = null },
+            colors = DatePickerDefaults.colors(
+                containerColor = p.bg,
+                titleContentColor = p.tp,
+                headlineContentColor = p.tp,
+                weekdayContentColor = p.ts,
+                subheadContentColor = p.ts,
+                yearContentColor = p.tp,
+                currentYearContentColor = p.ac,
+                selectedYearContainerColor = p.ac,
+                selectedYearContentColor = Color.White,
+                dayContentColor = p.tp,
+                selectedDayContainerColor = p.ac,
+                selectedDayContentColor = Color.White,
+                todayContentColor = p.ac,
+                todayDateBorderColor = p.ac
+            ),
             confirmButton = {
-                Button(
-                    onClick = {
-                        scope.launch {
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                val db = AppDatabase.getDatabase(context)
-                                val prefs = PreferencesManager(context, UserProfileManager(context))
-                                val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                TextButton(onClick = {
+                    val utc = dateState.selectedDateMillis ?: localToUtcMillis(initialDate)
+                    val date = utcToLocalMillis(utc)
+                    scope.launch {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            val db = AppDatabase.getDatabase(context)
+                            val prefs = PreferencesManager(context, UserProfileManager(context))
+                            val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                            if (editing != null) {
+                                val updated = editing.copy(
+                                    date = date,
+                                    type = selectedType,
+                                    notes = notes.trim(),
+                                    updatedAt = System.currentTimeMillis()
+                                )
+                                db.restDayDao().update(updated)
+                            } else {
                                 val restDay = RestDayEntity(
                                     userId = userId,
-                                    date = selectedDate,
+                                    date = date,
                                     type = selectedType,
                                     notes = notes.trim(),
                                     activities = stretchingExercises.filter { it.category == selectedType || selectedType == "rest" }
                                         .joinToString(",") { it.name }
                                 )
                                 syncRepo.saveRestDay(restDay)
-                                restDays = db.restDayDao().getAllForUser(userId)
-                                nextRestDay = db.restDayDao().getNextRestDay(userId, System.currentTimeMillis())
                             }
+                            restDays = db.restDayDao().getAllForUser(userId)
+                            nextRestDay = db.restDayDao().getNextRestDay(userId, System.currentTimeMillis())
                         }
-                        showScheduleDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = p.ac),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text(strings.confirm, color = Color.White, fontWeight = FontWeight.SemiBold)
+                    }
+                    showScheduleDialog = false
+                    editingRestDay = null
+                }) {
+                    Text(if (editing != null) strings.save else strings.confirm, color = p.ac)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showScheduleDialog = false }) {
+                TextButton(onClick = { showScheduleDialog = false; editingRestDay = null }) {
                     Text(strings.cancel, color = p.ac)
                 }
             }
-        )
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val types = remember(strings) { listOf("rest" to strings.recovery, "deload" to strings.deloadWeek, "stretching" to strings.stretching) }
+                    types.forEach { (type, label) ->
+                        FilterChip(
+                            selected = selectedType == type,
+                            onClick = { selectedType = type },
+                            label = { Text(label, fontSize = 11.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = p.ac.copy(alpha = 0.15f),
+                                selectedLabelColor = p.ac
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    placeholder = { Text(strings.notes, color = p.ts.copy(alpha = 0.5f)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = p.ac,
+                        unfocusedBorderColor = p.ts.copy(alpha = 0.3f),
+                        cursorColor = p.ac,
+                        focusedTextColor = p.tp,
+                        unfocusedTextColor = p.tp
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+                DatePicker(state = dateState)
+            }
+        }
     }
 
     Scaffold(
@@ -354,7 +532,7 @@ fun RestDayScreen(
                 Text(strings.restDaysSubtitle, color = p.ts, fontSize = 13.sp)
             }
 
-            // Auto-Detection Card
+            // ── Recovery Status card ────────────────────────────────
             item {
                 val tiredMuscles = getMusclesNeedingRest()
                 val isDeloadActive = activeDeload != null
@@ -372,7 +550,7 @@ fun RestDayScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(strings.deloadInfo.uppercase(), fontSize = 11.sp, letterSpacing = 2.sp, color = p.ac, fontWeight = FontWeight.Bold)
+                            Text(strings.recoveryInfo.uppercase(), fontSize = 11.sp, letterSpacing = 2.sp, color = p.ac, fontWeight = FontWeight.Bold)
                             if (isDeloadActive) {
                                 Surface(shape = RoundedCornerShape(4.dp), color = RecoveryOrange.copy(alpha = 0.15f)) {
                                     Text(strings.deloadActive, fontSize = 9.sp, color = RecoveryOrange, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp))
@@ -388,7 +566,7 @@ fun RestDayScreen(
                             Box(
                                 modifier = Modifier
                                     .size(44.dp)
-                                                                        .background(
+                                    .background(
                                         when {
                                             isDeloadActive -> RecoveryOrange.copy(alpha = 0.12f)
                                             shouldDeload -> RecoveryYellow.copy(alpha = 0.12f)
@@ -439,7 +617,7 @@ fun RestDayScreen(
                                 Spacer(Modifier.height(2.dp))
                                 Text(
                                     when {
-                                        isDeloadActive -> strings.deloadActiveThisWeek
+                                        isDeloadActive -> deloadDayLabel(strings, activeDeload!!)
                                         shouldDeload -> "${strings.timeForDeload} — ${strings.weeksSinceLastDeload}: $weeksSinceDeload"
                                         tiredCount >= 5 -> "${strings.muscleNeedsRest} — ${strings.weeksSinceLastDeload}: $weeksSinceDeload"
                                         tiredCount >= 3 -> "${strings.activeRecovery} — ${strings.weeksSinceLastDeload}: $weeksSinceDeload"
@@ -448,6 +626,42 @@ fun RestDayScreen(
                                     fontSize = 11.sp,
                                     color = p.ts
                                 )
+                            }
+                        }
+
+                        // Volume comparison while deload is active
+                        if (isDeloadActive && weeklyVolumes != null) {
+                            Spacer(Modifier.height(10.dp))
+                            HorizontalDivider(color = p.ts.copy(alpha = 0.1f))
+                            Spacer(Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                val (thisWeek, lastWeek) = weeklyVolumes!!
+                                val dropPct = if (lastWeek > 0) {
+                                    ((1.0 - thisWeek / lastWeek) * 100).toInt().coerceIn(0, 100)
+                                } else 0
+                                Column {
+                                    Text(strings.volumeLabel.uppercase(), fontSize = 10.sp, letterSpacing = 1.sp, color = p.ts, fontWeight = FontWeight.SemiBold)
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        "${strings.thisWeek}: ${String.format(Locale.getDefault(), "%.0f", thisWeek)} kg  ·  ${strings.lastWeekLabel}: ${String.format(Locale.getDefault(), "%.0f", lastWeek)} kg",
+                                        fontSize = 11.sp,
+                                        color = p.tp
+                                    )
+                                }
+                                if (lastWeek > 0) {
+                                    Surface(shape = RoundedCornerShape(4.dp), color = RecoveryGreen.copy(alpha = 0.12f)) {
+                                        Text(
+                                            "-$dropPct%",
+                                            fontSize = 11.sp,
+                                            color = RecoveryGreen,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
 
@@ -480,11 +694,30 @@ fun RestDayScreen(
                                 }
                             }
                         }
+                    }
+                }
+            }
 
-                        // Deload controls
-                        Spacer(Modifier.height(14.dp))
-                        HorizontalDivider(color = p.ts.copy(alpha = 0.1f))
-                        Spacer(Modifier.height(14.dp))
+            // ── Deload Settings card ────────────────────────────────
+            item {
+                val isDeloadActive = activeDeload != null
+                AppGlassCard(
+                    modifier = Modifier.fillMaxWidth().animateContentSize(),
+                    p = p,
+                    cornerRadius = 18.dp,
+                    contentPadding = PaddingValues(18.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(strings.deloadInfo.uppercase(), fontSize = 11.sp, letterSpacing = 2.sp, color = p.ac, fontWeight = FontWeight.Bold)
+                            TextButton(onClick = { showWhyDeload = true }) {
+                                Text("? ${strings.deloadWhyTitle}", fontSize = 11.sp, color = p.ac, fontWeight = FontWeight.Bold)
+                            }
+                        }
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -565,13 +798,13 @@ fun RestDayScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(6.dp)
-                                                                                .background(RecoveryTrack, RoundedCornerShape(3.dp))
+                                        .background(RecoveryTrack, RoundedCornerShape(3.dp))
                                 ) {
                                     Box(
                                         modifier = Modifier
                                             .fillMaxHeight()
                                             .fillMaxWidth(fraction = progress)
-                                                                                        .background(if (progress >= 1f) RecoveryRed else p.ac, RoundedCornerShape(3.dp))
+                                            .background(if (progress >= 1f) RecoveryRed else p.ac, RoundedCornerShape(3.dp))
                                     )
                                 }
                             }
@@ -579,40 +812,15 @@ fun RestDayScreen(
 
                         Spacer(Modifier.height(12.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (activeDeload == null && shouldDeload) {
+                            if (activeDeload == null) {
                                 Button(
                                     onClick = {
                                         scope.launch {
                                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                                 val db = AppDatabase.getDatabase(context)
-                                                val repo = AntrenamentRepository(db)
-                                                val reason = repo.getDeloadReason(deloadTrigger)
-                                                val deloadId = repo.startDeload(userId, reason, 0.65)
-                                                activeDeload = repo.getActiveDeload(userId)
-                                                val now = System.currentTimeMillis()
-                                                PreferencesManager(context, UserProfileManager(context)).apply {
-                                                    setDeloadActive(true)
-                                                    setDeloadStartDate(now)
-                                                    setDeloadEndDate(now + 7L * 24 * 60 * 60 * 1000)
-                                                    setDeloadReason(reason)
-                                                    setLastDeloadTimestamp(now)
-                                                }
-                                                // Generate preview
-                                                val topExercises = listOf("Bench Press", "Squat", "Deadlift", "Barbell Row", "Overhead Press", "Barbell Curl", "Tricep Pushdown")
-                                                val reductions = mutableListOf<DeloadExerciseReduction>()
-                                                for (ex in topExercises) {
-                                                    val history = db.exercitiuDao().getHistoryForExerciseSimple(userId, ex)
-                                                    val lastSets = history.take(5)
-                                                    if (lastSets.isNotEmpty()) {
-                                                        val maxWeight = lastSets.maxOfOrNull { it.greutateKg } ?: continue
-                                                        val avgReps = lastSets.map { it.repetari }.average().toInt().coerceAtLeast(8)
-                                                        val setCount = lastSets.groupBy { it.antrenamentId }.size.coerceIn(3, 5)
-                                                        reductions.add(repo.applyDeloadReduction(maxWeight, setCount, avgReps, ex))
-                                                    }
-                                                }
-                                                deloadReductions = reductions
-                                                showDeloadPreview = true
+                                                deloadReductions = AntrenamentRepository(db).getDeloadPreview(userId)
                                             }
+                                            showDeloadSetup = true
                                         }
                                     },
                                     modifier = Modifier.weight(1f),
@@ -628,17 +836,20 @@ fun RestDayScreen(
                                 Button(
                                     onClick = {
                                         scope.launch {
-                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                val db = AppDatabase.getDatabase(context)
-                                                val repo = AntrenamentRepository(db)
-                                                repo.endDeload(activeDeload!!.id)
-                                                activeDeload = null
-                                                PreferencesManager(context, UserProfileManager(context)).apply {
-                                                    setDeloadActive(false)
-                                                    setDeloadStartDate(0L)
-                                                    setDeloadEndDate(0L)
-                                                    setDeloadReason("")
-                                                }
+                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {                                val db = AppDatabase.getDatabase(context)
+                                val repo = AntrenamentRepository(db)
+                                repo.endDeload(activeDeload!!.id)
+                                activeDeload = null
+                                weeklyVolumes = null
+                                deloadHistory = repo.getDeloadHistory(userId)
+                                weeksSinceDeload = repo.weeksSinceLastDeload(userId)
+                                deloadTrigger = repo.shouldTriggerDeload(userId, deloadIntervalWeeks)
+                                PreferencesManager(context, UserProfileManager(context)).apply {
+                                    setDeloadActive(false)
+                                    setDeloadStartDate(0L)
+                                    setDeloadEndDate(0L)
+                                    setDeloadReason("")
+                                }
                                             }
                                         }
                                     },
@@ -651,42 +862,6 @@ fun RestDayScreen(
                                     Text(strings.endDeload, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 }
                             }
-                            OutlinedButton(
-                                onClick = {
-                                    scope.launch {
-                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                            val db = AppDatabase.getDatabase(context)
-                                            val repo = AntrenamentRepository(db)
-                                            val topExercises = listOf("Bench Press", "Squat", "Deadlift", "Barbell Row", "Overhead Press", "Barbell Curl", "Tricep Pushdown")
-                                            val reductions = mutableListOf<DeloadExerciseReduction>()
-                                            for (ex in topExercises) {
-                                                val history = db.exercitiuDao().getHistoryForExerciseSimple(userId, ex)
-                                                val lastSets = history.take(5)
-                                                if (lastSets.isNotEmpty()) {
-                                                    val maxWeight = lastSets.maxOfOrNull { it.greutateKg } ?: continue
-                                                    val avgReps = lastSets.map { it.repetari }.average().toInt().coerceAtLeast(8)
-                                                    val setCount = lastSets.groupBy { it.antrenamentId }.size.coerceIn(3, 5)
-                                                    reductions.add(repo.applyDeloadReduction(maxWeight, setCount, avgReps, ex))
-                                                }
-                                            }
-                                            deloadReductions = reductions
-                                        }
-                                        showDeloadPreview = true
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(10.dp),
-                                border = BorderStroke(1.dp, p.ac.copy(alpha = 0.3f))
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp), tint = p.ac)
-                                        Spacer(Modifier.width(4.dp))
-                                        Text(strings.deloadPreview, fontSize = 12.sp, color = p.ac, fontWeight = FontWeight.SemiBold)
-                                    }
-                                    Text(strings.deloadPreviewSubtitle, fontSize = 9.sp, color = p.ts, modifier = Modifier.padding(top = 2.dp))
-                                }
-                            }
                         }
                     }
                 }
@@ -695,7 +870,7 @@ fun RestDayScreen(
             // Next Rest Day Card
             item {
                 AppGlassCard(
-                    modifier = Modifier.fillMaxWidth().clickable { if (nextRestDay == null) showScheduleDialog = true },
+                    modifier = Modifier.fillMaxWidth().clickable { editingRestDay = null; showScheduleDialog = true },
                     p = p,
                     cornerRadius = 18.dp,
                     contentPadding = PaddingValues(18.dp)
@@ -707,7 +882,7 @@ fun RestDayScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(strings.nextRestDay.uppercase(), fontSize = 11.sp, letterSpacing = 2.sp, color = p.ac, fontWeight = FontWeight.Bold)
-                            IconButton(onClick = { showScheduleDialog = true }) {
+                            IconButton(onClick = { editingRestDay = null; showScheduleDialog = true }) {
                                 Icon(Icons.Default.Add, contentDescription = strings.add, tint = p.ac)
                             }
                         }
@@ -729,7 +904,7 @@ fun RestDayScreen(
                             }
                         } else {
                             AppGlassCard(
-                                modifier = Modifier.fillMaxWidth().clickable { showScheduleDialog = true },
+                                modifier = Modifier.fillMaxWidth().clickable { editingRestDay = null; showScheduleDialog = true },
                                 p = p,
                                 cornerRadius = 12.dp
                             ) {
@@ -770,7 +945,11 @@ fun RestDayScreen(
                             modifier = Modifier.size(44.dp).background(p.ac.copy(alpha = 0.12f), RoundedCornerShape(12.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(activity.icon, contentDescription = null, tint = p.ac, modifier = Modifier.size(22.dp))
+                            if (activity.iconRes != null) {
+                                Icon(painterResource(activity.iconRes), contentDescription = null, tint = p.ac, modifier = Modifier.size(22.dp))
+                            } else {
+                                Icon(activity.icon, contentDescription = null, tint = p.ac, modifier = Modifier.size(22.dp))
+                            }
                         }
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
@@ -817,11 +996,28 @@ fun RestDayScreen(
             }
 
             // Deload History
-            if (deloadHistory.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(4.dp))
+                Text(strings.deloadHistory.uppercase(), fontSize = 11.sp, letterSpacing = 2.sp, color = p.ac, fontWeight = FontWeight.Bold)
+            }
+            if (deloadHistory.isEmpty()) {
                 item {
-                    Spacer(Modifier.height(4.dp))
-                    Text(strings.deloadHistory.uppercase(), fontSize = 11.sp, letterSpacing = 2.sp, color = p.ac, fontWeight = FontWeight.Bold)
+                    AppGlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        p = p,
+                        cornerRadius = 14.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(18.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Default.History, contentDescription = null, tint = p.ts.copy(alpha = 0.5f), modifier = Modifier.size(26.dp))
+                            Spacer(Modifier.height(8.dp))
+                            Text(strings.deloadNoHistory, fontSize = 12.sp, color = p.ts, textAlign = TextAlign.Center, lineHeight = 17.sp)
+                        }
+                    }
                 }
+            } else {
                 items(deloadHistory.take(5)) { deload ->
                     val sdf = SimpleDateFormat("dd MMM", Locale.getDefault())
                     AppGlassCard(
@@ -854,7 +1050,12 @@ fun RestDayScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = p.tp
                                 )
-                                Text(deload.reason, fontSize = 11.sp, color = p.ts, maxLines = 1)
+                                Text(
+                                    translateDeloadReason(deload.reason, strings),
+                                    fontSize = 11.sp,
+                                    color = p.ts,
+                                    maxLines = 1
+                                )
                             }
                             Text(
                                 "${((1.0 - deload.reductionFactor) * 100).toInt()}%",
@@ -879,7 +1080,7 @@ fun RestDayScreen(
                     val isCompleted = restDay.completed
 
                     AppGlassCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().clickable { editingRestDay = restDay; showScheduleDialog = true },
                         p = p,
                         cornerRadius = 14.dp
                     ) {
@@ -893,10 +1094,10 @@ fun RestDayScreen(
                                     scope.launch {
                                         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                             val db = AppDatabase.getDatabase(context)
-                                            if (checked) {
-                                                db.restDayDao().markCompleted(restDay.id)
-                                            }
+                                            if (checked) db.restDayDao().markCompleted(restDay.id)
+                                            else db.restDayDao().markUncompleted(restDay.id)
                                             restDays = db.restDayDao().getAllForUser(userId)
+                                            nextRestDay = db.restDayDao().getNextRestDay(userId, System.currentTimeMillis())
                                         }
                                     }
                                 },
@@ -909,6 +1110,9 @@ fun RestDayScreen(
                                     Text(restDay.notes, fontSize = 11.sp, color = p.ts.copy(alpha = 0.7f))
                                 }
                             }
+                            IconButton(onClick = { editingRestDay = restDay; showScheduleDialog = true }) {
+                                Icon(Icons.Default.Edit, contentDescription = strings.editRestDay, tint = p.ac.copy(alpha = 0.8f), modifier = Modifier.size(18.dp))
+                            }
                             IconButton(onClick = { showDeleteConfirm = true }) {
                                 Icon(Icons.Default.Delete, contentDescription = strings.delete, tint = RecoveryRed.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
                             }
@@ -918,7 +1122,7 @@ fun RestDayScreen(
                     if (showDeleteConfirm) {
                         AlertDialog(
                             onDismissRequest = { showDeleteConfirm = false },
-                            containerColor = p.cr,
+                            containerColor = p.bg,
                             titleContentColor = p.tp,
                             title = { Text(strings.delete, fontWeight = FontWeight.Bold) },
                             confirmButton = {
@@ -953,4 +1157,12 @@ fun RestDayScreen(
             item { Spacer(Modifier.height(20.dp)) }
         }
     }
+}
+
+/** "Day X of Y" label for the active deload, capped to its total duration. */
+private fun deloadDayLabel(strings: LanguageManager.Strings, deload: DeloadWeekEntity): String {
+    val totalDays = ((deload.endDate - deload.startDate) / (24L * 60 * 60 * 1000)).toInt().coerceAtLeast(1)
+    val elapsed = System.currentTimeMillis() - deload.startDate
+    val day = (elapsed / (24L * 60 * 60 * 1000)).toInt().coerceIn(0, totalDays - 1) + 1
+    return String.format(Locale.getDefault(), strings.deloadDayOf, day, totalDays)
 }

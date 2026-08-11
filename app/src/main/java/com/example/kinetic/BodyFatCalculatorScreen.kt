@@ -147,7 +147,7 @@ fun BodyFatCalculatorScreen(
                         FilterChip(
                             selected = selectedMethod == 0,
                             onClick = { selectedMethod = 0; showResult = false },
-                            label = { Text("Navy", fontSize = 12.sp) },
+                            label = { Text(strings.navy, fontSize = 12.sp) },
                             modifier = Modifier.weight(1f),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = p.ac.copy(alpha = 0.25f),
@@ -157,7 +157,7 @@ fun BodyFatCalculatorScreen(
                         FilterChip(
                             selected = selectedMethod == 1,
                             onClick = { selectedMethod = 1; showResult = false },
-                            label = { Text("BMI", fontSize = 12.sp) },
+                            label = { Text(strings.bmi, fontSize = 12.sp) },
                             modifier = Modifier.weight(1f),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = p.ac.copy(alpha = 0.25f),

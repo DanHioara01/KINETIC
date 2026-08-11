@@ -2,6 +2,7 @@ package com.example.kinetic
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,17 +18,30 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathOperation
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kinetic.ui.theme.*
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlinx.coroutines.delay
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -108,17 +122,24 @@ fun DrawerMenu(
     onOpenUnitsDialog: () -> Unit,
     strings: LanguageManager.Strings,
     onClose: () -> Unit,
+    onToggleTheme: () -> Unit = {},
     onOpenServerSettings: () -> Unit = {},
     onOpenPricing: () -> Unit = {},
     isPremium: Boolean = false
 ) {
     val bg = if (isDark) DarkBackground else LightBackground
-    val textPrimary = if (isDark) WhiteText else LightTextPrimary
-    val textSecondary = if (isDark) GrayText else LightTextSecondary
-    val divider = if (isDark) DividerGray else LightDividerGray
-    val accent = if (isDark) LightRed else LightPrimaryRed
-    val selectedBg = if (isDark) DrawerItemSelectedDark else DrawerItemSelectedLight
-    val iconBg = if (isDark) IconBackground else LightIconBackground
+    // ── Tranziție globală de temă: culorile drawer-ului se amestecă lin (≈ crossfade) ──
+    val themeProgress by animateFloatAsState(
+        targetValue = if (isDark) 1f else 0f,
+        animationSpec = tween(450),
+        label = "drawerThemeProgress"
+    )
+    val textPrimary = lerp(LightTextPrimary, WhiteText, themeProgress)
+    val textSecondary = lerp(LightTextSecondary, GrayText, themeProgress)
+    val divider = lerp(LightDividerGray, DividerGray, themeProgress)
+    val accent = lerp(LightPrimaryRed, LightRed, themeProgress)
+    val selectedBg = lerp(DrawerItemSelectedLight, DrawerItemSelectedDark, themeProgress)
+    val iconBg = lerp(LightIconBackground, IconBackground, themeProgress)
 
     // ── Scroll state for depth effect ──
     val scrollState = rememberScrollState()
@@ -133,19 +154,11 @@ fun DrawerMenu(
             .width(320.dp)
             .background(
                 brush = Brush.verticalGradient(
-                    colors = if (isDark) {
-                        listOf(
-                            Color(0xFF1A1A1A),
-                            Color(0xFF121212),
-                            Color(0xFF0D0D0D)
-                        )
-                    } else {
-                        listOf(
-                            Color(0xFFE8E8E8),
-                            Color(0xFFE0E0E0),
-                            Color(0xFFD8D8D8)
-                        )
-                    }
+                    colors = listOf(
+                        lerp(Color(0xFFE8E8E8), Color(0xFF1A1A1A), themeProgress),
+                        lerp(Color(0xFFE0E0E0), Color(0xFF121212), themeProgress),
+                        lerp(Color(0xFFD8D8D8), Color(0xFF0D0D0D), themeProgress)
+                    )
                 )
             )
     ) {
@@ -235,6 +248,12 @@ fun DrawerMenu(
                             }
                         }
                     }
+                    // Switch dark/light — la dreapta, în dreptul imaginii de profil
+                    Spacer(Modifier.weight(1f))
+                    AnimatedThemeSwitch(
+                        isDark = isDark,
+                        onToggle = onToggleTheme
+                    )
                 }
             }
 
@@ -346,7 +365,7 @@ fun DrawerMenu(
             ) {
                 DrawerNavItem(
                     icon = Icons.Default.Calculate,
-                    label = "Plate Calculator",
+                    label = strings.plateCalculatorTitle,
                     selected = currentPage == DrawerPage.PLATE_CALCULATOR,
                     accent = accent,
                     selectedBg = selectedBg,
@@ -466,9 +485,10 @@ fun LanguageSelectionDialog(
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val cardBg = if (isDark) cardColor() else LightCard
-    val textPrimary = if (isDark) textColor() else LightTextPrimary
-    val accent = if (isDark) accentColor() else LightPrimaryRed
+    val p = appPalette(isDark)
+    val cardBg = p.card
+    val textPrimary = p.tp
+    val accent = p.ac
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -529,10 +549,11 @@ fun ThemeSelectionDialog(
     onSelect: (ThemeMode) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val cardBg = if (isDark) cardColor() else LightCard
-    val textPrimary = if (isDark) textColor() else LightTextPrimary
-    val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
-    val accent = if (isDark) accentColor() else LightPrimaryRed
+    val p = appPalette(isDark)
+    val cardBg = p.card
+    val textPrimary = p.tp
+    val textSecondary = p.ts
+    val accent = p.ac
 
     val themeOptions = remember(strings) { listOf(
         ThemeMode.LIGHT to strings.light,
@@ -604,10 +625,11 @@ fun UnitsSelectionDialog(
     onSelect: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val cardBg = if (isDark) cardColor() else LightCard
-    val textPrimary = if (isDark) textColor() else LightTextPrimary
-    val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
-    val accent = if (isDark) accentColor() else LightPrimaryRed
+    val p = appPalette(isDark)
+    val cardBg = p.card
+    val textPrimary = p.tp
+    val textSecondary = p.ts
+    val accent = p.ac
 
     val unitOptions = remember(strings) { listOf(
         false to strings.kg,
@@ -664,6 +686,178 @@ fun UnitsSelectionDialog(
             }
         }
     )
+}
+
+@Composable
+private fun AnimatedThemeSwitch(
+    isDark: Boolean,
+    onToggle: () -> Unit
+) {
+    // ══ Culori per mod — toate tranziționează în 0.4s ease ══
+    val trackBorderStart by animateColorAsState(
+        targetValue = if (isDark) Color(0xFF38BDF8) else Color(0xFFFB923C),
+        animationSpec = tween(400, easing = FastOutSlowInEasing),
+        label = "trackBorderStart"
+    )
+    val trackBorderEnd by animateColorAsState(
+        targetValue = if (isDark) Color(0xFF1D4ED8) else Color(0xFFA855F7),
+        animationSpec = tween(400, easing = FastOutSlowInEasing),
+        label = "trackBorderEnd"
+    )
+    val thumbStart by animateColorAsState(
+        targetValue = if (isDark) Color(0xFF60A5FA) else Color(0xFFFB923C),
+        animationSpec = tween(400, easing = FastOutSlowInEasing),
+        label = "thumbStart"
+    )
+    val thumbEnd by animateColorAsState(
+        targetValue = if (isDark) Color(0xFF1E40AF) else Color(0xFFA855F7),
+        animationSpec = tween(400, easing = FastOutSlowInEasing),
+        label = "thumbEnd"
+    )
+    val trackFill by animateColorAsState(
+        targetValue = if (isDark) Color(0xFF0C0F2B).copy(alpha = 0.80f) else Color(0xFFFFF6E5).copy(alpha = 0.80f),
+        animationSpec = tween(400, easing = FastOutSlowInEasing),
+        label = "trackFill"
+    )
+    val glowColor by animateColorAsState(
+        targetValue = if (isDark) Color(0xFF38BDF8) else Color(0xFFFB923C),
+        animationSpec = tween(400, easing = FastOutSlowInEasing),
+        label = "themeGlow"
+    )
+    val iconColor = if (isDark) Color(0xFF0D1226) else Color(0xFF2A1700)
+
+    // ══ Knob — spring bounce ≈ cubic-bezier(0.34, 1.56, 0.64, 1) ══
+    val knobOffset by animateDpAsState(
+        targetValue = if (isDark) 24.dp else 0.dp,
+        animationSpec = spring(
+            dampingRatio = 0.38f,          // bounce ușor pronunțat
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "themeKnob"
+    )
+    val iconRotation by animateFloatAsState(
+        targetValue = if (isDark) 0f else 360f,
+        animationSpec = tween(400, easing = FastOutSlowInEasing),
+        label = "themeRotation"
+    )
+
+    val pillShape = RoundedCornerShape(50)
+
+    Box(
+        modifier = Modifier
+            .size(width = 58.dp, height = 34.dp)
+            .shadow(
+                elevation = 10.dp,
+                shape = pillShape,
+                ambientColor = glowColor.copy(alpha = 0.55f),
+                spotColor = glowColor.copy(alpha = 0.55f)
+            )
+            .clip(pillShape)
+            .background(trackFill)
+            .border(
+                width = 1.5.dp,
+                brush = Brush.horizontalGradient(listOf(trackBorderStart, trackBorderEnd)),
+                shape = pillShape
+            )
+            .semantics {
+                role = Role.Switch
+                contentDescription = if (isDark) "Dark mode" else "Light mode"
+            }
+            .clickable(onClick = onToggle),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        // Knob cu iconița desenată (lună + stele / soare)
+        Box(
+            modifier = Modifier
+                .size(27.dp)
+                .offset(x = 3.5.dp + knobOffset)
+                .clip(CircleShape)
+                .graphicsLayer { shadowElevation = 2f }
+                .background(Brush.linearGradient(listOf(thumbStart, thumbEnd)))
+                .border(1.dp, Color.White.copy(alpha = 0.30f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { rotationZ = iconRotation }
+            ) {
+                if (isDark) drawMoonIcon(iconColor) else drawSunIcon(iconColor)
+            }
+        }
+    }
+}
+
+private fun DrawScope.drawMoonIcon(color: Color) {
+    val c = Offset(size.width * 0.5f, size.height * 0.5f)
+    val r = size.minDimension * 0.30f
+
+    // Semilună: cerc minus un cerc decalat spre stânga → deschiderea spre stânga
+    val body = Path().apply { addOval(Rect(c.x - r, c.y - r, c.x + r, c.y + r)) }
+    val cutR = r * 0.90f
+    val cut = Path().apply {
+        addOval(
+            Rect(
+                c.x - r * 0.45f - cutR, c.y - r * 0.10f - cutR,
+                c.x - r * 0.45f + cutR, c.y - r * 0.10f + cutR
+            )
+        )
+    }
+    drawPath(Path.combine(PathOperation.Difference, body, cut), color)
+
+    // Două steluțe mici sus-dreapta
+    drawSparkle(Offset(c.x + r * 0.95f, c.y - r * 0.85f), r * 0.20f, color)
+    drawSparkle(Offset(c.x + r * 1.30f, c.y - r * 0.30f), r * 0.13f, color)
+}
+
+private fun DrawScope.drawSunIcon(color: Color) {
+    val c = Offset(size.width * 0.5f, size.height * 0.5f)
+    val coreR = size.minDimension * 0.20f
+    val rayLen = size.minDimension * 0.24f
+
+    // Disc central + raze triunghiulare
+    drawCircle(color = color, radius = coreR, center = c)
+
+    val count = 8
+    for (i in 0 until count) {
+        val mid = i * (PI / 4.0) - PI / 2.0
+        val spread = PI / 14.0
+        val apex = Offset(
+            c.x + cos(mid).toFloat() * (coreR + rayLen),
+            c.y + sin(mid).toFloat() * (coreR + rayLen)
+        )
+        val b1 = Offset(
+            c.x + cos(mid - spread).toFloat() * coreR,
+            c.y + sin(mid - spread).toFloat() * coreR
+        )
+        val b2 = Offset(
+            c.x + cos(mid + spread).toFloat() * coreR,
+            c.y + sin(mid + spread).toFloat() * coreR
+        )
+        val ray = Path().apply {
+            moveTo(b1.x, b1.y)
+            lineTo(apex.x, apex.y)
+            lineTo(b2.x, b2.y)
+            close()
+        }
+        drawPath(ray, color)
+    }
+}
+
+private fun DrawScope.drawSparkle(center: Offset, radius: Float, color: Color) {
+    val inner = radius * 0.42f
+    val path = Path().apply {
+        moveTo(center.x, center.y - radius)
+        lineTo(center.x + inner, center.y - inner)
+        lineTo(center.x + radius, center.y)
+        lineTo(center.x + inner, center.y + inner)
+        lineTo(center.x, center.y + radius)
+        lineTo(center.x - inner, center.y + inner)
+        lineTo(center.x - radius, center.y)
+        lineTo(center.x - inner, center.y - inner)
+        close()
+    }
+    drawPath(path = path, color = color)
 }
 
 @Composable
@@ -894,15 +1088,17 @@ private fun DrawerSettingItem(
 @Composable
 fun ServerUrlDialog(
     isDark: Boolean,
+    strings: LanguageManager.Strings,
     currentUrl: String,
     currentApiKey: String,
     onSave: (String, String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val cardBg = if (isDark) cardColor() else LightCard
-    val textPrimary = if (isDark) textColor() else LightTextPrimary
-    val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
-    val accent = if (isDark) accentColor() else LightPrimaryRed
+    val p = appPalette(isDark)
+    val cardBg = p.card
+    val textPrimary = p.tp
+    val textSecondary = p.ts
+    val accent = p.ac
 
     var url by remember { mutableStateOf(currentUrl) }
     var apiKey by remember { mutableStateOf(currentApiKey) }
@@ -911,11 +1107,11 @@ fun ServerUrlDialog(
         onDismissRequest = onDismiss,
         containerColor = cardBg,
         titleContentColor = textPrimary,
-        title = { Text("Server Settings", fontWeight = FontWeight.Bold) },
+        title = { Text(strings.serverSettings, fontWeight = FontWeight.Bold) },
         text = {
             Column {
                 Text(
-                    "Backend server address:",
+                    strings.backendServerAddress,
                     color = textSecondary,
                     fontSize = 13.sp
                 )
@@ -937,7 +1133,7 @@ fun ServerUrlDialog(
                 )
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    "AI Trainer API Key (optional):",
+                    strings.aiApiKeyOptional,
                     color = textSecondary,
                     fontSize = 13.sp
                 )
@@ -945,7 +1141,7 @@ fun ServerUrlDialog(
                 OutlinedTextField(
                     value = apiKey,
                     onValueChange = { apiKey = it },
-                    placeholder = { Text("Leave empty if auth is disabled", color = textSecondary.copy(alpha = 0.5f)) },
+                    placeholder = { Text(strings.leaveEmptyIfAuthDisabled, color = textSecondary.copy(alpha = 0.5f)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -959,7 +1155,7 @@ fun ServerUrlDialog(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Leave empty for default server URL. API key only needed if server has auth enabled.",
+                    strings.leaveEmptyForDefaultServer,
                     color = textSecondary,
                     fontSize = 11.sp
                 )
@@ -971,12 +1167,12 @@ fun ServerUrlDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = accent),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("Save", color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text(strings.save, color = Color.White, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
                 TextButton(onClick = onDismiss) {
-                Text("Close", color = accent)
+                Text(strings.close, color = accent)
             }
         }
     )

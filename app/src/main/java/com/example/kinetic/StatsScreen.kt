@@ -466,7 +466,7 @@ private fun StatsScreenContent(
                     p = palette
                 )
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(36.dp))
             }
         }
 
@@ -887,6 +887,13 @@ private fun RingItem(
                         )
                     }
                 }
+                // Cifra din mijlocul inelului (era transmisă dar nu desenată → invizibilă)
+                Text(
+                    value,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = textPrimary
+                )
             }
             Spacer(Modifier.height(8.dp))
             Text(label, fontSize = 9.sp, letterSpacing = 0.8.sp, color = textSecondary)
@@ -954,12 +961,12 @@ private fun HeatmapCard(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("${data.count { it > 0 }} ${strings.workoutsLabel}", fontSize = 9.sp, color = textTertiary)
                 Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Low", fontSize = 7.sp, color = textTertiary)
+                    Text(strings.lowLabel, fontSize = 7.sp, color = textTertiary)
                     Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(accent.copy(alpha = 0.06f)))
                     Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(accent.copy(alpha = 0.18f)))
                     Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(accent.copy(alpha = 0.4f)))
                     Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(accent))
-                    Text("High", fontSize = 7.sp, color = textTertiary)
+                    Text(strings.highLabel, fontSize = 7.sp, color = textTertiary)
                 }
             }
         }
@@ -1166,7 +1173,7 @@ private fun TopExerciseCard(
                 }
             }
             Box(Modifier.clip(RoundedCornerShape(8.dp)).background(p.pus).padding(6.dp)) {
-                Text("TOP", fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp, color = p.pu)
+                Text(strings.top, fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp, color = p.pu)
             }
         }
     }

@@ -274,6 +274,6 @@ object BackupExporter {
             putExtra(Intent.EXTRA_STREAM, json)
             putExtra(Intent.EXTRA_SUBJECT, "Kinetic Backup")
         }
-        context.startActivity(Intent.createChooser(intent, "Export backup"))
+        context.startActivity(Intent.createChooser(intent, LanguageManager.getStrings(context).exportBackup))
     }
 }

@@ -422,13 +422,13 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
             val startDate = prefs.getWorkoutStartDate()
             val weeksSinceStart = java.time.temporal.ChronoUnit.WEEKS.between(startDate, java.time.LocalDate.now()).toInt()
             if (weeksSinceStart >= intervalWeeks) {
-                return DeloadTrigger("Time for deload after ${weeksSinceStart} weeks")
+                return DeloadTrigger("auto")
             }
             return null
         }
         val weeksSince = weeksSinceLastDeload(userId)
         if (weeksSince >= intervalWeeks) {
-            return DeloadTrigger("Deload scheduled after $weeksSince weeks")
+            return DeloadTrigger("auto")
         }
         return null
     }
@@ -442,12 +442,12 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
     }
 
     fun getDeloadReason(trigger: DeloadTrigger?): String {
-        return trigger?.reason ?: "General deload"
+        return trigger?.reason ?: "general"
     }
 
-    suspend fun startDeload(userId: String, reason: String, reductionFactor: Double): Long {
+    suspend fun startDeload(userId: String, reason: String, reductionFactor: Double, durationWeeks: Int = 1): Long {
         val now = System.currentTimeMillis()
-        val endDate = now + 7L * 24 * 60 * 60 * 1000
+        val endDate = now + durationWeeks * 7L * 24 * 60 * 60 * 1000
         val entity = DeloadWeekEntity(
             userId = userId,
             startDate = now,
@@ -471,11 +471,27 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
         }
     }
 
-    fun applyDeloadReduction(maxWeight: Double, setCount: Int, avgReps: Int, exerciseName: String): DeloadExerciseReduction {
-        val reductionPercent = 35
+    /** Builds the deload preview from the user's real training history (most frequent exercises). */
+    suspend fun getDeloadPreview(userId: String, limit: Int = 8, reductionPercent: Int = 35): List<DeloadExerciseReduction> {
+        val topExercises = db.exercitiuDao().getMostFrequentExerciseNames(userId, limit).map { it.numeExercitiu }
+        if (topExercises.isEmpty()) return emptyList()
+        val reductions = mutableListOf<DeloadExerciseReduction>()
+        for (ex in topExercises) {
+            val history = db.exercitiuDao().getHistoryForExerciseSimple(userId, ex)
+            val lastSets = history.take(5)
+            if (lastSets.isEmpty()) continue
+            val maxWeight = lastSets.maxOfOrNull { it.greutateKg } ?: continue
+            val avgReps = lastSets.map { it.repetari }.average().toInt().coerceAtLeast(8)
+            val setCount = lastSets.groupBy { it.antrenamentId }.size.coerceIn(3, 5)
+            val isCompound = db.exerciseDefinitionDao().getByName(ex)?.group in COMPOUND_GROUPS
+            reductions.add(applyDeloadReduction(maxWeight, setCount, avgReps, ex, reductionPercent, isCompound))
+        }
+        return reductions
+    }
+
+    fun applyDeloadReduction(maxWeight: Double, setCount: Int, avgReps: Int, exerciseName: String, reductionPercent: Int = 35, isCompound: Boolean = false): DeloadExerciseReduction {
         val newWeight = maxWeight * (1.0 - reductionPercent / 100.0)
         val newSets = (setCount * 0.6).toInt().coerceAtLeast(2)
-        val isCompound = exerciseName in listOf("Bench Press", "Squat", "Deadlift", "Barbell Row", "Overhead Press")
         return DeloadExerciseReduction(
             exerciseName = exerciseName,
             originalWeight = maxWeight,
@@ -488,15 +504,22 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
         )
     }
 
+    companion object {
+        /** Core muscle groups whose lifts count as compound exercises for the deload badge. */
+        private val COMPOUND_GROUPS = setOf("Piept", "Spate", "Picioare", "Umeri")
+    }
+
     fun weeksSinceLastDeload(userId: String): Int {
         val app = KineticApplication.get() ?: return 0
         val prefs = PreferencesManager(app, UserProfileManager(app))
         val lastTs = prefs.getLastDeloadTimestamp()
-        if (lastTs == 0L) return 0
-        val weeks = java.time.temporal.ChronoUnit.WEEKS.between(
-            java.time.Instant.ofEpochMilli(lastTs).atZone(java.time.ZoneId.systemDefault()).toLocalDate(),
-            java.time.LocalDate.now()
-        ).toInt()
+        val from: java.time.LocalDate = if (lastTs == 0L) {
+            // Never deloaded — fall back to training start so the progress bar is meaningful
+            prefs.getWorkoutStartDate()
+        } else {
+            java.time.Instant.ofEpochMilli(lastTs).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+        }
+        val weeks = java.time.temporal.ChronoUnit.WEEKS.between(from, java.time.LocalDate.now()).toInt()
         return weeks.coerceAtLeast(0)
     }
 
@@ -510,9 +533,33 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
         return ((1.0 - avg) * 100).toInt().coerceIn(0, 100)
     }
 
+    /** Returns (currentWeek, previousWeek) total volume in kg, for deload comparison. */
+    suspend fun getWeeklyVolumeComparison(userId: String): Pair<Double, Double> {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val todayStart = cal.timeInMillis
+        val thisWeekStart = todayStart - 6L * 24 * 60 * 60 * 1000
+        val lastWeekStart = thisWeekStart - 7L * 24 * 60 * 60 * 1000
+        val thisWeek = db.antrenamentDao().getTotalVolume(userId, thisWeekStart, todayStart + 24 * 60 * 60 * 1000) ?: 0.0
+        val lastWeek = db.antrenamentDao().getTotalVolume(userId, lastWeekStart, thisWeekStart) ?: 0.0
+        return thisWeek to lastWeek
+    }
+
     suspend fun endDeload(deloadId: Long) {
         try {
             db.deloadWeekDao().markCompleted(deloadId)
         } catch (_: Exception) { }
+    }
+}
+
+/** Localized label for a stored deload reason (keys "auto"/"general", legacy English text falls back to raw). */
+fun translateDeloadReason(reason: String, strings: LanguageManager.Strings): String {
+    return when (reason) {
+        "auto" -> strings.deloadReasonAuto
+        "general", "" -> strings.deloadReasonGeneral
+        else -> reason
     }
 }

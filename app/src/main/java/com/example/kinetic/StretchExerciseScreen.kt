@@ -45,6 +45,7 @@ import coil.compose.AsyncImage
 import com.example.kinetic.ui.theme.AppPalette
 import com.example.kinetic.ui.theme.appPalette
 import com.example.kinetic.ui.theme.overlay
+import com.example.kinetic.ui.components.GradientNextExerciseButton
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.cos
@@ -166,6 +167,15 @@ fun StretchExerciseScreen(
 
         Spacer(Modifier.height(12.dp))
 
+        // ── Next Exercise Button ──
+        if (onNextExercise != null) {
+            GradientNextExerciseButton(
+                text = strings.nextExercise,
+                onClick = { onNextExercise() }
+            )
+            Spacer(Modifier.height(12.dp))
+        }
+
         // ── GIF Card ──
         GifCard(
             p = p,
@@ -273,7 +283,8 @@ fun StretchExerciseScreen(
             NextExerciseHint(
                 p = p,
                 name = nextExerciseName,
-                sets = nextExerciseSets
+                sets = nextExerciseSets,
+                strings = strings
             )
         }
 
@@ -302,22 +313,22 @@ private fun TopBar(
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .size(44.dp)
+                .clip(RoundedCornerShape(14.dp))
                 .background(p.cr)
-                .border(1.dp, p.bd, RoundedCornerShape(12.dp))
+                .border(1.dp, p.bd, RoundedCornerShape(14.dp))
                 .clickable { onBack() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = null,
-                tint = p.ts,
+                tint = Color.White.copy(alpha = 0.6f),
                 modifier = Modifier.size(18.dp)
             )
         }
 
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -328,10 +339,11 @@ private fun TopBar(
                 color = p.am
             )
             Text(
-                text = exerciseName,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
+                text = exerciseName.uppercase(),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
                 color = p.tp,
+                letterSpacing = 0.8.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -397,7 +409,7 @@ private fun GifCard(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "EXERCISE",
+                    text = strings.exercise.uppercase(),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = p.tt
@@ -447,7 +459,7 @@ private fun GifCard(
                 .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
             Text(
-                text = "EXERCISE",
+                text = strings.exercise.uppercase(),
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,
@@ -684,7 +696,8 @@ private fun ControlsCard(
 private fun NextExerciseHint(
     p: AppPalette,
     name: String,
-    sets: String
+    sets: String,
+    strings: LanguageManager.Strings
 ) {
     Row(
         modifier = Modifier
@@ -703,7 +716,7 @@ private fun NextExerciseHint(
         )
         Spacer(Modifier.width(8.dp))
         Text(
-            text = "Urmatorul: ",
+            text = "${strings.next}: ",
             fontSize = 12.sp,
             color = p.tt
         )

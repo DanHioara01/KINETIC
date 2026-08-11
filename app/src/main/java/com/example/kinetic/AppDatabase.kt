@@ -447,6 +447,17 @@ interface ExercitiuDao {
     """)
     suspend fun getDistinctExerciseNames(userId: String, startTime: Long, endTime: Long): List<String>
 
+    @Query("""
+        SELECT e.numeExercitiu, COUNT(*) as cnt
+        FROM exercitii e
+        INNER JOIN antrenamente a ON e.antrenamentId = a.id
+        WHERE a.userId = :userId
+        GROUP BY e.numeExercitiu
+        ORDER BY cnt DESC
+        LIMIT :limit
+    """)
+    suspend fun getMostFrequentExerciseNames(userId: String, limit: Int): List<MostFrequentExercise>
+
     @Query("SELECT COUNT(*) FROM exercitii WHERE antrenamentId = :antrenamentId")
     suspend fun getSetCountForWorkout(antrenamentId: Long): Int
 
@@ -771,6 +782,9 @@ interface RestDayDao {
 
     @Query("UPDATE rest_days SET completed = 1 WHERE id = :id")
     suspend fun markCompleted(id: Long)
+
+    @Query("UPDATE rest_days SET completed = 0 WHERE id = :id")
+    suspend fun markUncompleted(id: Long)
 }
 
 @Dao

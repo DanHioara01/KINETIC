@@ -106,14 +106,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kinetic.ui.components.KineticAppBar
 import com.example.kinetic.ui.theme.RecoveryRed
 import com.example.kinetic.ui.theme.Varien
-import com.example.kinetic.ui.theme.accentColor
-import com.example.kinetic.ui.theme.bgColor
-import com.example.kinetic.ui.theme.cardColor
-import com.example.kinetic.ui.theme.secondaryTextColor
-import com.example.kinetic.ui.theme.textColor
-import com.example.kinetic.ui.theme.LightBackground
-import com.example.kinetic.ui.theme.LightCard
-import com.example.kinetic.ui.theme.LightPrimaryRed
+import com.example.kinetic.ui.theme.appPalette
 import com.example.kinetic.ui.theme.LightTextPrimary
 import com.example.kinetic.ui.theme.LightTextSecondary
 import com.google.android.gms.location.LocationServices
@@ -138,11 +131,12 @@ fun GpsCardioScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val surfaceBg = if (isDark) bgColor() else LightBackground
-    val textPrimary = if (isDark) textColor() else LightTextPrimary
-    val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
-    val cardBg = if (isDark) cardColor() else LightCard
-    val accent = if (isDark) accentColor() else LightPrimaryRed
+    val p = appPalette(isDark)
+    val surfaceBg = p.bg
+    val textPrimary = p.tp
+    val textSecondary = p.ts
+    val cardBg = p.card
+    val accent = p.ac
 
     val gpsState = GpsTrackingState
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
@@ -151,7 +145,7 @@ fun GpsCardioScreen(
     var showSavedRoutes by remember { mutableStateOf(false) }
     var selectedRoute by remember { mutableStateOf<CardioRouteEntity?>(null) }
     var hasLocationPermission by remember { mutableStateOf(false) }
-    var locationStatus by remember { mutableStateOf("Caut semnal GPS...") }
+    var locationStatus by remember { mutableStateOf(strings.gpsSearching) }
     var showGpsDisabledDialog by remember { mutableStateOf(false) }
     var showLocationDeniedDialog by remember { mutableStateOf(false) }
     var pendingStartAfterPermission by remember { mutableStateOf(false) }
@@ -205,7 +199,7 @@ fun GpsCardioScreen(
             androidx.core.content.ContextCompat.startForegroundService(context, intent)
         } catch (e: Exception) {
             GpsTrackingState.isTracking = false
-            android.widget.Toast.makeText(context, "Eroare GPS: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            android.widget.Toast.makeText(context, "${strings.gpsError}: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
         }
     }
 
@@ -239,7 +233,7 @@ fun GpsCardioScreen(
             androidx.core.content.ContextCompat.startForegroundService(context, intent)
         } catch (e: Exception) {
             GpsTrackingState.isTracking = false
-            android.widget.Toast.makeText(context, "Eroare GPS: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            android.widget.Toast.makeText(context, "${strings.gpsError}: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
         }
     }
 
@@ -702,7 +696,7 @@ fun GpsCardioScreen(
                                     FilterChip(
                                         selected = isActive,
                                         onClick = { if (!gpsState.isTracking) gpsState.activityType = type },
-                                        label = { Text(type.replaceFirstChar { it.uppercase() }, fontSize = 12.sp) },
+                                        label = { Text(when(type) { "running" -> strings.running; "cycling" -> strings.cycling; "walking" -> strings.walking; else -> type }, fontSize = 12.sp) },
                                         leadingIcon = {
                                             Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
                                         },
@@ -874,7 +868,7 @@ fun GpsCardioScreen(
                                 icon = Icons.Default.FitnessCenter,
                                 value = gpsState.routePoints.size.toString(),
                                 unit = "pts",
-                                label = "Points",
+                                label = strings.routePoints,
                                 cardBg = cardBg,
                                 accent = accent,
                                 textPrimary = textPrimary,
@@ -909,13 +903,13 @@ fun GpsCardioScreen(
                                     ) {
                                         Icon(
                                             Icons.Default.Map,
-                                            contentDescription = "Floating Window",
+                                            contentDescription = strings.floatingWindow,
                                             tint = Color.White,
                                             modifier = Modifier.size(28.dp)
                                         )
                                     }
                                     Spacer(Modifier.height(6.dp))
-                                    Text("Float", color = Color(0xFF2196F3), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                    Text(strings.float, color = Color(0xFF2196F3), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 }
                                 Column(
                                     modifier = Modifier.weight(1f),
@@ -967,13 +961,13 @@ fun GpsCardioScreen(
                                     ) {
                                         Icon(
                                             Icons.Default.Map,
-                                            contentDescription = "Floating Window",
+                                            contentDescription = strings.floatingWindow,
                                             tint = Color.White,
                                             modifier = Modifier.size(28.dp)
                                         )
                                     }
                                     Spacer(Modifier.height(6.dp))
-                                    Text("Float", color = Color(0xFF2196F3), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                    Text(strings.float, color = Color(0xFF2196F3), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                 }
                                 Column(
                                     modifier = Modifier.weight(1f),
@@ -1368,7 +1362,7 @@ private fun RouteDetailContent(
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "No route data",
+                            strings.noDataYet,
                             color = textSecondary,
                             fontSize = 13.sp,
                             textAlign = TextAlign.Center
@@ -1449,7 +1443,7 @@ private fun RouteDetailContent(
                 icon = Icons.Default.DirectionsRun,
                 value = "$stepsEstimate",
                 unit = "",
-                label = "Steps",
+                label = strings.steps,
                 cardBg = cardBg,
                 accent = accent,
                 textPrimary = textPrimary,
@@ -1460,7 +1454,7 @@ private fun RouteDetailContent(
                 icon = Icons.Default.FitnessCenter,
                 value = routePoints.size.toString(),
                 unit = "pts",
-                label = "Route Points",
+                label = strings.routePoints,
                 cardBg = cardBg,
                 accent = accent,
                 textPrimary = textPrimary,
@@ -1490,7 +1484,7 @@ private fun RouteDetailContent(
                         color = textSecondary
                     )
                     Text(
-                        route.activityType.replaceFirstChar { it.uppercase() },
+                        route.activityType.let { when(it) { "running" -> strings.running; "cycling" -> strings.cycling; "walking" -> strings.walking; else -> it } },
                         fontSize = 12.sp,
                         color = accent
                     )

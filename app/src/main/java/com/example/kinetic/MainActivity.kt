@@ -122,6 +122,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.kinetic.ui.components.AppGlassCard
+import com.example.kinetic.ui.components.GradientNextExerciseButton
 import com.example.kinetic.ui.components.GlassCard
 import com.example.kinetic.ui.components.KineticAppBar
 import com.example.kinetic.ui.components.KineticHeaderController
@@ -256,7 +257,7 @@ class MainActivity : ComponentActivity() {
     // ============================================
     // Helper functions for weight conversion
 // ============================================
-private fun convertWeight(kg: Double, isLbs: Boolean): Double = if (isLbs) kg * 2.20462 else kg
+internal fun convertWeight(kg: Double, isLbs: Boolean): Double = if (isLbs) kg * 2.20462 else kg
 internal fun weightLabel(kg: Double, isLbs: Boolean): String {
     val value = if (isLbs) kg * 2.20462 else kg
     val unit = if (isLbs) "lbs" else "kg"
@@ -368,7 +369,6 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
         mutableStateOf(isLoggedIn && !preferencesManager.isOnboardingComplete())
     }
     var showSignUp by remember { mutableStateOf(false) }
-    var showDeloadInfoDialog by remember { mutableStateOf(false) }
     val workoutNavController = rememberNavController()
     val workoutBackStackEntry by workoutNavController.currentBackStackEntryAsState()
     val isWorkoutFlowActive = WorkoutRoutes.isActiveRoute(workoutBackStackEntry?.destination?.route)
@@ -1114,70 +1114,11 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                 preferencesManager.setWorkoutStartDate(java.time.LocalDate.now())
                 preferencesManager.setLoggedIn(true)
                 preferencesManager.setAutoDeloadEnabled(false)
-                preferencesManager.setSeenDeloadInfo(false)
                 showOnboarding = false
                 isLoggedIn = true
-                if (!preferencesManager.hasSeenDeloadInfo()) {
-                    showDeloadInfoDialog = true
-                }
             }
         )
         return
-    }
-
-    if (showDeloadInfoDialog) {
-        AlertDialog(
-            onDismissRequest = { },
-            containerColor = cardColor(),
-            titleContentColor = textColor(),
-            textContentColor = secondaryTextColor(),
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = accentColor(), modifier = Modifier.size(28.dp))
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(strings.deloadInfo, fontWeight = FontWeight.Bold)
-                }
-            },
-            text = {
-                Column {
-                    Text(
-                        strings.deloadActiveThisWeek,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = accentColor()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Every ${preferencesManager.getDeloadIntervalWeeks()} weeks, Kinetic automatically reduces your weights and sets to help your body recover and prevent overtraining.",
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        strings.deloadPreviewSubtitle,
-                        fontSize = 13.sp,
-                        color = secondaryTextColor()
-                    )
-                }
-            },
-            confirmButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = {
-                        preferencesManager.setAutoDeloadEnabled(true)
-                        showDeloadInfoDialog = false
-                        preferencesManager.setSeenDeloadInfo(true)
-                    }) {
-                        Text(strings.autoDeloadEnabled, color = accentColor(), fontWeight = FontWeight.Bold)
-                    }
-                    TextButton(onClick = {
-                        showDeloadInfoDialog = false
-                        preferencesManager.setSeenDeloadInfo(true)
-                    }) {
-                        Text("OK", color = secondaryTextColor())
-                    }
-                }
-            }
-        )
     }
 
     if (!isLoggedIn) {
@@ -1377,6 +1318,12 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                     onOpenUnitsDialog = { showUnitsDialog = true },
                     strings = strings,
                     onClose = { scope.launch { drawerState.close() } },
+                    onToggleTheme = {
+                        val newMode = if (isDark) ThemeMode.LIGHT else ThemeMode.DARK
+                        preferencesManager.setThemeMode(newMode)
+                        currentThemeMode = newMode
+                        onThemeChanged(newMode)
+                    },
                     onOpenServerSettings = { showServerDialog = true },
                     onOpenPricing = { showPricing = true },
                     isPremium = subscription.isPremium || AdminManager.isAdmin(userEmail)
@@ -1395,13 +1342,13 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
         }
 
         // Content inside drawer
-        val surfaceBg = if (isDark) bgColor() else LightBackground
-        val textPrimary = if (isDark) textColor() else LightTextPrimary
-        val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
-        val cardBg = if (isDark) cardColor() else LightCard
-        val accent = if (isDark) accentColor() else LightPrimaryRed
-        val iconBg = if (isDark) IconBackground else LightIconBackground
         val p = appPalette(isDark)
+        val surfaceBg = p.bg
+        val textPrimary = p.tp
+        val textSecondary = p.ts
+        val cardBg = p.card
+        val accent = p.ac
+        val iconBg = if (isDark) IconBackground else LightIconBackground
 
         if (!subscriptionLoaded) {
             androidx.compose.foundation.layout.Box(
@@ -1418,13 +1365,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
         CompositionLocalProvider(
             LocalKineticHeader provides KineticHeaderController(
                 isDark = isDark,
-                onOpenMenu = { scope.launch { drawerState.open() } },
-                onToggleTheme = {
-                    val newMode = if (isDark) ThemeMode.LIGHT else ThemeMode.DARK
-                    preferencesManager.setThemeMode(newMode)
-                    currentThemeMode = newMode
-                    onThemeChanged(newMode)
-                }
+                onOpenMenu = { scope.launch { drawerState.open() } }
             )
         ) {
         Scaffold(
@@ -1706,7 +1647,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                             topBar = { KineticAppBar(onBack = { showWorkoutAnalytics = false }) }
                         ) { pad ->
                             Box(modifier = Modifier.fillMaxSize().padding(pad), contentAlignment = Alignment.Center) {
-                                Text("Workout Analytics", color = textPrimary, fontSize = 20.sp)
+                                Text(strings.workoutAnalytics, color = textPrimary, fontSize = 20.sp)
                             }
                         }
                     } else {
@@ -1867,7 +1808,21 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                     val onboardingProfile = remember(equipKey, profileChangedTrigger) { preferencesManager.getOnboardingProfile() }
                     val todayWorkoutData = mainViewModel.todayWorkout.collectAsState()
                     val exerciseSummaries by mainViewModel.exerciseSummaries.collectAsState()
+                    var isTodayScheduledRest by remember { mutableStateOf(false) }
                     LaunchedEffect(showTodayWorkout, equipKey, profileChangedTrigger) {
+                        val db = AppDatabase.getDatabase(context)
+                        val today = java.util.Calendar.getInstance().apply {
+                            set(java.util.Calendar.HOUR_OF_DAY, 0)
+                            set(java.util.Calendar.MINUTE, 0)
+                            set(java.util.Calendar.SECOND, 0)
+                            set(java.util.Calendar.MILLISECOND, 0)
+                        }.timeInMillis
+                        val tomorrow = today + 86400000L
+                        val uid = UserProfileManager(context).getOwnUserId()
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            val todayRestDay = db.restDayDao().getAllForUser(uid).find { it.date in today until tomorrow }
+                            isTodayScheduledRest = todayRestDay != null
+                        }
                         mainViewModel.computeTodayWorkout(preferencesManager)
                         val workout = mainViewModel.todayWorkout.value
                         if (workout != null) {
@@ -1877,7 +1832,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                         }
                     }
                             TodayWorkoutScreen(
-                                todayWorkout = todayWorkoutData.value,
+                                todayWorkout = if (isTodayScheduledRest) null else todayWorkoutData.value,
                                 strings = strings,
                                 isDark = isDark,
                                 onStartExercise = { grupa, exerciseName ->
@@ -1924,8 +1879,14 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                             val equipKey = preferencesManager.getEquipmentAvailable()
                             val onboardingProfile = remember(equipKey, profileChangedTrigger) { preferencesManager.getOnboardingProfile() }
                             val todayWorkoutData = mainViewModel.todayWorkout.collectAsState()
+                            var deloadDue by remember(equipKey, profileChangedTrigger) { mutableStateOf(false) }
                             LaunchedEffect(equipKey, profileChangedTrigger) {
                                 mainViewModel.computeTodayWorkout(preferencesManager)
+                                val uid = UserProfileManager(context).getOwnUserId()
+                                val repo = AntrenamentRepository(AppDatabase.getDatabase(context))
+                                deloadDue = preferencesManager.isAutoDeloadEnabled() &&
+                                    repo.shouldTriggerDeload(uid, preferencesManager.getDeloadIntervalWeeks()) != null &&
+                                    !preferencesManager.isDeloadActive()
                             }
                             DashboardScreen(
                                 state = DashboardUiState(
@@ -1964,7 +1925,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                     preferencesManager.setStepGoal(goal)
                                     refreshStepsWidget()
                                 },
-                                stepGoal = stepGoal
+                                stepGoal = stepGoal,
+                                deloadDue = deloadDue,
+                                onOpenDeload = { currentPage = DrawerPage.REST_DAYS }
                             )
                         } else if (currentDashboardTab == 1) {
                                 Column(
@@ -2109,7 +2072,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                                                 )
                                                                 Spacer(modifier = Modifier.height(6.dp))
                                                                 Text(
-                                                                    "${template.exercitii.size} ${strings.exercises}  ·  ~${estimatedDuration}min  ·  ${totalSets} sets",
+                                                                    "${template.exercitii.size} ${strings.exercises}  ·  ~${estimatedDuration}min  ·  ${totalSets} ${strings.sets}",
                                                                     color = p.ts,
                                                                     fontSize = 13.sp,
                                                                     fontWeight = FontWeight.Medium
@@ -2366,7 +2329,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                                 }
 
                                                 item {
-                                                    RecoveryBarCard(grupaMusculara = group)
+                                                    RecoveryBarCard(grupaMusculara = group, isDark = isDark)
                                                 }
 
                                                 item {
@@ -2397,7 +2360,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                                                 }
                                                                 if (mgSearchQuery.isNotEmpty()) {
                                                                     IconButton(onClick = { mgSearchQuery = "" }) {
-                                                                        Icon(Icons.Default.Clear, contentDescription = "Clear", tint = textSecondary)
+                                                                        Icon(Icons.Default.Clear, contentDescription = strings.clear, tint = textSecondary)
                                                                     }
                                                                 }
                                                             }
@@ -3086,6 +3049,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
     if (showServerDialog) {
         ServerUrlDialog(
             isDark = isDark,
+            strings = strings,
             currentUrl = preferencesManager.getServerUrl(),
             currentApiKey = preferencesManager.getAiApiKey(),
             onSave = { url, apiKey ->
@@ -3122,1959 +3086,6 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
 
 // ============================================
 // Ecranul 2: Lista de Exercitii
-// ============================================
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ExerciseListScreen(grupaMusculara: String, isLbs: Boolean = false, isDark: Boolean = true, onBackClick: () -> Unit, onWorkoutSaved: () -> Unit = {}) {
-    val context = LocalContext.current
-    val userId = remember { UserProfileManager(context).getOwnUserId() }
-    val strings = LanguageManager.getStrings(context)
-    val viewModel: MainViewModel = viewModel()
-    var exercitii by remember { mutableStateOf<List<ExerciseListItem>>(emptyList()) }
-    var selectedExercise: ExerciseDefinition? by remember { mutableStateOf(null) }
-    var selectedProgressExercise: String? by remember { mutableStateOf(null) }
-    var reloadToken by remember { mutableStateOf(0) }
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedEquipment by remember { mutableStateOf<String?>(null) }
-    val exerciseSummaries by viewModel.exerciseSummaries.collectAsState()
-
-    val surfaceBg = if (isDark) bgColor() else LightBackground
-    val textPrimary = if (isDark) textColor() else LightTextPrimary
-    val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
-    val cardBg = if (isDark) cardColor() else LightCard
-    val accent = if (isDark) accentColor() else LightPrimaryRed
-
-    LaunchedEffect(grupaMusculara, reloadToken) {
-        viewModel.getExercitiiPentruGrupa(userId, grupaMusculara) { exercitii = it }
-    }
-
-    LaunchedEffect(exercitii) {
-        val allNames = exercitii.map { it.exercise.nume }
-        if (allNames.isNotEmpty()) {
-            viewModel.loadExerciseSummaries(userId, allNames)
-        }
-    }
-
-    val equipmentTypes = remember {
-        listOf("Dumbbells", "Barbell", "Machine", "Cable", "Bodyweight", "EZ Bar", "Smith Machine", "Kettlebell", "Stability Ball", "Sled Machine", "Band")
-    }
-    val filteredExercises by remember(exercitii, searchQuery, selectedEquipment) {
-        derivedStateOf {
-            exercitii.filter { item ->
-                (searchQuery.isBlank() || item.exercise.nume.contains(searchQuery, ignoreCase = true)) &&
-                (selectedEquipment == null || item.equipment == selectedEquipment)
-            }
-        }
-    }
-
-    BackHandler {
-        when {
-            selectedProgressExercise != null -> selectedProgressExercise = null
-            selectedExercise != null -> selectedExercise = null
-            else -> onBackClick()
-        }
-    }
-
-    if (selectedProgressExercise != null) {
-        CalendarScreen(
-            isLbs = isLbs,
-            initialExercise = selectedProgressExercise,
-            isDark = isDark,
-            onBackClick = { selectedProgressExercise = null }
-        )
-    } else if (selectedExercise != null) {
-        ExerciseInputScreen(
-            exercise = selectedExercise!!,
-            grupaMusculara = grupaMusculara,
-            isLbs = isLbs,
-            isDark = isDark,
-            onBackClick = { selectedExercise = null },
-            onOpenProgress = { name -> selectedProgressExercise = name },
-            onWorkoutSaved = onWorkoutSaved,
-            strings = strings
-        )
-    } else {
-    val listState = rememberLazyListState()
-    val searchBarPx = with(LocalDensity.current) { 170.dp.roundToPx() }
-    var scrollOffset by remember { mutableFloatStateOf(0f) }
-
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            val firstItem = listState.layoutInfo.visibleItemsInfo.firstOrNull()
-            if (firstItem != null && firstItem.index == 0) {
-                -firstItem.offset.toFloat() / firstItem.size.toFloat()
-            } else if (firstItem != null) {
-                1f
-            } else {
-                0f
-            }
-        }.collect { progress ->
-            scrollOffset = progress.coerceIn(0f, 1f)
-        }
-    }
-
-    val offsetAnim by animateFloatAsState(
-        targetValue = scrollOffset,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
-        label = "offset"
-    )
-
-    Scaffold(
-        containerColor = bgColor(),
-        topBar = {
-            KineticAppBar(onBack = onBackClick)
-            }
-        ) { paddingValues ->
-            Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-                LazyColumn(
-                    state = listState,
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 170.dp, bottom = AppConstants.BOTTOM_NAV_PADDING),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(filteredExercises) { item ->
-                        val exercitiu = item.exercise
-                        GlassCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable { selectedExercise = exercitiu },
-                            shape = RoundedCornerShape(16.dp),
-                            isDark = isDark,
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Column {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(240.dp)
-                                        .background(if (isDark) Color(0xFF1A1A1A) else Color(0xFFF5F5F5)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    val gifUrl = ExerciseGifs.getGif(exercitiu.nume)
-                                    if (gifUrl != null) {
-                                        AsyncImage(
-                                            model = gifUrl,
-                                            contentDescription = exercitiu.nume,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(240.dp)
-                                                .padding(4.dp),
-                                            contentScale = ContentScale.Fit
-                                        )
-                                    } else {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Icon(
-                                                Icons.Default.PlayCircle,
-                                                contentDescription = null,
-                                                tint = accentColor().copy(alpha = 0.6f),
-                                                modifier = Modifier.size(48.dp)
-                                            )
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Text(
-                                                text = strings.demoExercise,
-                                                style = MaterialTheme.typography.labelLarge,
-                                                color = secondaryTextColor(),
-                                                letterSpacing = 2.sp
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = exercitiu.nume,
-                                            style = MaterialTheme.typography.titleLarge,
-                                            color = textColor(),
-                                            fontWeight = FontWeight.Bold,
-                                            maxLines = 2,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        val summary = exerciseSummaries[exercitiu.nume]
-                                        if (summary != null && summary.bestWeight > 0) {
-                                            Text(
-                                                text = "PR: ${summary.bestWeight.toInt()}kg × ${summary.bestReps}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = Color(0xFFD94848)
-                                            )
-                                        }
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            viewModel.setFavorite(
-                                                userId = userId,
-                                                grupa = grupaMusculara,
-                                                numeExercitiu = exercitiu.nume,
-                                                isFavorite = !item.isFavorite
-                                            ) {
-                                                reloadToken++
-                                            }
-                                        },
-                                        modifier = Modifier.size(40.dp)
-                                    ) {
-                                        Icon(
-                                            if (item.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                                            contentDescription = strings.favorite,
-                                            tint = if (item.isFavorite) RecoveryYellow else secondaryTextColor()
-                                        )
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                                                                        .background(DarkRed.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                                    ) {
-                                        Text(
-                                            strings.add,
-                                            color = accentColor(),
-                                            fontWeight = FontWeight.Medium,
-                                            fontSize = 13.sp
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .offset(y = (-170 * offsetAnim).dp)
-                        .alpha(1f - offsetAnim)
-                        .background(surfaceBg)
-                ) {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder = { Text(strings.search, color = textSecondary) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = textSecondary) },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Clear", tint = textSecondary)
-                                }
-                            }
-                        },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = accent,
-                            unfocusedBorderColor = dividerColor(),
-                            cursorColor = accent,
-                            focusedTextColor = textPrimary,
-                            unfocusedTextColor = textPrimary,
-                            focusedContainerColor = cardBg.copy(alpha = 0.5f),
-                            unfocusedContainerColor = cardBg.copy(alpha = 0.5f)
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    ) {
-                        item {
-                            FilterChip(
-                                selected = selectedEquipment == null,
-                                onClick = { selectedEquipment = null },
-                                label = { Text(strings.allGroups) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = accent,
-                                    selectedLabelColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
-                                    containerColor = cardBg,
-                                    labelColor = textSecondary
-                                ),
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                        }
-                        items(equipmentTypes) { eq ->
-                            FilterChip(
-                                selected = selectedEquipment == eq,
-                                onClick = { selectedEquipment = if (selectedEquipment == eq) null else eq },
-                                label = { Text(LanguageManager.translateEquipment(eq, strings)) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = accent,
-                                    selectedLabelColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
-                                    containerColor = cardBg,
-                                    labelColor = textSecondary
-                                ),
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ============================================
-// Animated Next Exercise Button (Liquid Swipe)
-// ============================================
-@Composable
-fun LiquidNextExerciseButton(
-    text: String,
-    onClick: () -> Unit,
-    isDark: Boolean
-) {
-    val redPrimary = Color(0xFFD94848)
-    val redGlow = Color(0xFFD94848)
-    val buttonText = if (isDark) Color.White else Color.Black
-    val buttonBg = if (isDark) Color(0xFF1C1C1E) else Color(0xFFF2F2F7)
-
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    var tapTrigger by remember { mutableIntStateOf(0) }
-
-    val buttonScale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = 400f
-        ),
-        label = "buttonScale"
-    )
-
-    val waveProgress = remember { Animatable(0f) }
-    val arrowOffset = remember { Animatable(0f) }
-    val ghostAlpha = remember { Animatable(0f) }
-
-    LaunchedEffect(tapTrigger) {
-        if (tapTrigger > 0) {
-            waveProgress.snapTo(0f)
-            arrowOffset.snapTo(0f)
-            ghostAlpha.snapTo(0f)
-            launch {
-                waveProgress.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(durationMillis = 600)
-                )
-            }
-            launch {
-                arrowOffset.snapTo(0f)
-                arrowOffset.animateTo(15f, tween(200))
-                arrowOffset.animateTo(0f, tween(300))
-            }
-            launch {
-                ghostAlpha.snapTo(0f)
-                ghostAlpha.animateTo(0.4f, tween(150))
-                ghostAlpha.animateTo(0f, tween(250))
-            }
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 300.dp)
-                .height(40.dp)
-                .scale(buttonScale)
-                .clip(RoundedCornerShape(24.dp))
-                .background(buttonBg)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null
-                ) {
-                    tapTrigger++
-                    onClick()
-                }
-        ) {
-        val density = LocalDensity.current
-        val maxWidthPx = with(density) { maxWidth.toPx() }
-
-        val waveOffsetX = (maxWidthPx * -0.2f) + (maxWidthPx * 1.4f * waveProgress.value)
-        val waveScale = 0.5f + (0.7f * waveProgress.value)
-        val waveAlpha = if (waveProgress.value > 0 && waveProgress.value < 1) {
-            0.8f - (0.8f * waveProgress.value)
-        } else 0f
-
-        Box(
-            modifier = Modifier
-                .offset { IntOffset(x = (waveOffsetX - maxWidthPx * 0.2f).toInt(), y = 0) }
-                .size(width = with(density) { (maxWidthPx * 0.4f).toDp() }, height = with(density) { (maxWidthPx * 2f).toDp() })
-                .scale(waveScale)
-                .clip(CircleShape)
-                .background(redGlow.copy(alpha = waveAlpha))
-                .align(Alignment.CenterStart)
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(40.dp)
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = text.uppercase(),
-                color = buttonText,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Box(contentAlignment = Alignment.CenterStart) {
-                Icon(
-                    imageVector = Icons.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = redPrimary.copy(alpha = ghostAlpha.value),
-                    modifier = Modifier.size(18.dp)
-                )
-                Icon(
-                    imageVector = Icons.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = redPrimary,
-                    modifier = Modifier
-                        .size(18.dp)
-                        .offset {
-                            IntOffset(
-                                x = arrowOffset.value.dp.roundToPx(),
-                                y = 0
-                            )
-                        }
-                )
-            }
-        }
-    }
-    }
-}
-
-// ── Confetti/particle burst: particule efemere care radiază din butonul de save ──
-private data class ConfettiParticle(
-    val color: Color,
-    val angle: Float,      // radiani; π..2π → evantai în sus (sin negativ = sus în Compose)
-    val distance: Float,   // în dp
-    val size: Float,       // în dp
-    val rotationSpeed: Float,
-    val delay: Float       // 0..0.35 stagger pentru efect natural
-)
-
-@Composable
-private fun ConfettiBurst(trigger: Int, isDark: Boolean, isPR: Boolean = false) {
-    if (trigger <= 0) return
-    val progress = remember { Animatable(0f) }
-    val particles = remember(trigger, isPR) {
-        val rnd = Random(trigger * 7919L + 31L)
-        val base = if (isPR) {
-            if (isDark) {
-                listOf(GoldPR, Color(0xFFF5A623), Color(0xFFFFD54F), Color(0xFFFFF176), Color.White)
-            } else {
-                listOf(Color(0xFFF5A623), Color(0xFFFFC107), Color(0xFFFFD54F), Color(0xFFFFF176), Color.White)
-            }
-        } else {
-            if (isDark) {
-                listOf(RecoveryGreen, Color(0xFF00E676), Color(0xFFA5D6A7), Color(0xFFB2FF59), Color.White)
-            } else {
-                listOf(Color(0xFF00C853), Color(0xFF4CAF50), Color(0xFFA5D6A7), Color(0xFFB2FF59), Color.White)
-            }
-        }
-        List(30) {
-            ConfettiParticle(
-                color = base[rnd.nextInt(base.size)],
-                angle = PI.toFloat() + rnd.nextFloat() * PI.toFloat(), // π..2π → jumătate de cerc în sus
-                distance = 36f + rnd.nextFloat() * 66f,
-                size = 3f + rnd.nextFloat() * 3.2f,
-                rotationSpeed = (if (rnd.nextBoolean()) 1 else -1) * (200f + rnd.nextFloat() * 400f),
-                delay = rnd.nextFloat() * 0.35f
-            )
-        }
-    }
-    val playedFor = remember { mutableIntStateOf(0) }
-    LaunchedEffect(trigger) {
-        if (playedFor.intValue != trigger) {
-            playedFor.intValue = trigger
-            progress.snapTo(0f)
-            progress.animateTo(1f, tween(900, easing = FastOutSlowInEasing))
-        }
-    }
-    Canvas(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(170.dp)
-            .offset(y = (-52).dp)
-    ) {
-        val cx = size.width - 60.dp.toPx() // în dreptul butonului de save
-        val cy = 118.dp.toPx()             // jos în rând, de unde pleacă burst-ul
-        val gravity = 26.dp.toPx()
-        particles.forEach { p ->
-            val t = ((progress.value - p.delay) / (1f - p.delay)).coerceIn(0f, 1f)
-            if (t <= 0f) return@forEach
-            val radius = p.distance.dp.toPx() * t
-            val x = cx + cos(p.angle) * radius
-            val y = cy + sin(p.angle) * radius + gravity * t * t
-            val alpha = if (t > 0.72f) (1f - (t - 0.72f) / 0.28f) else 1f
-            val half = p.size.dp.toPx() / 2f
-            rotate(degrees = p.rotationSpeed * t, pivot = Offset(x, y)) {
-                drawRect(
-                    color = p.color.copy(alpha = alpha.coerceIn(0f, 1f)),
-                    topLeft = Offset(x - half, y - half),
-                    size = Size(half * 2f, half * 2f)
-                )
-            }
-        }
-    }
-}
-
-// ============================================
-// Ecranul 3: Input Seturi
-// ============================================
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ExerciseInputScreen(
-    exercise: ExerciseDefinition,
-    grupaMusculara: String,
-    isLbs: Boolean = false,
-    isDark: Boolean = false,
-    onBackClick: () -> Unit,
-    onNextExercise: (() -> Unit)? = null,
-    onFinishExercise: () -> Unit = {},
-    onOpenProgress: (String) -> Unit = {},
-    onWorkoutSaved: () -> Unit = {},
-    workoutStartTimeMs: Long = System.currentTimeMillis(),
-    showFinishButton: Boolean = true,
-    strings: LanguageManager.Strings,
-    currentIndex: Int = 0,
-    totalExercises: Int = 0,
-    nextExerciseName: String? = null,
-    nextExerciseSets: String = "",
-    phase: String = "WARMUP"
-) {
-    val isStretch = exercise.nume.contains("Stretch", ignoreCase = true)
-    if (isStretch) {
-        StretchExerciseScreen(
-            exercise = exercise,
-            isLbs = isLbs,
-            isDark = isDark,
-            onBackClick = onBackClick,
-            onNextExercise = onNextExercise,
-            onFinishExercise = onFinishExercise,
-            onOpenProgress = onOpenProgress,
-            onWorkoutSaved = onWorkoutSaved,
-            strings = strings,
-            currentIndex = currentIndex,
-            totalExercises = totalExercises,
-            nextExerciseName = nextExerciseName,
-            nextExerciseSets = nextExerciseSets,
-            phase = phase
-        )
-        return
-    }
-    val context = LocalContext.current
-    val userId = remember { UserProfileManager(context).getOwnUserId() }
-    val viewModel: MainViewModel = viewModel()
-    val soundManager = remember { SoundManager(context.applicationContext) }
-    DisposableEffect(Unit) {
-        onDispose { soundManager.release() }
-    }
-    var currentSets by remember { mutableStateOf(listOf<SetEntry>(SetEntry(0.0, 0))) }
-    var showSaveConfirmation by remember { mutableStateOf(false) }
-    var isPR by remember { mutableStateOf(false) }
-    // Pulsul de succes pe butonul de save al seriei
-    var lastSavedSetIndex by remember { mutableIntStateOf(-1) }
-    var savePulseTick by remember { mutableIntStateOf(0) }
-    var lastPRSetIndex by remember { mutableIntStateOf(-1) }
-    var prBurstTick by remember { mutableIntStateOf(0) }
-    val pulseScope = rememberCoroutineScope()
-    var noteText by remember { mutableStateOf("") }
-    var history by remember { mutableStateOf<List<ExercitiuEntity>>(emptyList()) }
-    var stats by remember { mutableStateOf(ExerciseStats(0.0, 0, 0.0)) }
-    val textSecondary = if (isSystemInDarkTheme()) secondaryTextColor() else LightTextSecondary
-    var volumeSummary by remember { mutableStateOf(VolumeSummary(0.0, 0.0, 0.0)) }
-    var restSeconds by remember { mutableStateOf(90) }
-    var remainingSeconds by remember { mutableStateOf(0) }
-    var customTimerText by remember { mutableStateOf("") }
-    var editingSet by remember { mutableStateOf<ExercitiuEntity?>(null) }
-    var isFavorite by remember { mutableStateOf(false) }
-    val workoutDurationMs = remember { mutableLongStateOf(0L) }
-
-    LaunchedEffect(Unit) {
-        workoutDurationMs.longValue = System.currentTimeMillis() - workoutStartTimeMs
-    }
-
-    LaunchedEffect(exercise.nume, userId) {
-        val meta = AppDatabase.getDatabase(context).exerciseMetadataDao().getByName(userId, exercise.nume)
-        isFavorite = meta?.isFavorite == true
-    }
-
-    BackHandler {
-        when {
-            editingSet != null -> editingSet = null
-            else -> onBackClick()
-        }
-    }
-
-    fun refreshExerciseData() {
-        viewModel.getIstoricExercitiu(userId, exercise.nume) { history = it }
-        viewModel.getStatisticiExercitiu(userId, exercise.nume) { stats = it }
-        viewModel.getVolumeSummary(userId) { volumeSummary = it }
-    }
-
-    LaunchedEffect(exercise.nume) {
-        refreshExerciseData()
-    }
-
-    LaunchedEffect(remainingSeconds) {
-        if (remainingSeconds > 0) {
-            delay(1_000)
-            remainingSeconds--
-        }
-    }
-
-    editingSet?.let { set ->
-        EditSetDialog(
-            set = set,
-            isLbs = isLbs,
-            onDismiss = { editingSet = null },
-            onSave = { updated ->
-                viewModel.updateSet(updated) {
-                    editingSet = null
-                    refreshExerciseData()
-                }
-            }
-        )
-    }
-
-    if (showSaveConfirmation) {
-        var animScale by remember { mutableFloatStateOf(0f) }
-        LaunchedEffect(Unit) { animScale = 1f }
-        val scale by animateFloatAsState(targetValue = animScale, animationSpec = spring(dampingRatio = 0.4f, stiffness = 300f), label = "check")
-        val iconColor = if (isPR) GoldPR else RecoveryGreen
-        val icon = if (isPR) Icons.Default.EmojiEvents else Icons.Default.CheckCircle
-
-        val validSets = currentSets.filter { it.greutateKg > 0 || it.repetari > 0 }
-        val totalVolume = validSets.sumOf { it.greutateKg * it.repetari }
-        val totalSets = validSets.size
-        val maxWeight = validSets.maxOfOrNull { it.greutateKg } ?: 0.0
-        val totalReps = validSets.sumOf { it.repetari }
-
-        AlertDialog(
-            onDismissRequest = { showSaveConfirmation = false },
-            containerColor = Color.Transparent,
-            titleContentColor = textColor(),
-            textContentColor = secondaryTextColor(),
-            title = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Icon(
-                        icon,
-                        contentDescription = null,
-                        tint = iconColor,
-                        modifier = Modifier.size(56.dp).scale(scale)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = if (isPR) "\uD83C\uDFC6 NEW PR!" else LanguageManager.getStrings(context).workoutCompleted,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = textColor(),
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = exercise.nume,
-                        fontSize = 14.sp,
-                        color = secondaryTextColor(),
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            },
-            text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        StatItem(label = LanguageManager.getStrings(context).volume, value = String.format("%.0f", totalVolume), unit = "kg", accent = accentColor())
-                        StatItem(label = LanguageManager.getStrings(context).sets, value = "$totalSets", unit = "", accent = accentColor())
-                        StatItem(label = LanguageManager.getStrings(context).reps, value = "$totalReps", unit = "", accent = accentColor())
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        StatItem(label = LanguageManager.getStrings(context).maxWeight, value = String.format("%.1f", maxWeight), unit = "kg", accent = accentColor())
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showSaveConfirmation = false
-                        onBackClick()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("OK", color = accentColor(), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                }
-            },
-            modifier = Modifier
-                .clip(RoundedCornerShape(24.dp))
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = if (isDark) {
-                            listOf(
-                                Color(0xFF2A2A2A).copy(alpha = 0.95f),
-                                Color(0xFF1E1E1E).copy(alpha = 0.98f),
-                                Color(0xFF151515).copy(alpha = 1.0f)
-                            )
-                        } else {
-                            listOf(
-                                Color.White.copy(alpha = 0.95f),
-                                Color(0xFFF8F8F8).copy(alpha = 0.97f),
-                                Color.White.copy(alpha = 0.98f)
-                            )
-                        }
-                    )
-                )
-                .border(
-                    width = 1.dp,
-                    color = if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(24.dp)
-                )
-        )
-    }
-
-    val dark = isDark
-    val Bg = if (dark) DarkBackground else LightBackground
-    val S1 = if (dark) DarkCard else LightCard
-    val S2 = if (dark) DarkSurfaceVariant else LightCardHover
-    val RedC = Ember
-    val RedL = EmberLight
-    val RedD = Ember.copy(alpha = 0.12f)
-    val AmberC = Color(0xFFFF9F43)
-    val Mut = secondaryTextColor()
-    val Dim = if (dark) Color(0x2EE8E8EC) else Color(0x2A1A2E32)
-    val Txt = if (dark) textColor() else LightTextPrimary
-    val Bdr = if (dark) Border else LightDividerGray
-    val Bdr2 = if (dark) DarkDivider else LightDividerGray
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Bg)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(S1)
-                        .border(1.dp, Bdr, RoundedCornerShape(14.dp))
-                        .clickable(onClick = onBackClick),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.ArrowBack, null, tint = Dim, modifier = Modifier.size(18.dp))
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        "${currentIndex + 1} / $totalExercises",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Dim,
-                        letterSpacing = 2.sp
-                    )
-                    Text(
-                        exercise.nume.uppercase(),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = RedL,
-                        letterSpacing = 0.8.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(S1)
-                            .border(1.dp, Bdr, RoundedCornerShape(14.dp))
-                            .clickable {
-                                viewModel.setFavorite(userId, grupaMusculara, exercise.nume, !isFavorite) {
-                                    isFavorite = !isFavorite
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                            null, tint = if (isFavorite) Color(0xFFFFEB3B) else Dim, modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.height(4.dp))
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = AppConstants.BOTTOM_NAV_PADDING)
-            ) {
-                if (showFinishButton) {
-                    item {
-                        if (onNextExercise != null) {
-                            LiquidNextExerciseButton(
-                                text = strings.nextExercise,
-                                onClick = { onNextExercise() },
-                                isDark = isDark
-                            )
-                        } else {
-                            LiquidNextExerciseButton(
-                                text = strings.finish,
-                                onClick = { onFinishExercise() },
-                                isDark = isDark
-                            )
-                        }
-                        Spacer(Modifier.height(8.dp))
-                    }
-                }
-                item {
-                    RecoveryBarCard(grupaMusculara = grupaMusculara)
-                    Spacer(Modifier.height(12.dp))
-                }
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color.White)
-                            .border(1.dp, Bdr, RoundedCornerShape(20.dp))
-                    ) {
-                        val gifUrl = ExerciseGifs.getGif(exercise.nume)
-                        if (gifUrl != null) {
-                            AsyncImage(
-                                model = gifUrl,
-                                contentDescription = exercise.nume,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit
-                            )
-                        } else {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.FitnessCenter,
-                                    contentDescription = null,
-                                    tint = Dim,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    text = "EXERCISE".take(20),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Dim
-                                )
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .fillMaxWidth()
-                                .height(40.dp)
-                                .background(
-                                    Brush.verticalGradient(listOf(Color(0xFF0A0A0C).copy(alpha = 0.5f), Color.Transparent))
-                                )
-                        )
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .fillMaxWidth()
-                                .height(40.dp)
-                                .background(
-                                    Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF0A0A0C).copy(alpha = 0.5f)))
-                                )
-                        )
-
-                        Text(
-                            text = LanguageManager.translateMuscleGroup(grupaMusculara, strings).uppercase(),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                            color = RedL.copy(alpha = 0.85f),
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(12.dp)
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(12.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(RedD)
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = "EXERCISE",
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp,
-                                color = RedL
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                }
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(S1)
-                            .border(1.dp, Bdr, RoundedCornerShape(22.dp))
-                            .padding(22.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("PAUZA", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Dim, letterSpacing = 1.8.sp)
-                            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                                listOf(60, 90, 120, 180).forEach { sec ->
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(if (sec == restSeconds) RedD else S2)
-                                            .clickable { restSeconds = sec; remainingSeconds = 0 }
-                                            .padding(6.dp, 5.dp, 13.dp, 5.dp)
-                                    ) {
-                                        Text(
-                                            "${sec}s",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = if (sec == restSeconds) RedL else Dim,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(18.dp))
-                        val min = remainingSeconds / 60
-                        val sec = remainingSeconds % 60
-                        Row(verticalAlignment = Alignment.Bottom) {
-                            Text(
-                                min.toString(), fontSize = 54.sp, fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace, letterSpacing = (-3).sp,
-                                color = if (remainingSeconds > 0) RedL else Txt
-                            )
-                            Text(":", fontSize = 54.sp, fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace, letterSpacing = (-3).sp,
-                                color = if (remainingSeconds > 0) RedL else Dim)
-                            Text(
-                                sec.toString().padStart(2, '0'), fontSize = 54.sp, fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace, letterSpacing = (-3).sp,
-                                color = if (remainingSeconds > 0) RedL else Txt
-                            )
-                        }
-                        Spacer(Modifier.height(16.dp))
-                        val timerProgress = if (restSeconds > 0) remainingSeconds.toFloat() / restSeconds else 0f
-                        Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(6.dp)).background(Color(0x06FFFFFF))) {
-                            Box(Modifier.fillMaxWidth(timerProgress).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(Brush.horizontalGradient(listOf(RedC, RedL))))
-                        }
-                        Spacer(Modifier.height(18.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier.size(46.dp).clip(RoundedCornerShape(14.dp)).background(S2)
-                                    .border(1.dp, Bdr, RoundedCornerShape(14.dp))
-                                    .clickable { remainingSeconds = 0 },
-                                contentAlignment = Alignment.Center
-                            ) { Icon(Icons.Default.Replay, null, tint = Dim, modifier = Modifier.size(16.dp)) }
-                            Box(
-                                modifier = Modifier.size(54.dp).clip(RoundedCornerShape(18.dp))
-                                    .background(if (remainingSeconds > 0) S2 else RedC)
-                                    .clickable {
-                                        if (remainingSeconds > 0) remainingSeconds = 0
-                                        else remainingSeconds = restSeconds
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    if (remainingSeconds > 0) Icons.Default.Pause else Icons.Default.PlayArrow,
-                                    null, tint = if (remainingSeconds > 0) RedL else Color.White, modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                }
-                item {
-                    val counterScale = remember { Animatable(1f) }
-                    LaunchedEffect(savePulseTick) {
-                        if (savePulseTick > 0) {
-                            counterScale.snapTo(1.35f)
-                            counterScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.List, null, tint = RedL, modifier = Modifier.size(12.dp))
-                            Text("SERII", fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
-                        }
-                        val done = currentSets.count { it.greutateKg > 0 || it.repetari > 0 }
-                        Text(
-                            "$done/${currentSets.size}",
-                            fontSize = 11.sp,
-                            color = Dim,
-                            fontWeight = FontWeight.Medium,
-                            fontFamily = FontFamily.Monospace,
-                            modifier = Modifier.graphicsLayer {
-                                scaleX = counterScale.value
-                                scaleY = counterScale.value
-                            }
-                        )
-                    }
-                }
-                itemsIndexed(currentSets) { index, set ->
-                    // Micro-animație de succes: puls de scală pe butonul de save
-                    val saveScale = remember { Animatable(1f) }
-                    // Animație de ștergere: shrink + fade înainte de eliminare
-                    val deleteScale = remember { Animatable(1f) }
-                    val deleteAlpha = remember { Animatable(1f) }
-                    LaunchedEffect(savePulseTick) {
-                        if (lastSavedSetIndex == index) {
-                            saveScale.snapTo(0.82f)
-                            saveScale.animateTo(1.15f, tween(150, easing = FastOutSlowInEasing))
-                            saveScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium))
-                        }
-                    }
-                    Box {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .graphicsLayer {
-                                scaleX = deleteScale.value
-                                scaleY = deleteScale.value
-                                alpha = deleteAlpha.value
-                            }
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(S1)
-                            .border(1.dp, Bdr, RoundedCornerShape(16.dp))
-                            .padding(start = 14.dp, top = 14.dp, end = 16.dp, bottom = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            "${index + 1}", fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                            color = Dim, fontFamily = FontFamily.Monospace,
-                            modifier = Modifier.width(24.dp), textAlign = TextAlign.Center
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("KG", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Dim, letterSpacing = 1.sp)
-                            Spacer(Modifier.height(4.dp))
-                            OutlinedTextField(
-                                value = if (set.greutateKg > 0) set.greutateKg.toInt().toString() else "",
-                                onValueChange = {
-                                    val updated = set.copy(greutateKg = it.toDoubleOrNull() ?: 0.0)
-                                    currentSets = currentSets.toMutableList().also { it[index] = updated }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                textStyle = LocalTextStyle.current.copy(
-                                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                                    fontFamily = FontFamily.Monospace, color = Txt, textAlign = TextAlign.Center
-                                ),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                shape = RoundedCornerShape(10.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    unfocusedBorderColor = Bdr, focusedBorderColor = RedL.copy(alpha = 0.3f),
-                                    unfocusedContainerColor = Color(0x15FFFFFF), focusedContainerColor = Color(0x15FFFFFF),
-                                    cursorColor = RedL, focusedTextColor = Txt, unfocusedTextColor = Txt
-                                )
-                            )
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("REPS", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = Dim, letterSpacing = 1.sp)
-                            Spacer(Modifier.height(4.dp))
-                            OutlinedTextField(
-                                value = if (set.repetari > 0) set.repetari.toString() else "",
-                                onValueChange = {
-                                    val updated = set.copy(repetari = it.toIntOrNull() ?: 0)
-                                    currentSets = currentSets.toMutableList().also { it[index] = updated }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                textStyle = LocalTextStyle.current.copy(
-                                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                                    fontFamily = FontFamily.Monospace, color = Txt, textAlign = TextAlign.Center
-                                ),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                singleLine = true,
-                                shape = RoundedCornerShape(10.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    unfocusedBorderColor = Bdr, focusedBorderColor = RedL.copy(alpha = 0.3f),
-                                    unfocusedContainerColor = Color(0x15FFFFFF), focusedContainerColor = Color(0x15FFFFFF),
-                                    cursorColor = RedL, focusedTextColor = Txt, unfocusedTextColor = Txt
-                                )
-                            )
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(if (set.greutateKg > 0 || set.repetari > 0) RecoveryGreen else RecoveryGreen.copy(alpha = 0.12f))
-                                .border(1.dp, if (set.greutateKg > 0 || set.repetari > 0) RecoveryGreen else RecoveryGreen.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
-                                .graphicsLayer {
-                                    scaleX = saveScale.value
-                                    scaleY = saveScale.value
-                                }
-                                .clickable {
-                                    viewModel.salveazaAntrenament(
-                                        userId = userId,
-                                        grupaMusculara = grupaMusculara,
-                                        numeExercitiu = exercise.nume,
-                                        seturi = currentSets.filter { it.greutateKg > 0 || it.repetari > 0 },
-                                        note = noteText,
-                                        durationMs = workoutDurationMs.longValue
-                                    ) { newPR ->
-                                        refreshExerciseData()
-                                        onWorkoutSaved()
-                                        isPR = newPR
-                                        lastSavedSetIndex = index
-                                        savePulseTick++
-                                        if (newPR) {
-                                            lastPRSetIndex = index
-                                            prBurstTick++
-                                            soundManager.playPrSound()
-                                        }
-                                        pulseScope.launch {
-                                            delay(if (newPR) 950 else 420)
-                                            showSaveConfirmation = true
-                                        }
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Check, null, tint = if (set.greutateKg > 0 || set.repetari > 0) Color.White else RecoveryGreen, modifier = Modifier.size(14.dp))
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(DarkRed.copy(alpha = 0.18f))
-                                .border(1.dp, DarkRed.copy(alpha = 0.45f), RoundedCornerShape(10.dp))
-                                .clickable {
-                                    if (currentSets.size > 1 && deleteAlpha.value > 0.5f) {
-                                        pulseScope.launch {
-                                            coroutineScope {
-                                                launch { deleteScale.animateTo(0.55f, tween(240, easing = FastOutSlowInEasing)) }
-                                                launch { deleteAlpha.animateTo(0f, tween(240, easing = FastOutSlowInEasing)) }
-                                            }
-                                            currentSets = currentSets.toMutableList().also { it.removeAt(index) }
-                                        }
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Close, null, tint = DarkRed, modifier = Modifier.size(14.dp))
-                        }
-                    }
-                    // Confetti/particle burst la fiecare serie salvată (verde normal, auriu PR)
-                    if (lastSavedSetIndex == index && savePulseTick > 0) {
-                        ConfettiBurst(trigger = savePulseTick, isDark = isDark, isPR = lastPRSetIndex == index)
-                    }
-                    }
-                    Spacer(Modifier.height(8.dp))
-                }
-                item {
-                    val infiniteTransition = rememberInfiniteTransition(label = "addSetGlow")
-                    val glowAlpha by infiniteTransition.animateFloat(
-                        initialValue = 0.1f, targetValue = 0.35f,
-                        animationSpec = infiniteRepeatable(tween(1200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-                        label = "addSetGlowAlpha"
-                    )
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(RedL.copy(alpha = glowAlpha))
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .border(2.dp, RedL.copy(alpha = 0.25f + glowAlpha * 0.3f), RoundedCornerShape(14.dp))
-                                .clickable { currentSets = currentSets + SetEntry(0.0, 0) }
-                                .padding(13.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Add, null, tint = RedL, modifier = Modifier.size(12.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text(strings.addSet, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = RedL)
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                }
-                item {
-                    OutlinedTextField(
-                        value = noteText,
-                        onValueChange = { noteText = it },
-                        label = { Text(strings.exerciseNotes) },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 2,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = RedC, unfocusedBorderColor = Bdr,
-                            focusedLabelColor = RedC, unfocusedLabelColor = Mut,
-                            cursorColor = RedC, focusedTextColor = Txt, unfocusedTextColor = Txt
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                }
-                item {
-                    ExerciseHistoryCard(
-                        history = history, isLbs = isLbs,
-                        onEdit = { editingSet = it },
-                        onDelete = { set -> viewModel.deleteSet(set) { refreshExerciseData() } }
-                    )
-                    Spacer(Modifier.height(12.dp))
-                }
-                item {
-                    ExerciseStatsCard(stats = stats, volumeSummary = volumeSummary, isLbs = isLbs)
-                }
-            }
-        }
-    }
-}
-
-// ============================================
-// Componenta: Statistici + PR-uri
-// ============================================
-@Composable
-fun ExerciseStatsCard(stats: ExerciseStats, volumeSummary: VolumeSummary, isLbs: Boolean = false) {
-    val strings = LanguageManager.getStrings(LocalContext.current)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(surfaceColor())
-            .border(1.dp, dividerColor(), RoundedCornerShape(22.dp))
-            .padding(22.dp)
-    ) {
-        Text(strings.prAndVolume, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = secondaryTextColor(), letterSpacing = 0.5.sp)
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatPill(strings.maxWeight, weightLabel(stats.maxGreutate, isLbs), Modifier.weight(1f))
-            StatPill(strings.maxReps, "${stats.maxRepetari}", Modifier.weight(1f))
-            StatPill(strings.maxSet, weightLabel(stats.maxVolumSet, isLbs), Modifier.weight(1f))
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatPill(strings.today, weightLabel(volumeSummary.azi, isLbs), Modifier.weight(1f))
-            StatPill(strings.thisWeek, weightLabel(volumeSummary.saptamana, isLbs), Modifier.weight(1f))
-            StatPill(strings.thisMonth, weightLabel(volumeSummary.luna, isLbs), Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-fun StatPill(label: String, value: String, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(surfaceColor().copy(alpha = 0.5f))
-            .border(1.dp, dividerColor().copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-            .padding(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(label, color = secondaryTextColor(), fontSize = 11.sp, fontWeight = FontWeight.Medium)
-        Text(value, color = textColor(), fontWeight = FontWeight.Bold, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
-    }
-}
-
-// ============================================
-// Componenta: Timer Pauza
-// ============================================
-@Composable
-fun RestTimerCard(
-    restSeconds: Int,
-    remainingSeconds: Int,
-    customTimerText: String,
-    onRestSecondsChange: (Int) -> Unit,
-    onCustomTimerTextChange: (String) -> Unit,
-    onStart: () -> Unit,
-    onStop: () -> Unit
-) {
-    val strings = LanguageManager.getStrings(LocalContext.current)
-    GlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        contentPadding = PaddingValues(14.dp)
-    ) {
-        Column {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(strings.restTimer, color = textColor(), fontWeight = FontWeight.Bold)
-                Text(formatSeconds(remainingSeconds), color = accentColor(), fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(60, 90, 120).forEach { seconds ->
-                    OutlinedTextField(
-                        value = "",
-                        onValueChange = {},
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp)
-                            .clickable { onRestSecondsChange(seconds) },
-                        enabled = false,
-                        placeholder = {
-                            Text(
-                                "${seconds}s",
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center,
-                                fontWeight = if (restSeconds == seconds) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 14.sp
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            disabledTextColor = if (restSeconds == seconds) textColor() else secondaryTextColor(),
-                            disabledBorderColor = if (restSeconds == seconds) DarkRed else secondaryTextColor().copy(alpha = 0.5f),
-                            disabledLabelColor = if (restSeconds == seconds) textColor() else secondaryTextColor(),
-                            disabledPlaceholderColor = if (restSeconds == seconds) textColor() else secondaryTextColor(),
-                            unfocusedBorderColor = secondaryTextColor().copy(alpha = 0.5f),
-                            cursorColor = accentColor(),
-                            focusedTextColor = textColor(),
-                            unfocusedTextColor = textColor()
-                        ),
-                        singleLine = true,
-                        textStyle = TextStyle(textAlign = TextAlign.Center),
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                }
-                OutlinedTextField(
-                    value = customTimerText,
-                    onValueChange = onCustomTimerTextChange,
-                    placeholder = {
-                        Text(
-                            "...",
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = DarkRed,
-                        unfocusedBorderColor = secondaryTextColor().copy(alpha = 0.5f),
-                        focusedTextColor = textColor(),
-                        unfocusedTextColor = textColor(),
-                        cursorColor = accentColor(),
-                        unfocusedPlaceholderColor = secondaryTextColor()
-                    ),
-                    textStyle = TextStyle(textAlign = TextAlign.Center),
-                    shape = RoundedCornerShape(8.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = onStart,
-                    colors = ButtonDefaults.buttonColors(containerColor = DarkRed, contentColor = Color.White),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(strings.start)
-                }
-                OutlinedButton(onClick = onStop, modifier = Modifier.weight(1f)) {
-                    Text(strings.stop, color = accentColor())
-                }
-            }
-        }
-    }
-}
-
-// ============================================
-// Componenta: Istoric Exercitiu
-// ============================================
-@Composable
-fun ExerciseHistoryCard(
-    history: List<ExercitiuEntity>,
-    isLbs: Boolean = false,
-    onEdit: (ExercitiuEntity) -> Unit,
-    onDelete: (ExercitiuEntity) -> Unit
-) {
-    val strings = LanguageManager.getStrings(LocalContext.current)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(surfaceColor())
-            .border(1.dp, dividerColor(), RoundedCornerShape(22.dp))
-            .padding(22.dp)
-    ) {
-        Text(strings.exerciseHistory, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = secondaryTextColor(), letterSpacing = 0.5.sp)
-        Spacer(modifier = Modifier.height(8.dp))
-        if (history.isEmpty()) {
-            Text(strings.noSavedSetsYet, color = secondaryTextColor(), fontSize = 13.sp)
-        } else {
-            history.take(8).forEach { set ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "${weightLabel(set.greutateKg, isLbs)} x ${set.repetari} reps",
-                            color = textColor(),
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            "Set ${set.setIndex + 1}  (${set.numeExercitiu})",
-                            color = secondaryTextColor(),
-                            fontSize = 12.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (set.notes.isNotBlank()) {
-                            Text(set.notes, color = secondaryTextColor(), fontSize = 12.sp)
-                        }
-                    }
-                    IconButton(onClick = { onEdit(set) }) {
-                        Icon(Icons.Default.Edit, contentDescription = strings.edit, tint = accentColor())
-                    }
-                    IconButton(onClick = { onDelete(set) }) {
-                        Icon(Icons.Default.Delete, contentDescription = strings.delete, tint = DarkRed)
-                    }
-                }
-                HorizontalDivider(color = dividerColor().copy(alpha = 0.5f))
-            }
-        }
-    }
-}
-
-@Composable
-fun EditSetDialog(
-    set: ExercitiuEntity,
-    isLbs: Boolean = false,
-    onDismiss: () -> Unit,
-    onSave: (ExercitiuEntity) -> Unit
-) {
-    val strings = LanguageManager.getStrings(LocalContext.current)
-    val displayWeight = convertWeight(set.greutateKg, isLbs)
-    var kgText by remember(set.id) { mutableStateOf(String.format("%.1f", displayWeight)) }
-    var repsText by remember(set.id) { mutableStateOf(set.repetari.toString()) }
-    var noteText by remember(set.id) { mutableStateOf(set.notes) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = surfaceColor(),
-        titleContentColor = textColor(),
-        textContentColor = secondaryTextColor(),
-        title = { Text(strings.editSet) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = kgText,
-                    onValueChange = { kgText = it.filter { char -> char.isDigit() || char == '.' } },
-                    label = { Text(if (isLbs) "lbs" else "kg") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = repsText,
-                    onValueChange = { repsText = it.filter { char -> char.isDigit() } },
-                    label = { Text("reps") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = noteText,
-                    onValueChange = { noteText = it },
-                    label = { Text("notite") },
-                    minLines = 2
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                val displayVal = kgText.toDoubleOrNull() ?: (if (isLbs) set.greutateKg * 2.20462 else set.greutateKg)
-                val kgVal = if (isLbs) displayVal / 2.20462 else displayVal
-                onSave(
-                    set.copy(
-                        greutateKg = kgVal,
-                        repetari = repsText.toIntOrNull() ?: set.repetari,
-                        notes = noteText
-                    )
-                )
-            }) {
-                Text(strings.saveNotes, color = accentColor())
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(strings.cancel, color = secondaryTextColor())
-            }
-        }
-    )
-}
-
-fun formatSeconds(seconds: Int): String {
-    val minutes = seconds / 60
-    val remaining = seconds % 60
-    return "%d:%02d".format(minutes, remaining)
-}
-
-fun formatDate(date: java.util.Date): String {
-    return SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(date)
-}
-
-@Composable
-fun SetInputRow(
-    index: Int,
-    setEntry: SetEntry,
-    isLbs: Boolean = false,
-    onUpdate: (SetEntry) -> Unit,
-    onDelete: () -> Unit
-) {
-    val strings = LanguageManager.getStrings(LocalContext.current)
-    val displayWeight = convertWeight(setEntry.greutateKg, isLbs)
-    var kgText by remember { mutableStateOf(if (displayWeight > 0) String.format("%.1f", displayWeight) else "") }
-    var repsText by remember { mutableStateOf(if (setEntry.repetari > 0) setEntry.repetari.toString() else "") }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(30.dp)
-                                .background(DarkRed, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "${index + 1}",
-                style = MaterialTheme.typography.labelMedium,
-                color = textColor(),
-                fontWeight = FontWeight.Bold
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-
-        OutlinedTextField(
-            value = kgText,
-            onValueChange = { newValue ->
-                kgText = newValue.filter { it.isDigit() || it == '.' }
-                val displayVal = kgText.toDoubleOrNull() ?: 0.0
-                val kgVal = if (isLbs) displayVal / 2.20462 else displayVal
-                onUpdate(SetEntry(kgVal, repsText.toIntOrNull() ?: 0))
-            },
-            label = { Text(if (isLbs) "lbs" else "kg", color = secondaryTextColor()) },
-            modifier = Modifier.weight(1f),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = accentColor(),
-                unfocusedBorderColor = dividerColor(),
-                focusedLabelColor = accentColor(),
-                unfocusedLabelColor = secondaryTextColor(),
-                cursorColor = accentColor(),
-                focusedTextColor = textColor(),
-                unfocusedTextColor = textColor()
-            ),
-            shape = RoundedCornerShape(8.dp),
-            singleLine = true
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        OutlinedTextField(
-            value = repsText,
-            onValueChange = { newValue ->
-                repsText = newValue.filter { it.isDigit() }
-                val reps = repsText.toIntOrNull() ?: 0
-                onUpdate(SetEntry(kgText.toDoubleOrNull() ?: 0.0, reps))
-            },
-            label = { Text("Reps", color = secondaryTextColor()) },
-            modifier = Modifier.weight(1f),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = accentColor(),
-                unfocusedBorderColor = dividerColor(),
-                focusedLabelColor = accentColor(),
-                unfocusedLabelColor = secondaryTextColor(),
-                cursorColor = accentColor(),
-                focusedTextColor = textColor(),
-                unfocusedTextColor = textColor()
-            ),
-            shape = RoundedCornerShape(8.dp),
-            singleLine = true
-        )
-
-        IconButton(onClick = onDelete) {
-            Icon(
-                Icons.Default.Delete,
-                contentDescription = strings.delete,
-                tint = DarkRed.copy(alpha = 0.7f)
-            )
-        }
-    }
-}
-
-@Composable
-fun DailyActivityCard(
-    strings: LanguageManager.Strings,
-    isDark: Boolean,
-    cardBg: Color,
-    textPrimary: Color,
-    textSecondary: Color,
-    accent: Color,
-    iconBg: Color,
-    todayDistanceKm: Double,
-    todayDurationMs: Long,
-    todayCalories: Double,
-    stepsEstimate: Int,
-    stepGoal: Int = 7000,
-    activeTimeGoalMin: Int = 90,
-    calorieGoal: Int = 500,
-    onSetStepGoal: ((Int) -> Unit)? = null
-) {
-    val activeMinutes = todayDurationMs / 60000
-    var showSetGoalDialog by remember { mutableStateOf(false) }
-    var goalInput by remember { mutableStateOf("") }
-    var currentStepGoal by remember { mutableIntStateOf(stepGoal) }
-
-    if (showSetGoalDialog) {
-        androidx.compose.ui.window.Dialog(onDismissRequest = { showSetGoalDialog = false }) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color(0xFF1E1E1E),
-                tonalElevation = 6.dp
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text(
-                        "Set step goal",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF5F3EE)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        "Enter your daily step goal",
-                        color = Color(0xFFB0B0B0),
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = goalInput,
-                        onValueChange = { goalInput = it.filter { c -> c.isDigit() } },
-                        placeholder = { Text("e.g. 7000", color = textSecondary.copy(alpha = 0.5f)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = accent,
-                            unfocusedBorderColor = textSecondary.copy(alpha = 0.3f),
-                            cursorColor = accent,
-                            focusedTextColor = textPrimary,
-                            unfocusedTextColor = textPrimary
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    Spacer(Modifier.height(24.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextButton(onClick = { showSetGoalDialog = false }) {
-                            Text("Cancel", color = accent)
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Button(
-                            onClick = {
-                                val goal = goalInput.toIntOrNull() ?: 0
-                                if (goal > 0) {
-                                    currentStepGoal = goal
-                                    onSetStepGoal?.invoke(goal)
-                                    showSetGoalDialog = false
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = accent),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("Save", color = Color.White, fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Culori: roșu = pași, verde = timp activ, albastru = calorii
-    val calColor = Color(0xFF0A84FF)
-    val timeColor = Color(0xFF34C759)
-    val stepsColor = Color(0xFFFF3B30)
-
-    val calProgress by animateFloatAsState(
-        targetValue = (todayCalories.toFloat() / calorieGoal.coerceAtLeast(1)).coerceIn(0f, 1f),
-        animationSpec = tween(1200),
-        label = "calProgress"
-    )
-    val timeProgress by animateFloatAsState(
-        targetValue = (activeMinutes.toFloat() / activeTimeGoalMin.coerceAtLeast(1)).coerceIn(0f, 1f),
-        animationSpec = tween(1200),
-        label = "timeProgress"
-    )
-    val stepsProgress by animateFloatAsState(
-        targetValue = (stepsEstimate.toFloat() / currentStepGoal.coerceAtLeast(1)).coerceIn(0f, 1f),
-        animationSpec = tween(1200),
-        label = "stepsProgress"
-    )
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg),
-        border = BorderStroke(1.dp, if (isDark) Color(0x0FFFFFFF) else Color(0x14000000))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // ── Inele concentrice (stânga) — fără text în mijloc ──
-            Box(
-                modifier = Modifier.size(128.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val centerX = size.width / 2
-                    val centerY = size.height / 2
-                    val strokeWidth = 12.dp.toPx()
-                    val outerRadius = size.minDimension / 2 - strokeWidth / 2 - 3.dp.toPx()
-
-                    fun ring(color: Color, radius: Float, progress: Float) {
-                        val topLeft = Offset(centerX - radius, centerY - radius)
-                        val ringSize = Size(radius * 2, radius * 2)
-                        drawArc(
-                            color = color.copy(alpha = 0.15f),
-                            startAngle = 135f,
-                            sweepAngle = 270f,
-                            useCenter = false,
-                            topLeft = topLeft,
-                            size = ringSize,
-                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                        )
-                        drawArc(
-                            color = color,
-                            startAngle = 135f,
-                            sweepAngle = 270f * progress,
-                            useCenter = false,
-                            topLeft = topLeft,
-                            size = ringSize,
-                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                        )
-                    }
-
-                    // Exterior: pași (roșu, mare) · mijloc: timp activ (verde) · interior: calorii (albastru, mic)
-                    ring(stepsColor, outerRadius, stepsProgress)
-                    ring(timeColor, outerRadius - strokeWidth - 6.dp.toPx(), timeProgress)
-                    ring(calColor, outerRadius - 2 * (strokeWidth + 6.dp.toPx()), calProgress)
-                }
-            }
-
-            Spacer(Modifier.width(20.dp))
-
-            // ── Rânduri metrici (dreapta), ca în widget ──
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                DailyMetricRow(
-                    color = stepsColor,
-                    label = strings.stepsLabel.uppercase(),
-                    valueText = String.format(Locale.US, "%,d", stepsEstimate),
-                    goalText = "/ ${formatStepGoalShort(currentStepGoal)}",
-                    textPrimary = textPrimary,
-                    textSecondary = textSecondary,
-                    onSetGoal = onSetStepGoal?.let { { showSetGoalDialog = true } }
-                )
-                DailyMetricRow(
-                    color = timeColor,
-                    label = strings.activeTimeLabel.uppercase(),
-                    valueText = "$activeMinutes",
-                    unit = "min",
-                    goalText = "/ $activeTimeGoalMin",
-                    textPrimary = textPrimary,
-                    textSecondary = textSecondary
-                )
-                DailyMetricRow(
-                    color = calColor,
-                    label = strings.caloriesLabel.uppercase(),
-                    valueText = todayCalories.toInt().toString(),
-                    goalText = "/ $calorieGoal",
-                    textPrimary = textPrimary,
-                    textSecondary = textSecondary
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DailyMetricRow(
-    color: Color,
-    label: String,
-    valueText: String,
-    goalText: String,
-    textPrimary: Color,
-    textSecondary: Color,
-    unit: String? = null,
-    onSetGoal: (() -> Unit)? = null
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(9.dp)
-                .clip(CircleShape)
-                .background(color)
-        )
-        Spacer(Modifier.width(11.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = label,
-                fontSize = 9.sp,
-                letterSpacing = 1.2.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = textSecondary
-            )
-            Spacer(Modifier.height(2.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    text = valueText,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Black,
-                    color = textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                if (unit != null) {
-                    Spacer(Modifier.width(3.dp))
-                    Text(
-                        text = unit,
-                        fontSize = 11.sp,
-                        color = textSecondary,
-                        modifier = Modifier.padding(bottom = 2.dp)
-                    )
-                }
-                Text(
-                    text = goalText,
-                    fontSize = 12.sp,
-                    color = textSecondary,
-                    modifier = Modifier.padding(start = 3.dp, bottom = 1.dp)
-                )
-                if (onSetGoal != null) {
-                    Spacer(Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(color.copy(alpha = 0.12f))
-                            .border(1.dp, color.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
-                            .clickable { onSetGoal() }
-                            .padding(horizontal = 8.dp, vertical = 2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("+ Goal", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = color)
-                    }
-                }
-            }
-        }
-    }
-}
-
-private fun formatStepGoalShort(goal: Int): String = when {
-    goal >= 1000 && goal % 1000 == 0 -> "${goal / 1000}K"
-    goal >= 1000 -> String.format(Locale.US, "%.1fK", goal / 1000.0)
-    else -> goal.toString()
-}
-
-// ============================================
-// Page Title with border
-// ============================================
-@Composable
-fun PageTitle(title: String, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .border(2.dp, Color.Red, RoundedCornerShape(24.dp))
-                .padding(horizontal = 32.dp, vertical = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = title.uppercase(),
-                color = Color.Red,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 4.sp
-            )
-        }
-    }
-}
-
 // ============================================
 // Template color config
 // ============================================
@@ -5229,7 +3240,7 @@ fun TemplateScreen(onBackClick: () -> Unit) {
                                     )
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
-                                        "${template.exercitii.size} ${strings.exercises}  ·  ~${estimatedDuration}min  ·  ${totalSets} sets",
+                                        "${template.exercitii.size} ${strings.exercises}  ·  ~${estimatedDuration}min  ·  ${totalSets} ${strings.sets}",
                                         color = Color.White.copy(alpha = 0.8f),
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium
@@ -5623,8 +3634,11 @@ internal fun formatTimpRamas(ms: Long, strings: LanguageManager.Strings): String
 }
 
 @Composable
-fun RecoveryBarCard(grupaMusculara: String, modifier: Modifier = Modifier) {
+fun RecoveryBarCard(grupaMusculara: String, modifier: Modifier = Modifier, isDark: Boolean? = null) {
     val context = LocalContext.current
+    // Tema APLICAȚIEI (transmisă de apelant), nu tema sistemului — altfel cardul folosea
+    // culorile dark chiar și când aplicația e forțată pe light (dar sistemul e pe dark).
+    val resolvedDark = isDark ?: isSystemInDarkTheme()
     val strings = LanguageManager.getStrings(context)
     val userId = remember { UserProfileManager(context).getOwnUserId() }
     var groupLevel by remember { mutableStateOf(0.0) }
@@ -5643,8 +3657,8 @@ fun RecoveryBarCard(grupaMusculara: String, modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(surfaceColor())
-            .border(1.dp, dividerColor(), RoundedCornerShape(22.dp))
+            .background(if (resolvedDark) DarkCardElevated else surfaceColor())
+            .border(1.dp, if (resolvedDark) RedBorderSoft else dividerColor(), RoundedCornerShape(22.dp))
             .padding(16.dp, 14.dp, 20.dp, 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -5891,27 +3905,6 @@ fun MuscleRecoveryScreen(onBackClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun StatItem(label: String, value: String, unit: String, accent: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = value,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = accent
-        )
-        if (unit.isNotBlank()) {
-            Text(text = unit, fontSize = 11.sp, color = secondaryTextColor())
-        }
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            color = secondaryTextColor()
-        )
-    }
-}
-
 // ============================================
 // Ecranul Progres (redesignat cu Line Chart)
 // ============================================
@@ -5981,7 +3974,7 @@ fun CalendarScreen(
         exerciseEquipmentFilter = null
     }
     var stats by remember { mutableStateOf(ExerciseStats(0.0, 0, 0.0)) }
-    val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
+    val textSecondary = appPalette(isDark).ts
 
     BackHandler {
         when {
@@ -6091,7 +4084,7 @@ fun CalendarScreen(
                 } else {
                     TextButton(onClick = { selectedGroupFilter = null }) {
                         IconButton(onClick = { selectedGroupFilter = null }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = strings.back, tint = Color.White)
+                            Icon(Icons.Default.ArrowBack, contentDescription = strings.back, tint = textSecondary)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("< ${strings.back} ${strings.muscleGroups.lowercase()}", color = accentColor())
@@ -6134,7 +4127,7 @@ fun CalendarScreen(
                                 // Clear button
                                 if (exerciseSearchQuery.isNotEmpty()) {
                                     IconButton(onClick = { exerciseSearchQuery = "" }) {
-                                        Icon(Icons.Default.Clear, contentDescription = "Clear", tint = textSecondary)
+                                        Icon(Icons.Default.Clear, contentDescription = strings.clear, tint = textSecondary)
                                     }
                                 }
                             }
@@ -6410,7 +4403,7 @@ fun CalendarScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(strings.month, color = textColor(), fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Text("Max ${if (isLbs) "lbs" else "kg"}", color = textColor(), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text("${strings.max} ${if (isLbs) strings.lbs else strings.kg}", color = textColor(), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                 }
                             }
 
@@ -6721,6 +4714,7 @@ fun ProfileScreen(
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             ProfileHero(
+                strings = strings,
                 p = p,
                 profileName = profileName,
                 initials = initials,
@@ -6730,7 +4724,7 @@ fun ProfileScreen(
                 tierLabel = tierLabel,
                 tierColor = tierColor,
                 level = level,
-                xpText = "$levelRem / 1K XP",
+                xpText = "$levelRem / 1K ${strings.xp}",
                 levelProgress = levelProgress,
                 totalWorkouts = totalWorkouts,
                 currentStreak = currentStreak,
@@ -6984,7 +4978,7 @@ fun ProfileScreen(
                     OutlinedTextField(
                         value = bioEdit,
                         onValueChange = { bioEdit = it },
-                        label = { Text("Bio") },
+                        label = { Text(strings.bio) },
                         maxLines = 3,
                         colors = fieldColors(),
                         modifier = Modifier.fillMaxWidth()
@@ -7057,7 +5051,7 @@ fun ProfileScreen(
                     OutlinedTextField(
                         value = currentPassword,
                         onValueChange = { currentPassword = it; passwordError = "" },
-                        label = { Text("Current Password") },
+                        label = { Text(strings.currentPassword) },
                         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -7072,7 +5066,7 @@ fun ProfileScreen(
                     OutlinedTextField(
                         value = newPassword,
                         onValueChange = { newPassword = it; passwordError = "" },
-                        label = { Text("New Password") },
+                        label = { Text(strings.newPassword) },
                         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -7087,7 +5081,7 @@ fun ProfileScreen(
                     OutlinedTextField(
                         value = confirmPassword,
                         onValueChange = { confirmPassword = it; passwordError = "" },
-                        label = { Text("Confirm New Password") },
+                        label = { Text(strings.confirmNewPassword) },
                         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -7107,16 +5101,16 @@ fun ProfileScreen(
             confirmButton = {
                 TextButton(onClick = {
                     when {
-                        currentPassword.isBlank() -> passwordError = "Current password is required"
-                        newPassword.length < 6 -> passwordError = "New password must be at least 6 characters"
-                        newPassword != confirmPassword -> passwordError = "Passwords do not match"
+                        currentPassword.isBlank() -> passwordError = strings.currentPasswordRequired
+                        newPassword.length < 6 -> passwordError = strings.passwordTooShort
+                        newPassword != confirmPassword -> passwordError = strings.passwordMismatch
                         else -> {
                             onChangePassword(currentPassword, newPassword)
                             showPasswordChangeDialog = false
                         }
                     }
                 }) {
-                    Text("Change", color = p.ac, fontWeight = FontWeight.Bold)
+                    Text(strings.changeLabel, color = p.ac, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -7140,7 +5134,7 @@ fun ProfileScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "This action is permanent and cannot be undone. All your data will be deleted.",
+                        strings.deleteAccountWarning,
                         fontSize = 14.sp,
                         color = p.ts
                     )
@@ -7149,7 +5143,7 @@ fun ProfileScreen(
                         OutlinedTextField(
                             value = deletePassword,
                             onValueChange = { deletePassword = it; deleteError = "" },
-                            label = { Text("Enter your password to confirm") },
+                            label = { Text(strings.enterPasswordToConfirm) },
                             visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
@@ -7171,13 +5165,13 @@ fun ProfileScreen(
                 TextButton(onClick = {
                     val isEmailUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.providerData?.any { it.providerId == com.google.firebase.auth.EmailAuthProvider.PROVIDER_ID } == true
                     if (isEmailUser && deletePassword.isBlank()) {
-                        deleteError = "Password is required to delete account"
+                        deleteError = strings.passwordRequiredToDelete
                     } else {
                         onDeleteAccount(if (isEmailUser) deletePassword else null)
                         showDeleteAccountDialog = false
                     }
                 }) {
-                    Text("Delete", color = Color.Red, fontWeight = FontWeight.Bold)
+                    Text(strings.delete, color = Color.Red, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -7273,6 +5267,7 @@ private fun ProfileGlassCard(
 
 @Composable
 private fun ProfileHero(
+    strings: LanguageManager.Strings,
     p: ProfilePalette,
     profileName: String,
     initials: String,
@@ -7357,7 +5352,7 @@ private fun ProfileHero(
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     MiniBadge(p, Icons.Default.EmojiEvents, tierLabel, tierColor, tierColor.copy(alpha = 0.08f))
-                    MiniBadge(p, Icons.Default.Shield, "LV $level", p.bl, p.bls)
+                    MiniBadge(p, Icons.Default.Shield, "${strings.lv} $level", p.bl, p.bls)
                 }
             }
         }
@@ -7365,7 +5360,7 @@ private fun ProfileHero(
         Spacer(Modifier.height(18.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("LV $level", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = p.ac, letterSpacing = 1.sp)
+            Text("${strings.lv} $level", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = p.ac, letterSpacing = 1.sp)
             Box(
                 modifier = Modifier
                     .weight(1f)

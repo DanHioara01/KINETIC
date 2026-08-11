@@ -43,10 +43,11 @@ fun BarcodeScannerScreen(
     onBarcodeScanned: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    val surfaceBg = if (isDark) bgColor() else LightBackground
-    val textPrimary = if (isDark) textColor() else LightTextPrimary
-    val textSecondary = if (isDark) secondaryTextColor() else LightTextSecondary
-    val accent = if (isDark) accentColor() else LightPrimaryRed
+    val p = appPalette(isDark)
+    val surfaceBg = p.bg
+    val textPrimary = p.tp
+    val textSecondary = p.ts
+    val accent = p.ac
     val context = LocalContext.current
 
     var isScanning by remember { mutableStateOf(false) }

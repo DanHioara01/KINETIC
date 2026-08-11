@@ -2,36 +2,37 @@ package com.example.kinetic.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.RectangleShape
@@ -65,11 +66,11 @@ fun GlassBackground(
     isDark: Boolean = isSystemInDarkTheme(),
     content: @Composable BoxScope.() -> Unit
 ) {
-    val bgColor = if (isDark) bgColor() else LightBackground
+    val p = appPalette(isDark)
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(bgColor),
+            .background(p.bg),
         content = content
     )
 }
@@ -150,13 +151,14 @@ fun AppGlassCard(
     p: AppPalette = appPalette(isSystemInDarkTheme()),
     cornerRadius: Dp = 18.dp,
     contentPadding: PaddingValues = PaddingValues(14.dp),
+    containerColor: Color = p.cr,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(cornerRadius)
     Column(
         modifier = modifier
             .clip(shape)
-            .background(p.cr)
+            .background(containerColor)
             .border(1.dp, p.bd, shape)
             .padding(contentPadding),
         content = content
@@ -202,8 +204,7 @@ fun AppBg(
  */
 class KineticHeaderController(
     val isDark: Boolean,
-    val onOpenMenu: () -> Unit,
-    val onToggleTheme: () -> Unit
+    val onOpenMenu: () -> Unit
 )
 
 val LocalKineticHeader = staticCompositionLocalOf<KineticHeaderController?> { null }
@@ -212,7 +213,6 @@ val LocalKineticHeader = staticCompositionLocalOf<KineticHeaderController?> { nu
  * Header-ul global Kinetic: iconiță (back sau meniu) + textul „KINETIC" +
  * comutatorul dark/light. Folosit pe TOATE ecranele aplicației.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun KineticAppBar(
     onBack: (() -> Unit)? = null,
@@ -226,28 +226,39 @@ fun KineticAppBar(
     val isDark = controller?.isDark ?: isSystemInDarkTheme()
     val p = appPalette(isDark)
 
-    TopAppBar(
-        modifier = modifier,
-        windowInsets = WindowInsets(0, 0, 0, 0),
-        title = {
+    // Header construit manual (fără TopAppBar) ca textul „KINETIC" să fie EXACT pe mijlocul
+    // ecranului, indiferent de lățimea iconițelor laterale sau a acțiunilor.
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .background(p.bg)
+    ) {
+        // Titlul — plasat într-un Box care acoperă toată lățimea, centrat absolut
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
             if (title != null) {
                 title()
             } else {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "KINETIC",
-                        fontFamily = Varien,
-                        fontSize = 26.sp,
-                        letterSpacing = 6.sp,
-                        color = p.tp
-                    )
-                }
+                Text(
+                    "KINETIC",
+                    fontFamily = Varien,
+                    fontSize = 26.sp,
+                    letterSpacing = 6.sp,
+                    // letterSpacing adaugă spațiu și după ultima literă; compensăm ca
+                    // centrul VIZUAL al textului să fie exact pe mijlocul ecranului.
+                    modifier = Modifier.padding(end = 3.dp),
+                    color = p.tp
+                )
             }
-        },
-        navigationIcon = {
+        }
+        // Iconița de navigare — stânga
+        Box(
+            modifier = Modifier.fillMaxHeight(),
+            contentAlignment = Alignment.CenterStart
+        ) {
             if (onBack != null) {
                 IconButton(onClick = onBack) {
                     Icon(
@@ -267,23 +278,51 @@ fun KineticAppBar(
                     )
                 }
             }
-        },
-        actions = {
-            if (controller != null) {
-                IconButton(onClick = controller.onToggleTheme) {
-                    Icon(
-                        imageVector = if (isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
-                        contentDescription = if (isDark) strings.light else strings.dark,
-                        tint = p.ac,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
+        }
+        // Acțiuni — dreapta
+        Row(
+            modifier = Modifier.fillMaxHeight(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             actions()
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = p.bg,
-            titleContentColor = p.tp
-        )
-    )
+        }
+    }
+}
+
+@Composable
+fun GradientNextExerciseButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val p = appPalette(isSystemInDarkTheme())
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(brush = Brush.horizontalGradient(listOf(p.ac, Color(0xFFFF6B4A))))
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = text.uppercase(),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                color = Color.White
+            )
+            Icon(
+                Icons.Filled.SkipNext,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
 }

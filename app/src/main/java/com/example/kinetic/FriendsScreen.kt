@@ -94,7 +94,7 @@ fun FriendsScreen(
                 onBack = onBackClick,
                 actions = {
                     IconButton(onClick = onOpenLeaderboard) {
-                        Icon(Icons.Default.EmojiEvents, contentDescription = "Leaderboard", tint = p.ac)
+                        Icon(Icons.Default.EmojiEvents, contentDescription = strings.leaderboard, tint = p.ac)
                     }
                 }
             )

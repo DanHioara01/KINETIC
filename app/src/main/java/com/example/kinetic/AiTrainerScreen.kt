@@ -153,10 +153,10 @@ fun AiTrainerScreen(
                     onBack = onBack,
                     actions = {
                         IconButton(onClick = { startNewChat() }) {
-                            Icon(Icons.Default.Add, contentDescription = "New chat", tint = accent)
+                            Icon(Icons.Default.Add, contentDescription = strings.newChat, tint = accent)
                         }
                         IconButton(onClick = { showHistoryDrawer = true }) {
-                            Icon(Icons.Default.History, contentDescription = "History", tint = accent)
+                            Icon(Icons.Default.History, contentDescription = strings.history, tint = accent)
                         }
                     }
                 )
@@ -397,7 +397,7 @@ fun AiTrainerScreen(
                 ) {
                     Text(strings.aiTrainerHistory, fontWeight = FontWeight.Bold, color = textPrimary)
                     IconButton(onClick = { showHistoryDrawer = false }) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = textPrimary)
+                        Icon(Icons.Default.Close, contentDescription = strings.close, tint = textPrimary)
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -471,7 +471,7 @@ fun AiTrainerScreen(
                                     IconButton(onClick = { deleteSession(sessionId) }) {
                                         Icon(
                                             Icons.Default.DeleteOutline,
-                                            contentDescription = "Delete chat",
+                                            contentDescription = strings.deleteChat,
                                             tint = textSecondary
                                         )
                                     }
@@ -485,7 +485,7 @@ fun AiTrainerScreen(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = { showHistoryDrawer = false; startNewChat() }) {
-                        Text("New Chat", color = accent)
+                        Text(strings.newChat, color = accent)
                     }
                 }
             }
