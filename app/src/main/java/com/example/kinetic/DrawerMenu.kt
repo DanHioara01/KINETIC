@@ -128,12 +128,8 @@ fun DrawerMenu(
     isPremium: Boolean = false
 ) {
     val bg = if (isDark) DarkBackground else LightBackground
-    // ── Tranziție globală de temă: culorile drawer-ului se amestecă lin (≈ crossfade) ──
-    val themeProgress by animateFloatAsState(
-        targetValue = if (isDark) 1f else 0f,
-        animationSpec = tween(450),
-        label = "drawerThemeProgress"
-    )
+    // ── Tema comută instant (fără animație per-frame → zero jank). ──
+    val themeProgress = if (isDark) 1f else 0f
     val textPrimary = lerp(LightTextPrimary, WhiteText, themeProgress)
     val textSecondary = lerp(LightTextSecondary, GrayText, themeProgress)
     val divider = lerp(LightDividerGray, DividerGray, themeProgress)
@@ -693,33 +689,14 @@ private fun AnimatedThemeSwitch(
     isDark: Boolean,
     onToggle: () -> Unit
 ) {
-    // ══ Culori per mod — toate tranziționează în 0.4s ease ══
-    val trackBorderStart by animateColorAsState(
-        targetValue = if (isDark) Color(0xFF38BDF8) else Color(0xFFFB923C),
-        animationSpec = tween(400, easing = FastOutSlowInEasing),
-        label = "trackBorderStart"
-    )
-    val trackBorderEnd by animateColorAsState(
-        targetValue = if (isDark) Color(0xFF1D4ED8) else Color(0xFFA855F7),
-        animationSpec = tween(400, easing = FastOutSlowInEasing),
-        label = "trackBorderEnd"
-    )
-    val thumbStart by animateColorAsState(
-        targetValue = if (isDark) Color(0xFF60A5FA) else Color(0xFFFB923C),
-        animationSpec = tween(400, easing = FastOutSlowInEasing),
-        label = "thumbStart"
-    )
-    val thumbEnd by animateColorAsState(
-        targetValue = if (isDark) Color(0xFF1E40AF) else Color(0xFFA855F7),
-        animationSpec = tween(400, easing = FastOutSlowInEasing),
-        label = "thumbEnd"
-    )
-    val trackFill by animateColorAsState(
-        targetValue = if (isDark) Color(0xFF0C0F2B).copy(alpha = 0.80f) else Color(0xFFFFF6E5).copy(alpha = 0.80f),
-        animationSpec = tween(400, easing = FastOutSlowInEasing),
-        label = "trackFill"
-    )
-    val iconColor = if (isDark) Color(0xFF0D1226) else Color(0xFF2A1700)
+    // ══ Culori Volcanic per mod — noapte de lavă ↔ zori de cenușă ══
+    // Culori directe (comută instant, fără animație per-frame → zero jank).
+    val trackBorderStart = if (isDark) Color(0xFFFF7A3C) else Color(0xFFFFB84D)
+    val trackBorderEnd = if (isDark) Color(0xFFD61B30) else Color(0xFFF97316)
+    val thumbStart = if (isDark) Color(0xFFFF7A3C) else Color(0xFFFFB84D)
+    val thumbEnd = if (isDark) Color(0xFFD61B30) else Color(0xFFF97316)
+    val trackFill = (if (isDark) Color(0xFF170B09) else Color(0xFFFFF2E4)).copy(alpha = 0.85f)
+    val iconColor = if (isDark) Color(0xFF2B0E06) else Color(0xFF5C2600)
 
     // ══ Knob — spring bounce ≈ cubic-bezier(0.34, 1.56, 0.64, 1), dar RAPID ══
     // StiffnessMediumLow (200 N/m) lăsa thumb-ul să se târască ~1s → părea lag.
@@ -743,7 +720,7 @@ private fun AnimatedThemeSwitch(
     // Umbra folosește o culoare STATICĂ per mod (nu glowColor animat): altfel umbra
     // se re-rasterizează la fiecare frame al tranziției → jank. Efectul glow rămâne
     // vizibil prin border + thumb-ul animat.
-    val shadowColor = if (isDark) Color(0xFF38BDF8) else Color(0xFFFB923C)
+    val shadowColor = if (isDark) Color(0xFFFF5A36) else Color(0xFFF97316)
 
     Box(
         modifier = Modifier

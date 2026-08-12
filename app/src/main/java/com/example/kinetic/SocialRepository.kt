@@ -3,6 +3,7 @@ package com.example.kinetic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 class SocialRepository(private val db: AppDatabase) {
     private val api = NetworkClient.api
@@ -64,16 +65,35 @@ class SocialRepository(private val db: AppDatabase) {
             try {
                 val serverRequests = api.getIncomingRequests(userId)
                 val serverRequestIds = serverRequests.map { it.userId }.toSet()
-                db.friendshipDao().getIncomingRequests(userId).forEach { local ->
-                    if (local.userId !in serverRequestIds) {
-                        db.friendshipDao().deleteById(local.id)
+                // Ștergem doar dacă serverul a răspuns cu o listă non-goală: un răspuns gol
+                // tranzitoriu (rețea/proxy) nu trebuie să șteargă toate cererile locale.
+                if (serverRequests.isNotEmpty()) {
+                    db.friendshipDao().getIncomingRequests(userId).forEach { local ->
+                        if (local.userId !in serverRequestIds) {
+                            db.friendshipDao().deleteById(local.id)
+                        }
                     }
                 }
                 for (req in serverRequests) {
-                    db.friendshipDao().upsert(req)
+                    val existing = db.friendshipDao().getBetween(req.userId, req.friendId)
+                    if (existing == null || existing.status != "pending") {
+                        if (existing != null) db.friendshipDao().deleteById(existing.id)
+                        // Row nou cu id local (nu id-ul de pe server) ca să nu suprascrie alte relații.
+                        db.friendshipDao().upsert(
+                            FriendshipEntity(
+                                userId = req.userId,
+                                friendId = req.friendId,
+                                status = "pending",
+                                createdAt = req.createdAt
+                            )
+                        )
+                    }
                 }
             } catch (e: Exception) { e.printStackTrace() }
+            // Păstrăm o singură cerere per expeditor (cea mai recentă).
             db.friendshipDao().getIncomingRequests(userId)
+                .sortedByDescending { it.createdAt }
+                .distinctBy { it.userId }
         }
     }
 
@@ -82,17 +102,48 @@ class SocialRepository(private val db: AppDatabase) {
             try {
                 val serverFriends = api.getFriends(userId)
                 val serverFriendIds = serverFriends.map { if (it.userId == userId) it.friendId else it.userId }.toSet()
-                db.friendshipDao().getFriendsFor(userId).forEach { local ->
-                    if (local.friendId !in serverFriendIds) {
-                        db.friendshipDao().deleteById(local.id)
+                // Ștergem local doar când serverul a răspuns cu o listă non-goală — altfel un
+                // răspuns gol tranzitoriu ar șterge TOȚI prietenii de pe device.
+                if (serverFriends.isNotEmpty()) {
+                    db.friendshipDao().getFriendsFor(userId).forEach { local ->
+                        val localFriendId = if (local.userId == userId) local.friendId else local.userId
+                        if (localFriendId !in serverFriendIds) {
+                            db.friendshipDao().deleteById(local.id)
+                        }
                     }
                 }
                 for (f in serverFriends) {
                     val actualFriendId = if (f.userId == userId) f.friendId else f.userId
-                    db.friendshipDao().upsert(FriendshipEntity(userId = userId, friendId = actualFriendId, status = "accepted"))
+                    val existing = db.friendshipDao().getBetween(userId, actualFriendId)
+                    if (existing == null) {
+                        db.friendshipDao().upsert(
+                            FriendshipEntity(userId = userId, friendId = actualFriendId, status = "accepted")
+                        )
+                    } else if (existing.status != "accepted") {
+                        db.friendshipDao().accept(existing.id)
+                    }
                 }
             } catch (e: Exception) { e.printStackTrace() }
-            db.friendshipDao().getFriendsFor(userId)
+            // Curăță duplicatele rămase (de la versiunile vechi): o singură intrare per prieten,
+            // preferând rândul canonic (userId == mine) — altfel lista ar rămâne goală pentru că
+            // afișarea filtrează rândurile inverse (friendId == mine).
+            val all = db.friendshipDao().getFriendsFor(userId).sortedBy { it.id }
+            val byFriend = LinkedHashMap<String, FriendshipEntity>()
+            for (f in all) {
+                val key = if (f.userId == userId) f.friendId else f.userId
+                val prev = byFriend[key]
+                val keep: FriendshipEntity
+                val drop: FriendshipEntity?
+                when {
+                    prev == null -> { keep = f; drop = null }
+                    f.userId == userId -> { keep = f; drop = prev }
+                    prev.userId == userId -> { keep = prev; drop = f }
+                    else -> { keep = prev; drop = f } // ambele inverse: păstrăm cel mai vechi
+                }
+                byFriend[key] = keep
+                if (drop != null) db.friendshipDao().deleteById(drop.id)
+            }
+            byFriend.values.toList()
         }
     }
 
@@ -129,8 +180,18 @@ class SocialRepository(private val db: AppDatabase) {
     suspend fun syncUserProfile(userId: String, name: String, photoUri: String = "") {
         withContext(Dispatchers.IO) {
             try {
-                val token = com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
-                api.upsertUser(mapOf("id" to userId, "name" to name, "photoUri" to photoUri, "fcmToken" to (token ?: "")))
+                // Token-ul FCM nu trebuie să blocheze sync-ul profilului: dacă fetch-ul eșuează
+                // sau durează prea mult, trimitem profilul fără token ca utilizatorul să apară
+                // oricum în căutare (o persoană logată trebuie să fie găsită prin nume).
+                val token = runCatching {
+                    withTimeoutOrNull(3000) {
+                        com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+                    }
+                }.getOrNull() ?: ""
+                // Doar URL-urile accesibile (http/https) se sincronizează: un path local
+                // file:// e specific device-ului și inutil pentru alți utilizatori/leaderboard.
+                val remotePhoto = if (photoUri.startsWith("http://") || photoUri.startsWith("https://")) photoUri else ""
+                api.upsertUser(mapOf("id" to userId, "name" to name, "photoUri" to remotePhoto, "fcmToken" to token))
             } catch (e: Exception) { e.printStackTrace() }
         }
     }
@@ -168,7 +229,7 @@ class SocialRepository(private val db: AppDatabase) {
     suspend fun getLeaderboardFirestore(limit: Int = 50): List<LeaderboardEntry> {
         return withContext(Dispatchers.IO) {
             try {
-                val entries = api.getLeaderboard("volume", limit)
+                val entries = api.getLeaderboard("volume", limit).entries
                 entries.mapIndexed { index, entry ->
                     LeaderboardEntry(
                         userId = (entry["userId"] as? String) ?: "",
@@ -194,7 +255,7 @@ class SocialRepository(private val db: AppDatabase) {
 
         return withContext(Dispatchers.IO) {
             try {
-                val entries = api.getLeaderboard("volume", 200)
+                val entries = api.getLeaderboard("volume", 200).entries
                 val filtered = entries.filter { (it["userId"] as? String) in friendIds }.take(limit)
                 filtered.mapIndexed { index, entry ->
                     LeaderboardEntry(

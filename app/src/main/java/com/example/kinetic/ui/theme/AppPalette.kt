@@ -1,11 +1,7 @@
 package com.example.kinetic.ui.theme
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 
 data class AppPalette(
@@ -36,39 +32,14 @@ data class AppPalette(
  * Paleta animată: la schimbarea temei, toate culorile se amestecă lin (lerp) între
  * light și dark, deci orice ecran care folosește paleta are o tranziție globală de
  * temă (≈ crossfade) în loc de schimbare instantanee.
+ *
+ * Paleta e STATICĂ: culorile comută instant la schimbarea temei (zero animație
+ * per-frame → zero jank). Tranziția vizuală e un singur fade subtil pe conținut
+ * în MainActivity, care nu provoacă recompuneri.
  */
 @Composable
 fun appPalette(isDark: Boolean): AppPalette {
-    val progress by animateFloatAsState(
-        targetValue = if (isDark) 1f else 0f,
-        animationSpec = tween(450),
-        label = "paletteProgress"
-    )
-    val light = buildPalette(isDark = false)
-    val dark = buildPalette(isDark = true)
-    return AppPalette(
-        bg = lerp(light.bg, dark.bg, progress),
-        sf = lerp(light.sf, dark.sf, progress),
-        cr = lerp(light.cr, dark.cr, progress),
-        card = lerp(light.card, dark.card, progress),
-        bd = lerp(light.bd, dark.bd, progress),
-        tp = lerp(light.tp, dark.tp, progress),
-        ts = lerp(light.ts, dark.ts, progress),
-        tt = lerp(light.tt, dark.tt, progress),
-        ac = lerp(light.ac, dark.ac, progress),
-        acg = lerp(light.acg, dark.acg, progress),
-        acs = lerp(light.acs, dark.acs, progress),
-        gn = lerp(light.gn, dark.gn, progress),
-        gns = lerp(light.gns, dark.gns, progress),
-        am = lerp(light.am, dark.am, progress),
-        ams = lerp(light.ams, dark.ams, progress),
-        bl = lerp(light.bl, dark.bl, progress),
-        bls = lerp(light.bls, dark.bls, progress),
-        pu = lerp(light.pu, dark.pu, progress),
-        pus = lerp(light.pus, dark.pus, progress),
-        rs = lerp(light.rs, dark.rs, progress),
-        rss = lerp(light.rss, dark.rss, progress)
-    )
+    return buildPalette(isDark = isDark)
 }
 
 private fun buildPalette(isDark: Boolean): AppPalette {

@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -158,10 +159,14 @@ fun LeaderboardScreen(
                                 Spacer(Modifier.width(12.dp))
 
                                 val profile = userProfileManager.getProfile(entry.userId)
-                                if (entry.photoUri.isNotBlank()) {
+                                // Dacă backend-ul nu are URL (sau are unul neaccesibil), folosim poza
+                                // din profilul local — pe propriul device asta arată poza setată.
+                                val photoToShow = entry.photoUri.ifBlank { profile?.photoUri ?: "" }
+                                if (photoToShow.isNotBlank()) {
                                     coil.compose.AsyncImage(
-                                        model = entry.photoUri,
+                                        model = photoToShow,
                                         contentDescription = null,
+                                        contentScale = ContentScale.Crop,
                                         modifier = Modifier.size(42.dp).clip(CircleShape).border(2.dp, p.ac.copy(alpha = 0.3f), CircleShape)
                                     )
                                 } else {

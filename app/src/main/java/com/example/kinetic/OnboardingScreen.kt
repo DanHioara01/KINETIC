@@ -875,7 +875,7 @@ private fun MuscleGroupStep(
                 androidx.compose.foundation.Image(
                     painter = painterResource(id = group.iconRes),
                     contentDescription = group.label,
-                    modifier = Modifier.size(26.dp),
+                    modifier = Modifier.size(42.dp),
                     colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(if (isSelected) accent else textSecondary)
                 )
             }

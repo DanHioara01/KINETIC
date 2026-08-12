@@ -1266,24 +1266,44 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private fun columnExists(db: SupportSQLiteDatabase, table: String, column: String): Boolean {
+            var exists = false
+            db.query("PRAGMA table_info(`$table`)").use { cursor ->
+                val nameIdx = cursor.getColumnIndexOrThrow("name")
+                while (cursor.moveToNext()) {
+                    if (cursor.getString(nameIdx) == column) {
+                        exists = true
+                        break
+                    }
+                }
+            }
+            return exists
+        }
+
+        private fun addColumnIfMissing(db: SupportSQLiteDatabase, table: String, column: String, definition: String) {
+            if (!columnExists(db, table, column)) {
+                db.execSQL("ALTER TABLE `$table` ADD COLUMN $column $definition")
+            }
+        }
+
         private val MIGRATION_24_25 = object : Migration(24, 25) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE `food_items` ADD COLUMN nameEn TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `food_items` ADD COLUMN nameRu TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `food_items` ADD COLUMN nameUk TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `food_items` ADD COLUMN nameFr TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `food_items` ADD COLUMN nameDe TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `food_items` ADD COLUMN nameEs TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `food_items` ADD COLUMN nameIt TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `food_items` ADD COLUMN nameTr TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `food_items` ADD COLUMN namePt TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE `food_items` ADD COLUMN namePl TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "food_items", "nameEn", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "food_items", "nameRu", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "food_items", "nameUk", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "food_items", "nameFr", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "food_items", "nameDe", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "food_items", "nameEs", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "food_items", "nameIt", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "food_items", "nameTr", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "food_items", "namePt", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "food_items", "namePl", "TEXT NOT NULL DEFAULT ''")
             }
         }
 
         private val MIGRATION_25_26 = object : Migration(25, 26) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE `food_items` ADD COLUMN searchKey TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "food_items", "searchKey", "TEXT NOT NULL DEFAULT ''")
             }
         }
 

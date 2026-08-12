@@ -65,6 +65,14 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
         val totalSets = session.exercitii.sumOf { it.seturi.size }
         updateMuscleRecovery(userId, session.grupaMusculara, totalSets)
 
+        // Sincronizează statisticile cu backend-ul, ca utilizatorul să apară imediat
+        // în leaderboard cu volumul și numărul real de antrenamente.
+        try {
+            val totalVolume = db.antrenamentDao().sumVolumeForUser(userId)
+            val workoutCount = db.antrenamentDao().countForUser(userId)
+            SocialRepository(db).syncVolumeToFirestore(userId, totalVolume, workoutCount)
+        } catch (_: Exception) {}
+
         return antrenamentId
     }
 

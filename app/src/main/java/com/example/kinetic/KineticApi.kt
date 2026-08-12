@@ -70,7 +70,7 @@ interface KineticApi {
     suspend fun upsertLeaderboardEntry(@Body body: Map<String, Any>): Map<String, Any>
 
     @GET("leaderboard")
-    suspend fun getLeaderboard(@Query("metric") metric: String, @Query("limit") limit: Int): List<Map<String, Any>>
+    suspend fun getLeaderboard(@Query("metric") metric: String, @Query("limit") limit: Int): LeaderboardResponse
 
     // Streaks & Workout Logging (Gamification)
     @POST("workouts/log")
@@ -264,6 +264,16 @@ data class WorkoutLogResponse(
     val stats: Map<String, Int>,
     val streak: StreakResponse,
     val newlyAwardedBadges: List<String>
+)
+
+/**
+ * Răspunsul backend-ului pentru /leaderboard: { entries: [...], total, hasMore }.
+ * Default-urile fac parsing-ul tolerant la versiuni vechi ale backend-ului.
+ */
+data class LeaderboardResponse(
+    val entries: List<Map<String, Any>> = emptyList(),
+    val total: Int = 0,
+    val hasMore: Boolean = false
 )
 
 data class StreakResponse(

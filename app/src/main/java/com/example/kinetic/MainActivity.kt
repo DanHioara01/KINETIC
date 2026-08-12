@@ -24,8 +24,10 @@ import androidx.core.app.ActivityCompat
 import androidx.annotation.RequiresApi
 import kotlinx.coroutines.tasks.await
 import kotlin.math.PI
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlin.random.Random
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateDpAsState
@@ -95,8 +97,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -106,7 +110,11 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -179,6 +187,11 @@ class MainActivity : ComponentActivity() {
             }
 
             KineticTheme(themeMode = themeMode.value) {
+                // ══ Animație de temă UȘOARĂ (crossfade cu scrim) ══
+                // Un singur overlay solid acoperă scurt conținutul, DUPĂ care culorile
+                // comută (ascunse sub scrim), apoi scrim-ul se dezvăluie → crossfade lin,
+                // vizibil pe orice ecran, fără flash de fundal. Un singur nod animat → zero lag.
+                val scrimAlpha = remember { Animatable(0f) }
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -192,26 +205,25 @@ class MainActivity : ComponentActivity() {
                             onFinished = { showWelcome = false }
                         )
                     } else {
-                        var mainAlphaTarget by remember { mutableFloatStateOf(0f) }
-                        val mainAlpha by animateFloatAsState(
-                            targetValue = mainAlphaTarget,
-                            animationSpec = tween(500),
-                            label = "mainAlpha"
-                        )
-                        LaunchedEffect(Unit) {
-                            mainAlphaTarget = 1f
-                        }
+                        // alpha(1f) creează un hardware layer care asigură că primul frame
+                        // e prezentat la pornire (fără el, pe unele device-uri conținutul
+                        // rămâne nedesenat până la primul invalidate/scroll). Fără fade.
                         Surface(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .alpha(mainAlpha),
+                                .alpha(1f),
                             color = MaterialTheme.colorScheme.background
                         ) {
                             MuscleGroupList(
-                                onThemeChanged = { themeMode.value = it }
+                                onThemeChanged = { themeMode.value = it },
+                                themeScrim = scrimAlpha
                             )
                         }
                     }
+                    // Scrim peste tot (acoperă și drawer-ul): crossfade spre tema țintă.
+                    // Composable separat → doar el recompune în timpul animației (290ms),
+                    // întregul arbore nu. La repaus e absent complet (alpha = 0).
+                    ThemeScrimOverlay(scrimAlpha = scrimAlpha)
                 }
             }
         }
@@ -349,9 +361,30 @@ private fun WorkoutSubTabs(
     }
 }
 
+@Composable
+private fun ThemeScrimOverlay(scrimAlpha: Animatable<Float, *>) {
+    val a = scrimAlpha.value
+    if (a > 0f) {
+        // Scrim cu culoare CONSTANTĂ (întunecată), nu legată de temă: la schimbarea
+        // culorilor sub el, scrim-ul NU se recolorează → fără flash alb la dark→light.
+        // Tranziția trece prin întuneric și dezvăluie tema nouă lin.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(com.example.kinetic.ui.theme.DarkBackground)
+                .alpha(a)
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
-fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
+fun MuscleGroupList(
+    onThemeChanged: (ThemeMode) -> Unit = {},
+    // Scrim-ul de crossfade al temei (din MainActivity). Dacă e furnizat, comutarea
+    // temei e secvențiată: acoperire solidă → schimbare culori → dezvăluire lină.
+    themeScrim: Animatable<Float, *>? = null
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val userProfileManager = remember { UserProfileManager(context) }
     val preferencesManager = remember { PreferencesManager(context, userProfileManager) }
@@ -444,8 +477,27 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                     try {
                         if (profileName.isNotBlank()) {
                             val db = AppDatabase.getDatabase(context)
-                            SocialRepository(db).syncUserProfile(userId, profileName, profilePhoto)
+                            // Dacă poza e un path local (file:// / content://), o urcăm în
+                            // Firebase Storage ca să fie vizibilă și pentru ceilalți (leaderboard,
+                            // căutare); altfel trimitem URL-ul direct.
+                            var photoToSync = profilePhoto
+                            if (photoToSync.startsWith("file://") || photoToSync.startsWith("content://")) {
+                                photoToSync = try {
+                                    FirestoreHelper().uploadProfilePhoto(context, userId, android.net.Uri.parse(photoToSync))
+                                } catch (_: Exception) {
+                                    photoToSync
+                                }
+                            }
+                            SocialRepository(db).syncUserProfile(userId, profileName, photoToSync)
                         }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                    try {
+                        val db = AppDatabase.getDatabase(context)
+                        val totalVolume = db.antrenamentDao().sumVolumeForUser(userId)
+                        val workoutCount = db.antrenamentDao().countForUser(userId)
+                        SocialRepository(db).syncVolumeToFirestore(userId, totalVolume, workoutCount)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -1319,10 +1371,27 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                     strings = strings,
                     onClose = { scope.launch { drawerState.close() } },
                     onToggleTheme = {
-                        val newMode = if (isDark) ThemeMode.LIGHT else ThemeMode.DARK
-                        preferencesManager.setThemeMode(newMode)
-                        currentThemeMode = newMode
-                        onThemeChanged(newMode)
+                        val performToggle = {
+                            val newMode = if (isDark) ThemeMode.LIGHT else ThemeMode.DARK
+                            preferencesManager.setThemeMode(newMode)
+                            currentThemeMode = newMode
+                            onThemeChanged(newMode)
+                        }
+                        val scrim = themeScrim
+                        if (scrim != null) {
+                            // Crossfade SEMI-TRANSPARENT: scrim-ul atinge doar ~65% opacitate,
+                            // deci ecranul NU devine solid — conținutul rămâne vizibil prin el
+                            // pe tot parcursul tranziției. Culorile se schimbă sub scrim,
+                            // apoi acesta se estompează. Un singur nod animat, zero lag.
+                            scope.launch {
+                                scrim.snapTo(0f)
+                                scrim.animateTo(0.65f, tween(110, easing = FastOutSlowInEasing))
+                                performToggle()
+                                scrim.animateTo(0f, tween(220, easing = FastOutSlowInEasing))
+                            }
+                        } else {
+                            performToggle()
+                        }
                     },
                     onOpenServerSettings = { showServerDialog = true },
                     onOpenPricing = { showPricing = true },
@@ -2638,7 +2707,11 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                 }
                 // Floating Navbar — Glassmorphism Frosted Glass
                 val navbarContext = LocalContext.current
-                val navbarShape = RoundedCornerShape(28.dp)
+                val navbarShape = NavbarCradleShape(
+                    cornerRadius = 28.dp,
+                    cradleRadius = 33.dp,
+                    cradleCenterY = 13.dp
+                )
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2655,10 +2728,11 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                         Color(0xFF151515).copy(alpha = 1.0f)
                                     )
                                 } else {
+                                    // Light mode: solid, la fel ca dark (fără transparență)
                                     listOf(
-                                        Color.White.copy(alpha = 0.85f),
-                                        Color(0xFFF5F5F5).copy(alpha = 0.90f),
-                                        Color.White.copy(alpha = 0.95f)
+                                        Color.White.copy(alpha = 1.0f),
+                                        Color(0xFFF7F7F7).copy(alpha = 1.0f),
+                                        Color.White.copy(alpha = 1.0f)
                                     )
                                 }
                             )
@@ -2668,7 +2742,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                             color = if (isDark) {
                                 Color(0xFF444444).copy(alpha = 0.8f)
                             } else {
-                                Color.Black.copy(alpha = 0.08f)
+                                Color(0xFFDDDDDD).copy(alpha = 1.0f)
                             },
                             shape = navbarShape
                         )
@@ -2697,61 +2771,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                         }
 
                         val navItems = listOf(
-                            Triple(Icons.Default.Home, strings.acasa, 0),
-                            Triple(Icons.Default.BarChart, strings.stats, 2)
+                            Triple(painterResource(R.drawable.ic_nav_home), strings.acasa, 0),
+                            Triple(painterResource(R.drawable.ic_nav_stats), strings.stats, 2)
                         )
-
-                        // ── Animated indicator state for left items ──
-                        val selectedLeftIndex = remember(currentDashboardTab) {
-                            navItems.indexOfFirst { it.third == currentDashboardTab }.coerceAtLeast(0)
-                        }
-                        val animatedIndicatorOffset by animateDpAsState(
-                            targetValue = (selectedLeftIndex * 56).dp,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessLow
-                            ),
-                            label = "leftIndicator"
-                        )
-
-                        // Animated indicator with glow
-                        val infiniteGlow = rememberInfiniteTransition(label = "glow")
-                        val glowAlpha by infiniteGlow.animateFloat(
-                            initialValue = 0.3f,
-                            targetValue = 0.7f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1200, easing = FastOutSlowInEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "glowAlpha"
-                        )
-                        // Overlay 0-width: nu consumă lățime din Row, deci iconițele rămân vizibile
-                        Box(modifier = Modifier.requiredWidth(0.dp)) {
-                            // Glow effect
-                            Box(
-                                modifier = Modifier
-                                    .offset(x = animatedIndicatorOffset + 8.dp)
-                                    .size(width = 48.dp, height = 12.dp)
-                                    .background(
-                                        brush = Brush.radialGradient(
-                                            colors = listOf(
-                                                accent.copy(alpha = glowAlpha * 0.5f),
-                                                accent.copy(alpha = glowAlpha * 0.2f),
-                                                Color.Transparent
-                                            ),
-                                            radius = 30f
-                                        )
-                                    )
-                            )
-                            // Indicator bar
-                            Box(
-                                modifier = Modifier
-                                    .offset(x = animatedIndicatorOffset + 24.dp)
-                                    .size(width = 32.dp, height = 3.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(accent)
-                            )
-                        }
 
                         navItems.forEach { (icon, label, tabIndex) ->
                             val selected = currentDashboardTab == tabIndex
@@ -2828,10 +2850,6 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                                 scaleY = bounceScale
                                             }
                                     )
-                                    if (selected) {
-                                        Spacer(modifier = Modifier.height(3.dp))
-                                        Box(modifier = Modifier.size(width = 18.dp, height = 3.dp).background(accent, RoundedCornerShape(2.dp)))
-                                    }
                                 }
                             }
                         }
@@ -2839,61 +2857,9 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                         Spacer(modifier = Modifier.width(56.dp))
 
                         val rightItems = listOf(
-                            Triple(Icons.Default.LocalDrink, strings.waterIntake, 3),
-                            Triple(Icons.Default.Person, strings.profile, 4)
+                            Triple(painterResource(R.drawable.ic_nav_water), strings.waterIntake, 3),
+                            Triple(painterResource(R.drawable.ic_nav_profile), strings.profile, 4)
                         )
-
-                        // ── Animated indicator state for right items ──
-                        val selectedRightIndex = remember(currentDashboardTab) {
-                            rightItems.indexOfFirst { it.third == currentDashboardTab }.coerceAtLeast(0)
-                        }
-                        val animatedRightIndicatorOffset by animateDpAsState(
-                            targetValue = (selectedRightIndex * 56).dp,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessLow
-                            ),
-                            label = "rightIndicator"
-                        )
-
-                        // Animated indicator for right items with glow
-                        val infiniteGlowRight = rememberInfiniteTransition(label = "glowRight")
-                        val glowAlphaRight by infiniteGlowRight.animateFloat(
-                            initialValue = 0.3f,
-                            targetValue = 0.7f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1200, easing = FastOutSlowInEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "glowAlphaRight"
-                        )
-                        // Overlay 0-width: nu consumă lățime din Row, deci iconițele rămân vizibile
-                        Box(modifier = Modifier.requiredWidth(0.dp)) {
-                            // Glow effect
-                            Box(
-                                modifier = Modifier
-                                    .offset(x = animatedRightIndicatorOffset + 8.dp)
-                                    .size(width = 48.dp, height = 12.dp)
-                                    .background(
-                                        brush = Brush.radialGradient(
-                                            colors = listOf(
-                                                accent.copy(alpha = glowAlphaRight * 0.5f),
-                                                accent.copy(alpha = glowAlphaRight * 0.2f),
-                                                Color.Transparent
-                                            ),
-                                            radius = 30f
-                                        )
-                                    )
-                            )
-                            // Indicator bar
-                            Box(
-                                modifier = Modifier
-                                    .offset(x = animatedRightIndicatorOffset + 24.dp)
-                                    .size(width = 32.dp, height = 3.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(accent)
-                            )
-                        }
 
                         rightItems.forEach { (icon, label, tabIndex) ->
                             val selected = currentDashboardTab == tabIndex
@@ -2970,10 +2936,6 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                                                 scaleY = rightBounceScale
                                             }
                                     )
-                                    if (selected) {
-                                        Spacer(modifier = Modifier.height(3.dp))
-                                        Box(modifier = Modifier.size(width = 18.dp, height = 3.dp).background(accent, RoundedCornerShape(2.dp)))
-                                    }
                                 }
                             }
                         }
@@ -3013,7 +2975,7 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
                     Image(
                         painter = painterResource(id = R.drawable.barbell),
                         contentDescription = strings.workouts,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(34.dp)
                     )
                 }
             }
@@ -3082,6 +3044,64 @@ fun MuscleGroupList(onThemeChanged: (ThemeMode) -> Unit = {}) {
     }
         }
 }
+}
+
+// ============================================
+// Forma navbar-ului cu „cradle" (crestătură curbă) pentru butonul de workout
+// ============================================
+/**
+ * Forma navbar-ului cu o crestătură semicirculară pe marginea de sus, în centru.
+ * Curba înconjoară partea inferioară a butonului central de workout, ca butonul
+ * să pară așezat în navbar, nu plutind deasupra lui.
+ */
+private class NavbarCradleShape(
+    private val cornerRadius: Dp,
+    private val cradleRadius: Dp,
+    private val cradleCenterY: Dp
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density
+    ): Outline {
+        val cr = with(density) { cornerRadius.toPx() }
+        val cradleR = with(density) { cradleRadius.toPx() }
+        val cx = size.width / 2f
+        val cy = with(density) { cradleCenterY.toPx() } // centrul cercului crestăturii, relativ la marginea de sus
+        // Intersecția cercului crestăturii cu marginea de sus (y = 0)
+        val dy = cy
+        val halfW = if (cradleR > dy) sqrt(cradleR * cradleR - dy * dy) else 0f
+        // Unghiul dintre verticală și punctul de intersecție (în radiani)
+        val alpha = atan2(dy, halfW)
+        // Unghiul de start: punctul stânga-sus al arcului (sistem y în jos)
+        val startAngle = atan2(-dy, -halfW) * 180f / PI.toFloat()
+        // Sweep-ul trebuie să meargă PE SUB cerc (prin punctul de jos, +90° în sistem y-jos),
+        // nu pe deasupra — altfel crestătura iese în sus, invizibilă.
+        val sweep = -(180f + 2f * alpha * 180f / PI.toFloat())
+
+        val path = Path().apply {
+            moveTo(0f, size.height)
+            lineTo(0f, cr)
+            // colțul stânga-sus
+            arcTo(Rect(0f, 0f, cr * 2f, cr * 2f), 180f, 90f, false)
+            // marginea de sus până la crestătură
+            lineTo(cx - halfW, 0f)
+            // arcul crestăturii — înconjoară partea de jos a butonului
+            arcTo(
+                Rect(cx - cradleR, cy - cradleR, cx + cradleR, cy + cradleR),
+                startAngle,
+                sweep,
+                false
+            )
+            // marginea de sus după crestătură
+            lineTo(size.width - cr, 0f)
+            // colțul dreapta-sus
+            arcTo(Rect(size.width - cr * 2f, 0f, size.width, cr * 2f), 270f, 90f, false)
+            lineTo(size.width, size.height)
+            close()
+        }
+        return Outline.Generic(path)
+    }
 }
 
 // ============================================

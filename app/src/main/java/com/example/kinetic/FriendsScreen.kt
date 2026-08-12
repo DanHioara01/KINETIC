@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -61,6 +62,9 @@ fun FriendsScreen(
 
     var loading by remember { mutableStateOf(true) }
     var requestSentMessage by remember { mutableStateOf<String?>(null) }
+    // Incrementat după fiecare salvare de profil → forțează recompoziția cardurilor,
+    // ca numele să apară imediat (nu doar la a doua vizită).
+    var profilesVersion by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
         val profile = userProfileManager.getOwnProfile()
@@ -70,13 +74,16 @@ fun FriendsScreen(
         friends = socialRepository.getFriends(currentUserId)
         incomingRequests = socialRepository.getIncomingRequests(currentUserId)
 
-        val allIds = (friends.map { it.friendId } + incomingRequests.map { it.userId }).distinct().filter { it != currentUserId }
-        for (id in allIds) {
+        val friendIds = friends.map { it.friendId }.distinct().filter { it != currentUserId }
+        for (id in friendIds) {
             try {
                 val user = NetworkClient.api.getUser(id)
-                val name = (user["name"] as? String)?.takeIf { it.isNotBlank() } ?: id
-                val photo = (user["photoUri"] as? String) ?: ""
-                userProfileManager.saveProfile(UserProfileManager.UserProfile(userId = id, name = name, photoUri = photo))
+                val name = (user["name"] as? String)?.takeIf { it.isNotBlank() }
+                if (name != null) {
+                    val photo = (user["photoUri"] as? String) ?: ""
+                    userProfileManager.saveProfile(UserProfileManager.UserProfile(userId = id, name = name, photoUri = photo))
+                    profilesVersion++
+                }
             } catch (_: Exception) {}
         }
 
@@ -226,7 +233,7 @@ fun FriendsScreen(
                 Text(strings.yourFriends.uppercase(), color = p.ts, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
             }
 
-            val visibleFriends = friends.filter { it.friendId != currentUserId }
+            val visibleFriends = friends.filter { it.friendId != currentUserId }.distinctBy { it.friendId }
             if (visibleFriends.isEmpty() && !loading && incomingRequests.isEmpty()) {
                 item {
                     Box(
@@ -245,8 +252,10 @@ fun FriendsScreen(
             }
 
             items(visibleFriends) { friendship ->
+                val pv = profilesVersion // re-render itemul când sosesc profilele
                 val friendId = friendship.friendId
                 val profile = userProfileManager.getProfile(friendId)
+                val shortId = userProfileManager.getShortId(friendId)
                 val vol = friendsVolume[friendId]?.first ?: 0.0
                 val wc = friendsVolume[friendId]?.second ?: 0
 
@@ -263,6 +272,7 @@ fun FriendsScreen(
                             coil.compose.AsyncImage(
                                 model = profile.photoUri,
                                 contentDescription = null,
+                                contentScale = ContentScale.Crop,
                                 modifier = Modifier.size(48.dp).clip(CircleShape).border(2.dp, p.ac.copy(alpha = 0.3f), CircleShape)
                             )
                         } else {
@@ -270,18 +280,18 @@ fun FriendsScreen(
                                 modifier = Modifier.size(48.dp).background(p.ac.copy(alpha = 0.15f), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    (profile?.name ?: friendId).take(1).uppercase(),
-                                    color = p.ac,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                            Text(
+                                (profile?.name ?: "?").take(1).uppercase(),
+                                color = p.ac,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                             }
                         }
                         Spacer(Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                profile?.name ?: friendId,
+                                profile?.name ?: "#$shortId",
                                 color = p.tp,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp
@@ -376,7 +386,7 @@ private fun SearchResultCard(
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(userName, color = p.tp, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text(userId, color = p.ts, fontSize = 11.sp)
+                Text("#${userProfileManager.getShortId(userId)}", color = p.ts, fontSize = 11.sp)
             }
             if (!alreadyFriend) {
                 Button(
@@ -418,7 +428,29 @@ private fun IncomingRequestCard(
     strings: LanguageManager.Strings
 ) {
     val scope = rememberCoroutineScope()
-    val profile = userProfileManager.getProfile(request.userId)
+    val shortId = userProfileManager.getShortId(request.userId)
+    var profile by remember { mutableStateOf(userProfileManager.getProfile(request.userId)) }
+
+    // Fetch reactiv: dacă profilul expeditorului nu e încă local, îl încărcăm de pe
+    // backend chiar în card, ca numele să apară imediat (nu la a doua vizită).
+    LaunchedEffect(request.userId) {
+        if (profile == null) {
+            try {
+                val user = NetworkClient.api.getUser(request.userId)
+                val name = (user["name"] as? String)?.takeIf { it.isNotBlank() }
+                if (name != null) {
+                    userProfileManager.saveProfile(
+                        UserProfileManager.UserProfile(
+                            userId = request.userId,
+                            name = name,
+                            photoUri = (user["photoUri"] as? String) ?: ""
+                        )
+                    )
+                    profile = userProfileManager.getProfile(request.userId)
+                }
+            } catch (_: Exception) {}
+        }
+    }
 
     AppGlassCard(
         modifier = Modifier.fillMaxWidth(),
@@ -429,10 +461,12 @@ private fun IncomingRequestCard(
             modifier = Modifier.fillMaxWidth().padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (profile?.photoUri?.isNotBlank() == true) {
+            val photoUri = profile?.photoUri
+            if (photoUri?.isNotBlank() == true) {
                 coil.compose.AsyncImage(
-                    model = profile.photoUri,
+                    model = photoUri,
                     contentDescription = null,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier.size(42.dp).clip(CircleShape).border(2.dp, p.ac.copy(alpha = 0.3f), CircleShape)
                 )
             } else {
@@ -441,7 +475,7 @@ private fun IncomingRequestCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        (profile?.name ?: request.userId).take(1).uppercase(),
+                        (profile?.name ?: "?").take(1).uppercase(),
                         color = p.ac,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
@@ -450,7 +484,14 @@ private fun IncomingRequestCard(
             }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(profile?.name ?: request.userId, color = p.tp, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                val profileName = profile?.name
+                if (profileName != null) {
+                    Text(profileName, color = p.tp, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(Modifier.height(2.dp))
+                    Text("#$shortId", color = p.ts, fontSize = 11.sp)
+                } else {
+                    Text("#$shortId", color = p.tp, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(

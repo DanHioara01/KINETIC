@@ -1,13 +1,22 @@
 package com.example.kinetic.ui.theme
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import com.example.kinetic.ThemeMode
+
+/**
+ * Progres global al temei (0f = light, 1f = dark). Valoare STATICĂ — culorile comută
+ * instant, fără animație per-frame. Tranziția vizuală e făcută de un singur fade subtil
+ * pe conținut în MainActivity (alpha), care nu provoacă recompuneri. Astfel switch-ul
+ * nu mai are lag chiar și pe device-uri mid-range.
+ */
+val LocalThemeProgress = staticCompositionLocalOf { 0f }
+
+/** Tema globală rezolvată (dark = true), pentru componentele care primesc isDark separat. */
+val LocalThemeIsDark = staticCompositionLocalOf { false }
 
 @Composable
 fun KineticTheme(themeMode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
@@ -17,31 +26,29 @@ fun KineticTheme(themeMode: ThemeMode = ThemeMode.SYSTEM, content: @Composable (
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
 
-    // Tranziție globală de temă: culorile MaterialTheme se amestecă lin (≈ crossfade)
-    // între light și dark, deci fundalurile/texturile care citesc colorScheme animă.
-    val progress by animateFloatAsState(
-        targetValue = if (isDark) 1f else 0f,
-        animationSpec = tween(450),
-        label = "themeSchemeProgress"
-    )
-
+    // Culori directe, fără lerp animat: instant, zero recompuneri la comutare.
     val colorScheme = lightColorScheme(
         primary = Volcanico,
         secondary = Purple,
         tertiary = Purple,
-        background = lerp(LightBackground, DarkBackground, progress),
-        surface = lerp(LightSurface, DarkSurface, progress),
-        surfaceVariant = lerp(LightCard, DarkCard, progress),
-        onBackground = lerp(LightTextPrimary, TextWarmWhite, progress),
-        onSurface = lerp(LightTextPrimary, TextWarmWhite, progress),
-        onSurfaceVariant = lerp(LightTextSecondary, TextGrayRed, progress),
-        outline = lerp(LightDividerGray, DarkDivider, progress),
-        error = lerp(VolcanicoDark, Volcanico, progress)
+        background = if (isDark) DarkBackground else LightBackground,
+        surface = if (isDark) DarkSurface else LightSurface,
+        surfaceVariant = if (isDark) DarkCard else LightCard,
+        onBackground = if (isDark) TextWarmWhite else LightTextPrimary,
+        onSurface = if (isDark) TextWarmWhite else LightTextPrimary,
+        onSurfaceVariant = if (isDark) TextGrayRed else LightTextSecondary,
+        outline = if (isDark) DarkDivider else LightDividerGray,
+        error = if (isDark) Volcanico else VolcanicoDark
     )
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = KineticTypography,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalThemeProgress provides if (isDark) 1f else 0f,
+        LocalThemeIsDark provides isDark
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = KineticTypography,
+            content = content
+        )
+    }
 }
