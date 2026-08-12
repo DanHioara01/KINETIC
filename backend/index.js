@@ -460,7 +460,7 @@ app.post('/users', (req, res) => {
   const userId = sanitizeId(id);
   if (!userId) return res.status(400).json({ error: 'id required' });
   const now = Date.now();
-  db.prepare(`INSERT INTO users (id, name, photoUri, fcmToken, totalVolume, workoutCount, lastSeen, createdAt, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1) ON CONFLICT(id) DO UPDATE SET name=excluded.name, photoUri=excluded.photoUri, fcmToken=CASE WHEN excluded.fcmToken != '' THEN excluded.fcmToken ELSE users.fcmToken END, totalVolume=CASE WHEN excluded.totalVolume > 0 THEN excluded.totalVolume ELSE users.totalVolume END, workoutCount=CASE WHEN excluded.workoutCount > 0 THEN excluded.workoutCount ELSE users.workoutCount END, lastSeen=excluded.lastSeen, isActive=1`)
+  db.prepare(`INSERT INTO users (id, name, photoUri, fcmToken, totalVolume, workoutCount, lastSeen, createdAt, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1) ON CONFLICT(id) DO UPDATE SET name=CASE WHEN excluded.name != '' THEN excluded.name ELSE users.name END, photoUri=CASE WHEN excluded.photoUri != '' THEN excluded.photoUri ELSE users.photoUri END, fcmToken=CASE WHEN excluded.fcmToken != '' THEN excluded.fcmToken ELSE users.fcmToken END, totalVolume=CASE WHEN excluded.totalVolume > 0 THEN excluded.totalVolume ELSE users.totalVolume END, workoutCount=CASE WHEN excluded.workoutCount > 0 THEN excluded.workoutCount ELSE users.workoutCount END, lastSeen=excluded.lastSeen, isActive=1`)
     .run(userId, sanitizeString(name), sanitizeString(photoUri), sanitizeString(fcmToken), sanitizeFloat(totalVolume), sanitizeInt(workoutCount), now, now);
   res.json({ id: userId, name: sanitizeString(name), photoUri: sanitizeString(photoUri), isActive: 1 });
 });
@@ -944,6 +944,66 @@ Object.entries(SYNC_TABLES).forEach(([table, config]) => {
     db.prepare(`DELETE FROM ${tableName} WHERE uuid = ?`).run(uuid);
     res.json({ success: true });
   });
+});
+
+// =============================================
+// ADMIN: CLEANUP TEST USERS
+// =============================================
+// Șterge complet conturile de test (id TEST* sau nume care conține „Test") din toate
+// tabelele: users, friendships, leaderboard, streaks, badges, posts, comments, likes
+// și toate tabelele sync_*. Protejat cu header X-Admin-Key.
+app.post('/admin/cleanup-test-users', (req, res) => {
+  const adminKey = process.env.ADMIN_KEY || 'kinetic-cleanup-2024';
+  if (req.headers['x-admin-key'] !== adminKey) {
+    return res.status(401).json({ error: 'Invalid admin key' });
+  }
+
+  const targets = db.prepare(
+    `SELECT id, name FROM users WHERE id LIKE 'TEST%' OR name LIKE '%Test%'`
+  ).all();
+  if (targets.length === 0) return res.json({ success: true, deleted: 0 });
+
+  const ids = targets.map(t => t.id);
+  const ph = ids.map(() => '?').join(',');
+
+  const del = db.transaction(() => {
+    // Prietenii (ambele direcții) și cereri pendente
+    db.prepare(`DELETE FROM friendships WHERE userId IN (${ph}) OR friendId IN (${ph})`).run(...ids, ...ids);
+    // Leaderboard
+    db.prepare(`DELETE FROM leaderboard_entries WHERE userId IN (${ph})`).run(...ids);
+    // Streaks + badges
+    db.prepare(`DELETE FROM streaks WHERE userId IN (${ph})`).run(...ids);
+    db.prepare(`DELETE FROM user_badges WHERE userId IN (${ph})`).run(...ids);
+    // Posturi ale userilor de test + comentariile/like-urile lor
+    const posts = db.prepare(`SELECT id FROM feed_posts WHERE authorId IN (${ph})`).all(...ids);
+    const postIds = posts.map(p => p.id);
+    if (postIds.length > 0) {
+      const pph = postIds.map(() => '?').join(',');
+      db.prepare(`DELETE FROM comments WHERE postId IN (${pph})`).run(...postIds);
+      db.prepare(`DELETE FROM likes WHERE postId IN (${pph})`).run(...postIds);
+      db.prepare(`DELETE FROM feed_posts WHERE id IN (${pph})`).run(...postIds);
+    }
+    db.prepare(`DELETE FROM comments WHERE authorId IN (${ph})`).run(...ids);
+    db.prepare(`DELETE FROM likes WHERE userId IN (${ph})`).run(...ids);
+    // Toate tabelele sync_ cu coloană userId
+    for (const [table, cfg] of Object.entries(SYNC_TABLES)) {
+      if (cfg.userCol) {
+        db.prepare(`DELETE FROM sync_${table} WHERE ${cfg.userCol} IN (${ph})`).run(...ids);
+      }
+    }
+    // Tabele sync cu coloană userId dar definite manual (sync_antrenamente etc.)
+    db.prepare(`DELETE FROM sync_antrenamente WHERE userId IN (${ph})`).run(...ids);
+    db.prepare(`DELETE FROM sync_templates WHERE userId IN (${ph})`).run(...ids);
+    db.prepare(`DELETE FROM sync_personal_records WHERE userId IN (${ph})`).run(...ids);
+    db.prepare(`DELETE FROM sync_muscle_recovery WHERE userId IN (${ph})`).run(...ids);
+    db.prepare(`DELETE FROM sync_exercise_metadata WHERE userId IN (${ph})`).run(...ids);
+    db.prepare(`DELETE FROM sync_biometric_entries WHERE userId IN (${ph})`).run(...ids);
+    // În final, userii înșiși
+    db.prepare(`DELETE FROM users WHERE id IN (${ph})`).run(...ids);
+  });
+  del();
+
+  res.json({ success: true, deleted: targets.length, users: targets.map(t => t.id) });
 });
 
 // =============================================
