@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -15,6 +16,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun EmptyState(
     icon: ImageVector,
+    iconPainter: Painter? = null,
     title: String,
     subtitle: String,
     textPrimary: Color,
@@ -40,12 +42,21 @@ fun EmptyState(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.fillMaxSize()
             ) {
+                if (iconPainter != null) {
+                    Icon(
+                    painter = iconPainter,
+                    contentDescription = null,
+                    tint = androidx.compose.ui.graphics.Color.Unspecified,
+                    modifier = Modifier.size(34.dp)
+                )
+                } else {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = accent ?: textSecondary,
                     modifier = Modifier.size(32.dp)
                 )
+                }
             }
         }
 

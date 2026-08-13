@@ -8,7 +8,7 @@ class BadgeEngine(private val db: AppDatabase) {
         fun badgeIconRes(key: String): Int = when (key) {
             "first_workout" -> R.drawable.ach_first_workout
             "7day_streak", "30day_streak" -> R.drawable.ach_streak
-            "pr_machine" -> R.drawable.ach_trophy
+            "pr_machine" -> R.drawable.trophy_star
             "century_club" -> R.drawable.ach_100
             "social_butterfly" -> R.drawable.ach_butterfly
             "helping_hand" -> R.drawable.ach_helping_hand

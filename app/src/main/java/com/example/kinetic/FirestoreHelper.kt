@@ -5,10 +5,16 @@ import android.net.Uri
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessaging
-import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class FirestoreHelper {
     private val db = FirebaseFirestore.getInstance()
@@ -42,23 +48,54 @@ class FirestoreHelper {
         if (!photoDir.exists()) photoDir.mkdirs()
         val localFile = File(photoDir, "${userId}.jpg")
         localFile.writeBytes(bytes)
-        try {
-            val storage = FirebaseStorage.getInstance()
-            val ref = storage.reference.child("profile_photos/$userId/photo.jpg")
-            ref.putBytes(bytes).await()
-            return ref.downloadUrl.await().toString()
-        } catch (_: Exception) {
-            // Firebase Storage indisponibil (offline / reguli) — folosim copia locală
-            // ca poza să se vadă oricum, atât în profil cât și în side menu.
-            return Uri.fromFile(localFile).toString()
+        // Upload direct la Supabase Storage (bucket public "profile_photos") via REST.
+        // La eșec păstrăm copia locală, ca poza să se vadă oricum pe acest device.
+        return withContext(Dispatchers.IO) {
+            try {
+                val client = OkHttpClient.Builder()
+                    .connectTimeout(20, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .build()
+                val url = "${AppConstants.SUPABASE_URL}/storage/v1/object/${AppConstants.SUPABASE_PHOTO_BUCKET}/$userId.jpg"
+                val request = Request.Builder()
+                    .url(url)
+                    .addHeader("Authorization", "Bearer ${AppConstants.SUPABASE_ANON_KEY}")
+                    .addHeader("apikey", AppConstants.SUPABASE_ANON_KEY)
+                    .addHeader("x-upsert", "true")
+                    .post(bytes.toRequestBody("image/jpeg".toMediaType()))
+                    .build()
+                client.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        // Query-ul forțează re-fetch la ceilalți utilizatori (Coil ține cache pe URL).
+                        "${AppConstants.SUPABASE_URL}/storage/v1/object/public/${AppConstants.SUPABASE_PHOTO_BUCKET}/$userId.jpg?v=${System.currentTimeMillis()}"
+                    } else {
+                        android.util.Log.e("PhotoUpload", "upload failed for $userId: HTTP ${response.code} ${response.body?.string().orEmpty()}")
+                        Uri.fromFile(localFile).toString()
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("PhotoUpload", "upload failed for $userId: ${e.message}", e)
+                Uri.fromFile(localFile).toString()
+            }
         }
     }
 
     suspend fun deleteProfilePhoto(userId: String) {
         try {
-            val storage = FirebaseStorage.getInstance()
-            val ref = storage.reference.child("profile_photos/$userId")
-            ref.listAll().await().items.forEach { it.delete().await() }
+            withContext(Dispatchers.IO) {
+                val client = OkHttpClient.Builder()
+                    .connectTimeout(15, TimeUnit.SECONDS)
+                    .readTimeout(20, TimeUnit.SECONDS)
+                    .build()
+                val url = "${AppConstants.SUPABASE_URL}/storage/v1/object/${AppConstants.SUPABASE_PHOTO_BUCKET}/$userId.jpg"
+                val request = Request.Builder()
+                    .url(url)
+                    .addHeader("Authorization", "Bearer ${AppConstants.SUPABASE_ANON_KEY}")
+                    .addHeader("apikey", AppConstants.SUPABASE_ANON_KEY)
+                    .delete()
+                    .build()
+                client.newCall(request).execute().use { }
+            }
         } catch (_: Exception) {}
     }
 

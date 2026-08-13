@@ -162,10 +162,10 @@ fun WorkoutSummaryScreen(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.EmojiEvents,
+                        androidx.compose.ui.res.painterResource(R.drawable.trophy_star),
                         contentDescription = null,
-                        tint = Color(0xFFFFC107),
-                        modifier = Modifier.size(20.dp)
+                        tint = androidx.compose.ui.graphics.Color.Unspecified,
+                        modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(

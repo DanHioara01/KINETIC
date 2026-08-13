@@ -149,6 +149,17 @@ function enforceAuth(req, res, next) {
   next();
 }
 
+// Verifică că userId-ul din cerere aparține utilizatorului autentificat.
+function requireOwnership(req, res, userId) {
+  if (!req.authUserId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  if (req.authUserId !== userId) {
+    return res.status(403).json({ error: 'Forbidden: not your data' });
+  }
+  return true;
+}
+
 app.use(verifyToken);
 
 // =============================================
@@ -455,10 +466,11 @@ app.get('/health', (_req, res) => {
 // USERS
 // =============================================
 
-app.post('/users', (req, res) => {
+app.post('/users', enforceAuth, (req, res) => {
   const { id, name, photoUri, fcmToken, totalVolume, workoutCount } = req.body;
   const userId = sanitizeId(id);
   if (!userId) return res.status(400).json({ error: 'id required' });
+  if (requireOwnership(req, res, userId) !== true) return;
   const now = Date.now();
   db.prepare(`INSERT INTO users (id, name, photoUri, fcmToken, totalVolume, workoutCount, lastSeen, createdAt, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1) ON CONFLICT(id) DO UPDATE SET name=CASE WHEN excluded.name != '' THEN excluded.name ELSE users.name END, photoUri=CASE WHEN excluded.photoUri != '' THEN excluded.photoUri ELSE users.photoUri END, fcmToken=CASE WHEN excluded.fcmToken != '' THEN excluded.fcmToken ELSE users.fcmToken END, totalVolume=CASE WHEN excluded.totalVolume > 0 THEN excluded.totalVolume ELSE users.totalVolume END, workoutCount=CASE WHEN excluded.workoutCount > 0 THEN excluded.workoutCount ELSE users.workoutCount END, lastSeen=excluded.lastSeen, isActive=1`)
     .run(userId, sanitizeString(name), sanitizeString(photoUri), sanitizeString(fcmToken), sanitizeFloat(totalVolume), sanitizeInt(workoutCount), now, now);
@@ -506,12 +518,13 @@ app.delete('/users/:id', enforceAuth, (req, res) => {
 // FRIENDSHIPS
 // =============================================
 
-app.post('/friends/request', (req, res) => {
+app.post('/friends/request', enforceAuth, (req, res) => {
   const { fromUserId, toUserId } = req.body;
   const from = sanitizeId(fromUserId);
   const to = sanitizeId(toUserId);
   if (!from || !to) return res.status(400).json({ error: 'fromUserId and toUserId required' });
   if (from === to) return res.status(400).json({ error: 'cannot send friend request to yourself' });
+  if (requireOwnership(req, res, from) !== true) return;
   const now = Date.now();
   db.prepare('INSERT OR IGNORE INTO friendships (userId, friendId, status, createdAt) VALUES (?, ?, ?, ?)')
     .run(from, to, 'pending', now);
@@ -541,11 +554,12 @@ app.get('/friends/incoming/:userId', (req, res) => {
   res.json(rows);
 });
 
-app.post('/friends/accept', (req, res) => {
+app.post('/friends/accept', enforceAuth, (req, res) => {
   const { userId, friendId } = req.body;
   const uid = sanitizeId(userId);
   const fid = sanitizeId(friendId);
   if (!uid || !fid) return res.status(400).json({ error: 'userId and friendId required' });
+  if (requireOwnership(req, res, uid) !== true) return;
   db.prepare('UPDATE friendships SET status = ? WHERE userId = ? AND friendId = ?').run('accepted', uid, fid);
   db.prepare('INSERT OR IGNORE INTO friendships (userId, friendId, status, createdAt) VALUES (?, ?, ?, ?)').run(fid, uid, 'accepted', Date.now());
 
@@ -563,21 +577,23 @@ app.post('/friends/accept', (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/friends/reject', (req, res) => {
+app.post('/friends/reject', enforceAuth, (req, res) => {
   const { userId, friendId } = req.body;
   const uid = sanitizeId(userId);
   const fid = sanitizeId(friendId);
   if (!uid || !fid) return res.status(400).json({ error: 'userId and friendId required' });
+  if (requireOwnership(req, res, uid) !== true) return;
   db.prepare('DELETE FROM friendships WHERE userId = ? AND friendId = ?').run(uid, fid);
   db.prepare('DELETE FROM friendships WHERE userId = ? AND friendId = ?').run(fid, uid);
   res.json({ success: true });
 });
 
-app.post('/friends/remove', (req, res) => {
+app.post('/friends/remove', enforceAuth, (req, res) => {
   const { userId, friendId } = req.body;
   const uid = sanitizeId(userId);
   const fid = sanitizeId(friendId);
   if (!uid || !fid) return res.status(400).json({ error: 'userId and friendId required' });
+  if (requireOwnership(req, res, uid) !== true) return;
   db.prepare('DELETE FROM friendships WHERE userId = ? AND friendId = ? AND status = ?').run(uid, fid, 'accepted');
   db.prepare('DELETE FROM friendships WHERE userId = ? AND friendId = ? AND status = ?').run(fid, uid, 'accepted');
   res.json({ success: true });
@@ -595,11 +611,12 @@ app.get('/friends/:userId', (req, res) => {
 // FEED & POSTS (with pagination)
 // =============================================
 
-app.post('/posts', postLimiter, (req, res) => {
+app.post('/posts', postLimiter, enforceAuth, (req, res) => {
   const { authorId, content, activityType } = req.body;
   const author = sanitizeId(authorId);
   const text = sanitizeString(content);
   if (!author || !text) return res.status(400).json({ error: 'authorId and content required' });
+  if (requireOwnership(req, res, author) !== true) return;
   const now = Date.now();
   const result = db.prepare('INSERT INTO feed_posts (authorId, content, activityType, createdAt) VALUES (?, ?, ?, ?)')
     .run(author, text, sanitizeString(activityType) || 'post', now);
@@ -629,12 +646,13 @@ app.get('/posts/author/:authorId', (req, res) => {
 // COMMENTS & LIKES
 // =============================================
 
-app.post('/comments', postLimiter, (req, res) => {
+app.post('/comments', postLimiter, enforceAuth, (req, res) => {
   const { postId, authorId, content } = req.body;
   const pid = sanitizeInt(postId, 0, 1, 1e9);
   const author = sanitizeId(authorId);
   const text = sanitizeString(content);
   if (!pid || !author || !text) return res.status(400).json({ error: 'postId, authorId and content required' });
+  if (requireOwnership(req, res, author) !== true) return;
   const now = Date.now();
   const result = db.prepare('INSERT INTO comments (postId, authorId, content, createdAt) VALUES (?, ?, ?, ?)')
     .run(pid, author, text, now);
@@ -648,19 +666,21 @@ app.get('/comments/:postId', (req, res) => {
   res.json(rows);
 });
 
-app.post('/posts/:postId/like', (req, res) => {
+app.post('/posts/:postId/like', enforceAuth, (req, res) => {
   const postId = sanitizeInt(req.params.postId, 0, 1, 1e9);
   const { userId } = req.body;
   const uid = sanitizeId(userId);
   if (!uid) return res.status(400).json({ error: 'userId required' });
+  if (requireOwnership(req, res, uid) !== true) return;
   db.prepare('INSERT OR IGNORE INTO likes (postId, userId, createdAt) VALUES (?, ?, ?)').run(postId, uid, Date.now());
   res.json({ success: true });
 });
 
-app.delete('/posts/:postId/like', (req, res) => {
+app.delete('/posts/:postId/like', enforceAuth, (req, res) => {
   const postId = sanitizeInt(req.params.postId, 0, 1, 1e9);
   const userId = sanitizeId(req.query.userId);
   if (!userId) return res.status(400).json({ error: 'userId required' });
+  if (requireOwnership(req, res, userId) !== true) return;
   db.prepare('DELETE FROM likes WHERE postId = ? AND userId = ?').run(postId, userId);
   res.json({ success: true });
 });
@@ -683,11 +703,12 @@ app.get('/posts/:postId/liked/:userId', (req, res) => {
 // LEADERBOARD (with pagination)
 // =============================================
 
-app.post('/leaderboard', (req, res) => {
+app.post('/leaderboard', enforceAuth, (req, res) => {
   const { userId, metric, value, periodStart, periodEnd } = req.body;
   const uid = sanitizeId(userId);
   const met = sanitizeString(metric);
   if (!uid || !met) return res.status(400).json({ error: 'userId and metric required' });
+  if (requireOwnership(req, res, uid) !== true) return;
   const now = Date.now();
   db.prepare('INSERT INTO leaderboard_entries (userId, metric, value, periodStart, periodEnd) VALUES (?, ?, ?, ?, ?) ON CONFLICT(userId, metric, periodStart) DO UPDATE SET value=excluded.value')
     .run(uid, met, sanitizeFloat(value), sanitizeInt(periodStart, now), sanitizeInt(periodEnd, now));
@@ -718,10 +739,11 @@ app.get('/leaderboard', (req, res) => {
 // WORKOUTS / STREAKS / BADGES
 // =============================================
 
-app.post('/workouts/log', (req, res) => {
+app.post('/workouts/log', enforceAuth, (req, res) => {
   const { userId } = req.body;
   const uid = sanitizeId(userId);
   if (!uid) return res.status(400).json({ error: 'userId required' });
+  if (requireOwnership(req, res, uid) !== true) return;
   const now = Date.now();
 
   const streak = db.prepare('SELECT * FROM streaks WHERE userId = ?').get(uid);
@@ -790,11 +812,12 @@ app.get('/badges/user/:userId', (req, res) => {
   res.json(rows);
 });
 
-app.post('/badges/award', (req, res) => {
+app.post('/badges/award', enforceAuth, (req, res) => {
   const { userId, badgeKey } = req.body;
   const uid = sanitizeId(userId);
   const key = sanitizeString(badgeKey);
   if (!uid || !key) return res.status(400).json({ error: 'userId and badgeKey required' });
+  if (requireOwnership(req, res, uid) !== true) return;
   const existing = db.prepare('SELECT 1 FROM user_badges WHERE userId = ? AND badgeKey = ?').get(uid, key);
   if (existing) return res.json({ success: false, alreadyAwarded: true });
   db.prepare('INSERT INTO user_badges (userId, badgeKey, awardedAt) VALUES (?, ?, ?)').run(uid, key, Date.now());
@@ -901,9 +924,14 @@ Object.entries(SYNC_TABLES).forEach(([table, config]) => {
     res.json(rows);
   });
 
-  app.post(`/sync/${table}/upsert`, (req, res) => {
+  app.post(`/sync/${table}/upsert`, enforceAuth, (req, res) => {
     const item = req.body;
     if (!item || !item.uuid) return res.status(400).json({ error: 'uuid required' });
+    // Tabelele cu coloană de user trebuie să aparțină utilizatorului autentificat.
+    if (config.userCol) {
+      const owner = sanitizeId(item[config.userCol]);
+      if (requireOwnership(req, res, owner) !== true) return;
+    }
     const values = config.upsertCols.map(c => {
       if (c === 'uuid') return sanitizeId(item.uuid);
       const val = item[c];
@@ -916,9 +944,17 @@ Object.entries(SYNC_TABLES).forEach(([table, config]) => {
     res.json({ success: true });
   });
 
-  app.post(`/sync/${table}/bulk`, (req, res) => {
+  app.post(`/sync/${table}/bulk`, enforceAuth, (req, res) => {
     const items = req.body.items;
     if (!Array.isArray(items)) return res.status(400).json({ error: 'items array required' });
+    // Fiecare element cu userCol trebuie să aparțină utilizatorului autentificat.
+    if (config.userCol) {
+      for (const item of items) {
+        if (!item.uuid) continue;
+        const owner = sanitizeId(item[config.userCol]);
+        if (requireOwnership(req, res, owner) !== true) return;
+      }
+    }
     const stmt = db.prepare(upsertSql);
     const insertMany = db.transaction((rows) => {
       for (const item of rows) {
@@ -938,9 +974,15 @@ Object.entries(SYNC_TABLES).forEach(([table, config]) => {
     res.json({ success: true, count: items.length });
   });
 
-  app.delete(`/sync/${table}/:uuid`, (req, res) => {
+  app.delete(`/sync/${table}/:uuid`, enforceAuth, (req, res) => {
     const uuid = sanitizeId(req.params.uuid);
     if (!uuid) return res.status(400).json({ error: 'invalid uuid' });
+    // Doar proprietarul poate șterge un rând care are coloană de user.
+    if (config.userCol) {
+      const row = db.prepare(`SELECT ${config.userCol} FROM ${tableName} WHERE uuid = ?`).get(uuid);
+      if (!row) return res.status(404).json({ error: 'not found' });
+      if (requireOwnership(req, res, sanitizeId(row[config.userCol])) !== true) return;
+    }
     db.prepare(`DELETE FROM ${tableName} WHERE uuid = ?`).run(uuid);
     res.json({ success: true });
   });

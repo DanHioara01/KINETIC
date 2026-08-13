@@ -4,7 +4,11 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.runBlocking
+import com.google.android.gms.tasks.Tasks
+import com.google.firebase.auth.FirebaseAuth
 
 interface KineticApi {
     // Users
@@ -287,10 +291,35 @@ object NetworkClient {
     private var currentUrl: String = DEFAULT_URL
     private var currentApi: KineticApi? = null
 
+    /**
+     * Atașează token-ul de ID Firebase (Authorization: Bearer) la fiecare cerere,
+     * pentru ca backend-ul să poată verifica identitatea utilizatorului.
+     */
+    private fun authInterceptor(): okhttp3.Interceptor = okhttp3.Interceptor { chain ->
+        val original = chain.request()
+        val token = runCatching {
+            runBlocking {
+                val user = FirebaseAuth.getInstance().currentUser ?: return@runBlocking null
+                val task = user.getIdToken(false)
+                Tasks.await(task).token
+            }
+        }.getOrNull()
+
+        if (token == null) {
+            chain.proceed(original)
+        } else {
+            val authed = original.newBuilder()
+                .header("Authorization", "Bearer $token")
+                .build()
+            chain.proceed(authed)
+        }
+    }
+
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
+        .addInterceptor(authInterceptor())
         .build()
 
     fun getApi(serverUrl: String? = null): KineticApi {

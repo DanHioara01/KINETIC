@@ -646,7 +646,7 @@ fun ExerciseInputScreen(
         LaunchedEffect(Unit) { animScale = 1f }
         val scale by animateFloatAsState(targetValue = animScale, animationSpec = spring(dampingRatio = 0.4f, stiffness = 300f), label = "check")
         val iconColor = if (isPR) GoldPR else RecoveryGreen
-        val icon = if (isPR) Icons.Default.EmojiEvents else Icons.Default.CheckCircle
+        val icon: androidx.compose.ui.graphics.painter.Painter = if (isPR) androidx.compose.ui.res.painterResource(R.drawable.trophy_star) else androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.CheckCircle)
 
         val validSets = currentSets.filter { it.greutateKg > 0 || it.repetari > 0 }
         val totalVolume = validSets.sumOf { it.greutateKg * it.repetari }
@@ -665,7 +665,7 @@ fun ExerciseInputScreen(
                     Icon(
                         icon,
                         contentDescription = null,
-                        tint = iconColor,
+                        tint = if (icon is androidx.compose.ui.graphics.vector.VectorPainter) iconColor else androidx.compose.ui.graphics.Color.Unspecified,
                         modifier = Modifier.size(56.dp).scale(scale)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -710,8 +710,9 @@ fun ExerciseInputScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        // Doar închide dialogul — utilizatorul rămâne în exercițiul selectat
+                        // și poate adăuga alte seturi sau ieși prin săgeata de back.
                         showSaveConfirmation = false
-                        onBackClick()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)

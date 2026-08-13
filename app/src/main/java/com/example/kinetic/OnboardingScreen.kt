@@ -566,7 +566,7 @@ private fun ActivityStep(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(level.icon, contentDescription = null, modifier = Modifier.size(28.dp), tint = if (isSelected) accent else textSecondary)
+            Icon(level.icon, contentDescription = null, modifier = Modifier.size(28.dp), tint = if (level.icon is androidx.compose.ui.graphics.vector.VectorPainter || level.icon is ImageVector) (if (isSelected) accent else textSecondary) else androidx.compose.ui.graphics.Color.Unspecified)
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(level.label, style = MaterialTheme.typography.titleMedium, color = if (isSelected) accent else textPrimary)
@@ -590,11 +590,14 @@ private fun ExperienceStep(
     textSecondary: Color,
     border: Color
 ) {
-    data class Level(val key: String, val label: String, val icon: ImageVector, val desc: String)
-    val levels = remember(strings) { listOf(
-        Level("beginner", strings.beginnerLabel, Icons.Default.ChildCare, strings.beginnerDesc),
-        Level("intermediate", strings.intermediateLabel, Icons.Default.Person, strings.intermediateDesc),
-        Level("advanced", strings.advancedLabel, Icons.Default.EmojiEvents, strings.advancedDesc)
+    data class Level(val key: String, val label: String, val icon: androidx.compose.ui.graphics.painter.Painter, val desc: String)
+    val beginnerIcon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.ChildCare)
+    val intermediateIcon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Person)
+    val advancedIcon = androidx.compose.ui.res.painterResource(R.drawable.trophy_star)
+    val levels = remember(strings, beginnerIcon, intermediateIcon, advancedIcon) { listOf(
+        Level("beginner", strings.beginnerLabel, beginnerIcon, strings.beginnerDesc),
+        Level("intermediate", strings.intermediateLabel, intermediateIcon, strings.intermediateDesc),
+        Level("advanced", strings.advancedLabel, advancedIcon, strings.advancedDesc)
     ) }
 
     Text(
@@ -619,7 +622,7 @@ private fun ExperienceStep(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(level.icon, contentDescription = null, modifier = Modifier.size(28.dp), tint = if (isSelected) accent else textSecondary)
+            Icon(level.icon, contentDescription = null, modifier = Modifier.size(28.dp), tint = if (level.icon is androidx.compose.ui.graphics.vector.VectorPainter || level.icon is ImageVector) (if (isSelected) accent else textSecondary) else androidx.compose.ui.graphics.Color.Unspecified)
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(level.label, style = MaterialTheme.typography.titleMedium, color = if (isSelected) accent else textPrimary)

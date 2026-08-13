@@ -233,7 +233,12 @@ fun DrawerMenu(
                         if (badgeCount > 0) {
                             Spacer(Modifier.height(6.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("\uD83C\uDFC6", fontSize = 14.sp)
+                                Icon(
+                                    androidx.compose.ui.res.painterResource(R.drawable.trophy_star),
+                                    contentDescription = null,
+                                    tint = androidx.compose.ui.graphics.Color.Unspecified,
+                                    modifier = Modifier.size(16.dp)
+                                )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
                                     "$badgeCount",
@@ -468,7 +473,18 @@ fun DrawerMenu(
                 )
             }
 
-            Spacer(Modifier.height(24.dp))
+            // Versiunea aplicației — se actualizează automat din BuildConfig la fiecare release
+            Text(
+                "KINETIC v${BuildConfig.VERSION_NAME}",
+                style = MaterialTheme.typography.labelSmall,
+                color = textSecondary.copy(alpha = 0.5f),
+                fontSize = 11.sp,
+                letterSpacing = 1.sp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
         }
     }
 }
@@ -842,6 +858,7 @@ private fun DrawScope.drawSparkle(center: Offset, radius: Float, color: Color) {
 @Composable
 private fun DrawerNavItem(
     icon: ImageVector,
+    iconPainter: androidx.compose.ui.graphics.painter.Painter? = null,
     label: String,
     selected: Boolean,
     accent: Color,
@@ -912,7 +929,11 @@ private fun DrawerNavItem(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(icon, contentDescription = null, tint = if (selected) accent else textSecondary, modifier = Modifier.size(20.dp))
+            if (iconPainter != null) {
+                Icon(iconPainter, contentDescription = label, tint = androidx.compose.ui.graphics.Color.Unspecified, modifier = Modifier.size(24.dp))
+            } else {
+                Icon(icon, contentDescription = null, tint = if (selected) accent else textSecondary, modifier = Modifier.size(20.dp))
+            }
         }
         Spacer(Modifier.width(14.dp))
         Text(

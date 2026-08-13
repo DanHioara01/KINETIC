@@ -121,7 +121,7 @@ fun WeeklySummaryCard(
             ) {
                 SummaryProgressCard(
                     modifier = Modifier.weight(1f),
-                    icon = Icons.Default.LocalFireDepartment,
+                    icon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.LocalFireDepartment),
                     iconTint = workoutsColor,
                     iconBg = workoutsColor.copy(alpha = 0.15f),
                     label = strings.workoutsLabel.uppercase(),
@@ -136,7 +136,7 @@ fun WeeklySummaryCard(
                 )
                 SummaryProgressCard(
                     modifier = Modifier.weight(1f),
-                    icon = Icons.Default.MonitorWeight,
+                    icon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.MonitorWeight),
                     iconTint = volumeColor,
                     iconBg = volumeColor.copy(alpha = 0.15f),
                     label = strings.volumeLabel.uppercase(),
@@ -157,7 +157,7 @@ fun WeeklySummaryCard(
             ) {
                 SummaryProgressCard(
                     modifier = Modifier.weight(1f),
-                    icon = Icons.Outlined.Schedule,
+                    icon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Outlined.Schedule),
                     iconTint = timeColor,
                     iconBg = timeColor.copy(alpha = 0.15f),
                     label = strings.duration.uppercase(),
@@ -172,8 +172,8 @@ fun WeeklySummaryCard(
                 )
                 SummaryProgressCard(
                     modifier = Modifier.weight(1f),
-                    icon = Icons.Default.EmojiEvents,
-                    iconTint = streakColor,
+                    icon = androidx.compose.ui.res.painterResource(R.drawable.trophy_star),
+                    iconTint = Color.Unspecified,
                     iconBg = streakColor.copy(alpha = 0.15f),
                     label = strings.bestStreakLabel.uppercase(),
                     value = bestStreak.toString(),
@@ -223,7 +223,7 @@ fun WeeklySummaryCard(
 @Composable
 private fun SummaryProgressCard(
     modifier: Modifier = Modifier,
-    icon: ImageVector,
+    icon: androidx.compose.ui.graphics.painter.Painter,
     iconTint: Color,
     iconBg: Color,
     label: String,
@@ -269,7 +269,7 @@ private fun SummaryProgressCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = icon,
+                        painter = icon,
                         contentDescription = label,
                         tint = iconTint,
                         modifier = Modifier.size(13.dp)

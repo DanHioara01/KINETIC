@@ -32,7 +32,6 @@ import com.example.kinetic.ui.theme.appPalette
 import com.example.kinetic.ui.components.AppGlassCard
 import com.example.kinetic.ui.components.AppSectionLabel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
@@ -368,10 +367,8 @@ private fun StatsScreenContent(
 ) {
     var visibleItems by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
-        for (i in 1..16) {
-            delay(80L)
-            visibleItems = i
-        }
+        // Fade-in rapid: toate secțiunile apar simultan (300ms), fără stagger
+        visibleItems = 16
     }
 
     LazyColumn(
@@ -1156,7 +1153,7 @@ private fun TopExerciseCard(
             Box(
                 modifier = Modifier.size(44.dp).clip(RoundedCornerShape(13.dp)).background(p.pus),
                 contentAlignment = Alignment.Center
-            ) { Icon(Icons.Filled.EmojiEvents, null, tint = p.pu, modifier = Modifier.size(18.dp)) }
+            ) { Icon(androidx.compose.ui.res.painterResource(R.drawable.stat_star_laurel), null, tint = androidx.compose.ui.graphics.Color.Unspecified, modifier = Modifier.size(22.dp)) }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(strings.mostTrained.uppercase(), fontSize = 9.sp, letterSpacing = 1.sp, color = textTertiary)
@@ -1205,7 +1202,7 @@ private fun PersonalBestsCard(
                     Box(
                         modifier = Modifier.size(38.dp).clip(RoundedCornerShape(10.dp)).background(pb.bg),
                         contentAlignment = Alignment.Center
-                    ) { Icon(Icons.Filled.EmojiEvents, null, tint = pb.color, modifier = Modifier.size(15.dp)) }
+                    ) { Icon(androidx.compose.ui.res.painterResource(R.drawable.trophy_star), null, tint = androidx.compose.ui.graphics.Color.Unspecified, modifier = Modifier.size(17.dp)) }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Text(pb.name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)

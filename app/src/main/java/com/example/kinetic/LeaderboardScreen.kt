@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -145,13 +146,13 @@ fun LeaderboardScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (index < 3) {
-                                        val trophyColor = when (index) {
-                                            0 -> GoldPR
-                                            1 -> RecoveryGreen
-                                            2 -> Color(0xFFCD7F32)
-                                            else -> p.ts
+                                        val trophyRes = when (index) {
+                                            0 -> R.drawable.trophy_1st
+                                            1 -> R.drawable.trophy_2nd
+                                            2 -> R.drawable.trophy_3rd
+                                            else -> R.drawable.trophy_1st
                                         }
-                                        Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = trophyColor, modifier = Modifier.size(28.dp))
+                                        Icon(painterResource(trophyRes), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(34.dp))
                                     } else {
                                         Text("${index + 1}", color = p.ts, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                     }

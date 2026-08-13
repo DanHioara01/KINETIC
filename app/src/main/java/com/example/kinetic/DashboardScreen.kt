@@ -128,13 +128,11 @@ fun DashboardScreen(
 
     val pullToRefreshState = rememberPullToRefreshState()
 
-    // ── Stagger entry animation ──
+    // ── Fade-in rapid: toate secțiunile apar simultan (300ms), fără stagger ──
     var visibleItems by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
-        for (i in 1..8) {
-            delay(80L)
-            visibleItems = i
-        }
+        // Pornesc toate animațiile de intrare în paralel, fără delay-uri secvențiale
+        visibleItems = 8
     }
 
     Box(modifier = Modifier.fillMaxSize().background(p.bg)) {
@@ -282,15 +280,15 @@ fun DashboardScreen(
                         val currentTip = generatedTips.getOrNull(activeTipIndex)
                         if (currentTip != null) {
                             val (tipLabel, tipIcon) = when (currentTip.category) {
-                                "performanta" -> Pair(strings.performLabel, Icons.Default.TrendingUp)
-                                "sfat_obiectiv" -> Pair(strings.goalLabel, Icons.Default.EmojiEvents)
-                                "sfat_tehnic" -> Pair(strings.technicalTip, Icons.Default.Lightbulb)
-                                "nutritie" -> Pair(strings.nutritionLabel, Icons.Default.Restaurant)
-                                "energie" -> Pair(strings.energizeLabel, Icons.Default.Battery1Bar)
-                                "recuperare" -> Pair(strings.recovery, Icons.Default.Accessibility)
-                                "motivatie" -> Pair(strings.motivationLabel, Icons.Default.EmojiEvents)
-                                "forteaza_te" -> Pair(strings.pushItLabel, Icons.Default.BatteryFull)
-                                else -> Pair(strings.performLabel, Icons.Default.TrendingUp)
+                                "performanta" -> Pair(strings.performLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.TrendingUp))
+                                "sfat_obiectiv" -> Pair(strings.goalLabel, androidx.compose.ui.res.painterResource(R.drawable.trophy_star))
+                                "sfat_tehnic" -> Pair(strings.technicalTip, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Lightbulb))
+                                "nutritie" -> Pair(strings.nutritionLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Restaurant))
+                                "energie" -> Pair(strings.energizeLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Battery1Bar))
+                                "recuperare" -> Pair(strings.recovery, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Accessibility))
+                                "motivatie" -> Pair(strings.motivationLabel, androidx.compose.ui.res.painterResource(R.drawable.trophy_star))
+                                "forteaza_te" -> Pair(strings.pushItLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.BatteryFull))
+                                else -> Pair(strings.performLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.TrendingUp))
                             }
 
                             // Accent bar color per mood (0 exhausted, 1 tired, 2 normal, 3 energic)
@@ -355,8 +353,8 @@ fun DashboardScreen(
                                                     Icon(
                                                         tipIcon,
                                                         contentDescription = null,
-                                                        tint = categoryBadgeColor,
-                                                        modifier = Modifier.size(14.dp)
+                                                        tint = if (tipLabel == strings.goalLabel || tipLabel == strings.motivationLabel) Color.Unspecified else categoryBadgeColor,
+                                                        modifier = Modifier.size(if (tipLabel == strings.goalLabel || tipLabel == strings.motivationLabel) 16.dp else 14.dp)
                                                     )
                                                     Text(
                                                         tipLabel,

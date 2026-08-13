@@ -146,6 +146,10 @@ import android.hardware.SensorManager
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.glance.appwidget.updateAll
 
+// True once the navbar/WORKOUT entrance animation has played this app session,
+// so it does not replay on recomposition or reloadToken refreshes.
+private var navbarEntranceAnimationPlayed = false
+
 class MainActivity : ComponentActivity() {
     // Set when the GPS tracking notification is tapped so the app reopens on the Cardio screen.
     var openGpsCardioRequest by mutableStateOf(false)
@@ -428,6 +432,8 @@ fun MuscleGroupList(
     var badgeCheckTrigger by remember { mutableIntStateOf(0) }
     var profileChangedTrigger by remember { mutableIntStateOf(0) }
     var newBadgeNotifications by remember { mutableStateOf<List<String>>(emptyList()) }
+    var updateAvailable by remember { mutableStateOf<UpdateChecker.LatestRelease?>(null) }
+    var updateChecked by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     val strings = LanguageManager.getStrings(context)
@@ -454,6 +460,13 @@ fun MuscleGroupList(
             }
             if (!preferencesManager.isOnboardingComplete()) {
                 showOnboarding = true
+            }
+            // Verifică o singură dată pe pornire dacă există o versiune nouă pe GitHub
+            if (!updateChecked) {
+                updateChecked = true
+                runCatching { UpdateChecker.checkForUpdate() }.getOrNull()?.let {
+                    updateAvailable = it
+                }
             }
         }
     }
@@ -2707,6 +2720,38 @@ fun MuscleGroupList(
                 }
                 // Floating Navbar — Glassmorphism Frosted Glass
                 val navbarContext = LocalContext.current
+
+                // ── Entrance animations: navbar fade-in + rise, WORKOUT spin-in (once per session) ──
+                val navbarAnimationsEnabled = remember {
+                    try {
+                        android.provider.Settings.Global.getFloat(
+                            navbarContext.contentResolver,
+                            android.provider.Settings.Global.ANIMATOR_DURATION_SCALE
+                        ) != 0f
+                    } catch (_: Exception) { true }
+                }
+                val playNavbarEntrance = !navbarEntranceAnimationPlayed && navbarAnimationsEnabled
+                val navbarEntranceAlpha = remember { Animatable(if (playNavbarEntrance) 0f else 1f) }
+                val navbarEntranceOffsetY = remember { Animatable(if (playNavbarEntrance) 48f else 0f) }
+                val fabEntranceAlpha = remember { Animatable(if (playNavbarEntrance) 0f else 1f) }
+                val fabEntranceRotation = remember { Animatable(if (playNavbarEntrance) -360f else 0f) }
+                val fabEntranceScale = remember { Animatable(if (playNavbarEntrance) 0.4f else 1f) }
+                LaunchedEffect(Unit) {
+                    if (playNavbarEntrance) {
+                        navbarEntranceAnimationPlayed = true
+                        delay(150)
+                        launch { navbarEntranceAlpha.animateTo(1f, tween(800, easing = FastOutSlowInEasing)) }
+                        launch { navbarEntranceOffsetY.animateTo(0f, tween(800, easing = FastOutSlowInEasing)) }
+                        // WORKOUT button enters after the navbar, spinning into place
+                        delay(500)
+                        launch { fabEntranceAlpha.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
+                        launch { fabEntranceRotation.animateTo(0f, tween(900, easing = FastOutSlowInEasing)) }
+                        fabEntranceScale.animateTo(
+                            1f,
+                            spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+                        )
+                    }
+                }
                 val navbarShape = NavbarCradleShape(
                     cornerRadius = 28.dp,
                     cradleRadius = 33.dp,
@@ -2718,6 +2763,10 @@ fun MuscleGroupList(
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 6.dp)
                         .align(Alignment.BottomCenter)
+                        .graphicsLayer {
+                            alpha = navbarEntranceAlpha.value
+                            translationY = navbarEntranceOffsetY.value
+                        }
                         .clip(navbarShape)
                         .background(
                             brush = Brush.verticalGradient(
@@ -2728,10 +2777,10 @@ fun MuscleGroupList(
                                         Color(0xFF151515).copy(alpha = 1.0f)
                                     )
                                 } else {
-                                    // Light mode: solid, la fel ca dark (fără transparență)
+                                    // Light mode: aceeași transparență ca dark (0.95 / 0.98 / 1.0)
                                     listOf(
-                                        Color.White.copy(alpha = 1.0f),
-                                        Color(0xFFF7F7F7).copy(alpha = 1.0f),
+                                        Color.White.copy(alpha = 0.95f),
+                                        Color(0xFFF7F7F7).copy(alpha = 0.98f),
                                         Color.White.copy(alpha = 1.0f)
                                     )
                                 }
@@ -2966,7 +3015,13 @@ fun MuscleGroupList(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 32.dp)
-                        .size(56.dp),
+                        .size(56.dp)
+                        .graphicsLayer {
+                            alpha = fabEntranceAlpha.value
+                            rotationZ = fabEntranceRotation.value
+                            scaleX = fabEntranceScale.value
+                            scaleY = fabEntranceScale.value
+                        },
                     containerColor = if (centerSelected) accent else accent.copy(alpha = 0.85f),
                     contentColor = Color.White,
                     shape = CircleShape,
@@ -2993,6 +3048,38 @@ fun MuscleGroupList(
                 showLanguageDialog = false
             },
             onDismiss = { showLanguageDialog = false }
+        )
+    }
+    updateAvailable?.let { release ->
+        AlertDialog(
+            onDismissRequest = { updateAvailable = null },
+            containerColor = if (isDark) Color(0xFF1E1E1E) else Color.White,
+            title = { Text("Versiune nouă disponibilă", fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Color(0xFF111111)) },
+            text = {
+                Text(
+                    "Kinetic ${release.tagName} a fost lansată. Ai instalată versiunea v${BuildConfig.VERSION_NAME}.\n\nApasă pentru a descărca noul APK.",
+                    color = if (isDark) Color(0xFFCCCCCC) else Color(0xFF444444)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    updateAvailable = null
+                    try {
+                        val intent = android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(release.htmlUrl)
+                        )
+                        context.startActivity(intent)
+                    } catch (_: Exception) {}
+                }) {
+                    Text("Descarcă", fontWeight = FontWeight.Bold, color = Volcanico)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { updateAvailable = null }) {
+                    Text("Mai târziu", color = if (isDark) Color(0xFF999999) else Color(0xFF777777))
+                }
+            }
         )
     }
     if (showUnitsDialog) {
@@ -3080,7 +3167,8 @@ private class NavbarCradleShape(
         val sweep = -(180f + 2f * alpha * 180f / PI.toFloat())
 
         val path = Path().apply {
-            moveTo(0f, size.height)
+            // colțul stânga-jos (rotunjit, la fel ca sus)
+            moveTo(0f, size.height - cr)
             lineTo(0f, cr)
             // colțul stânga-sus
             arcTo(Rect(0f, 0f, cr * 2f, cr * 2f), 180f, 90f, false)
@@ -3097,7 +3185,20 @@ private class NavbarCradleShape(
             lineTo(size.width - cr, 0f)
             // colțul dreapta-sus
             arcTo(Rect(size.width - cr * 2f, 0f, size.width, cr * 2f), 270f, 90f, false)
-            lineTo(size.width, size.height)
+            // latura dreaptă în jos
+            lineTo(size.width, size.height - cr)
+            // colțul dreapta-jos (rotunjit)
+            arcTo(
+                Rect(size.width - cr * 2f, size.height - cr * 2f, size.width, size.height),
+                0f, 90f, false
+            )
+            // marginea de jos până la colțul stânga-jos
+            lineTo(cr, size.height)
+            // colțul stânga-jos (rotunjit)
+            arcTo(
+                Rect(0f, size.height - cr * 2f, cr * 2f, size.height),
+                90f, 90f, false
+            )
             close()
         }
         return Outline.Generic(path)
@@ -4696,10 +4797,8 @@ fun ProfileScreen(
     ) {
         var visibleItems by remember { mutableIntStateOf(0) }
         LaunchedEffect(Unit) {
-            for (i in 1..8) {
-                delay(80L)
-                visibleItems = i
-            }
+            // Fade-in rapid: toate secțiunile apar simultan (300ms), fără stagger
+            visibleItems = 8
         }
 
         Column(
@@ -5371,8 +5470,8 @@ private fun ProfileHero(
                     Spacer(Modifier.height(4.dp))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    MiniBadge(p, Icons.Default.EmojiEvents, tierLabel, tierColor, tierColor.copy(alpha = 0.08f))
-                    MiniBadge(p, Icons.Default.Shield, "${strings.lv} $level", p.bl, p.bls)
+                    MiniBadge(p, androidx.compose.ui.res.painterResource(R.drawable.trophy_star), tierLabel, tierColor, tierColor.copy(alpha = 0.08f))
+                    MiniBadge(p, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Shield), "${strings.lv} $level", p.bl, p.bls)
                 }
             }
         }
@@ -5411,7 +5510,7 @@ private fun ProfileHero(
 }
 
 @Composable
-private fun MiniBadge(p: ProfilePalette, icon: ImageVector, text: String, tint: Color, bg: Color) {
+private fun MiniBadge(p: ProfilePalette, icon: androidx.compose.ui.graphics.painter.Painter, text: String, tint: Color, bg: Color) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(5.dp))
@@ -5421,7 +5520,7 @@ private fun MiniBadge(p: ProfilePalette, icon: ImageVector, text: String, tint: 
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        Icon(icon, null, tint = tint, modifier = Modifier.size(7.dp))
+        Icon(icon, null, tint = if (icon is androidx.compose.ui.graphics.vector.VectorPainter) tint else androidx.compose.ui.graphics.Color.Unspecified, modifier = Modifier.size(8.dp))
         Text(text, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = tint, letterSpacing = 0.6.sp)
     }
 }

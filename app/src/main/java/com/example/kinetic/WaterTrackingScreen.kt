@@ -102,10 +102,8 @@ fun WaterTrackingScreen(
 
     var visibleItems by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
-        for (i in 1..7) {
-            delay(80L)
-            visibleItems = i
-        }
+        // Fade-in rapid: toate secțiunile apar simultan (300ms), fără stagger
+        visibleItems = 7
     }
 
     LazyColumn(
