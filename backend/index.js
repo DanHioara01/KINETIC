@@ -1,9 +1,10 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
-const Database = require('better-sqlite3');
-const path = require('path');
 const admin = require('firebase-admin');
 const rateLimit = require('express-rate-limit');
+const { q, qOne, qRun, withTransaction } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 4242;
@@ -117,13 +118,6 @@ try {
 }
 
 // =============================================
-// DATABASE
-// =============================================
-const db = new Database(path.join(__dirname, 'kinetic.db'));
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
-
-// =============================================
 // AUTH MIDDLEWARE
 // =============================================
 async function verifyToken(req, res, next) {
@@ -163,276 +157,270 @@ function requireOwnership(req, res, userId) {
 app.use(verifyToken);
 
 // =============================================
-// SCHEMA
+// SCHEMA (PostgreSQL / Supabase)
 // =============================================
-db.exec(`
+// Coloanele camelCase sunt puse între ghilimele ca să rămână identice cu
+// ceea ce citește aplicația Android (SELECT * → chei camelCase exacte).
+const SCHEMA = `
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL DEFAULT '',
-    photoUri TEXT NOT NULL DEFAULT '',
-    fcmToken TEXT NOT NULL DEFAULT '',
-    totalVolume REAL NOT NULL DEFAULT 0,
-    workoutCount INTEGER NOT NULL DEFAULT 0,
-    lastSeen INTEGER NOT NULL DEFAULT 0,
-    createdAt INTEGER NOT NULL DEFAULT 0,
-    isActive INTEGER NOT NULL DEFAULT 0
+    "photoUri" TEXT NOT NULL DEFAULT '',
+    "fcmToken" TEXT NOT NULL DEFAULT '',
+    "totalVolume" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "workoutCount" INTEGER NOT NULL DEFAULT 0,
+    "lastSeen" BIGINT NOT NULL DEFAULT 0,
+    "createdAt" BIGINT NOT NULL DEFAULT 0,
+    "isActive" INTEGER NOT NULL DEFAULT 0
   );
   CREATE INDEX IF NOT EXISTS idx_users_name ON users(name);
 
   CREATE TABLE IF NOT EXISTS friendships (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId TEXT NOT NULL,
-    friendId TEXT NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "friendId" TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
-    createdAt INTEGER NOT NULL DEFAULT 0,
-    UNIQUE(userId, friendId)
+    "createdAt" BIGINT NOT NULL DEFAULT 0,
+    UNIQUE("userId", "friendId")
   );
-  CREATE INDEX IF NOT EXISTS idx_friends_user ON friendships(userId);
-  CREATE INDEX IF NOT EXISTS idx_friends_friend ON friendships(friendId);
+  CREATE INDEX IF NOT EXISTS idx_friends_user ON friendships("userId");
+  CREATE INDEX IF NOT EXISTS idx_friends_friend ON friendships("friendId");
 
   CREATE TABLE IF NOT EXISTS feed_posts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    authorId TEXT NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    "authorId" TEXT NOT NULL,
     content TEXT NOT NULL DEFAULT '',
-    activityType TEXT NOT NULL DEFAULT 'post',
-    createdAt INTEGER NOT NULL DEFAULT 0
+    "activityType" TEXT NOT NULL DEFAULT 'post',
+    "createdAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_posts_author ON feed_posts(authorId);
-  CREATE INDEX IF NOT EXISTS idx_posts_created ON feed_posts(createdAt DESC);
+  CREATE INDEX IF NOT EXISTS idx_posts_author ON feed_posts("authorId");
+  CREATE INDEX IF NOT EXISTS idx_posts_created ON feed_posts("createdAt" DESC);
 
   CREATE TABLE IF NOT EXISTS comments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    postId INTEGER NOT NULL,
-    authorId TEXT NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    "postId" BIGINT NOT NULL,
+    "authorId" TEXT NOT NULL,
     content TEXT NOT NULL DEFAULT '',
-    createdAt INTEGER NOT NULL DEFAULT 0
+    "createdAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_comments_post ON comments(postId);
+  CREATE INDEX IF NOT EXISTS idx_comments_post ON comments("postId");
 
   CREATE TABLE IF NOT EXISTS likes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    postId INTEGER NOT NULL,
-    userId TEXT NOT NULL,
-    createdAt INTEGER NOT NULL DEFAULT 0,
-    UNIQUE(postId, userId)
+    id BIGSERIAL PRIMARY KEY,
+    "postId" BIGINT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "createdAt" BIGINT NOT NULL DEFAULT 0,
+    UNIQUE("postId", "userId")
   );
-  CREATE INDEX IF NOT EXISTS idx_likes_post ON likes(postId);
+  CREATE INDEX IF NOT EXISTS idx_likes_post ON likes("postId");
 
   CREATE TABLE IF NOT EXISTS leaderboard_entries (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId TEXT NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
     metric TEXT NOT NULL,
-    value REAL NOT NULL DEFAULT 0,
-    periodStart INTEGER NOT NULL DEFAULT 0,
-    periodEnd INTEGER NOT NULL DEFAULT 0,
-    UNIQUE(userId, metric, periodStart)
+    value DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "periodStart" BIGINT NOT NULL DEFAULT 0,
+    "periodEnd" BIGINT NOT NULL DEFAULT 0,
+    UNIQUE("userId", metric, "periodStart")
   );
   CREATE INDEX IF NOT EXISTS idx_lb_metric ON leaderboard_entries(metric, value DESC);
 
   CREATE TABLE IF NOT EXISTS badges (
-    key TEXT PRIMARY KEY,
+    "key" TEXT PRIMARY KEY,
     title TEXT NOT NULL DEFAULT '',
     description TEXT NOT NULL DEFAULT '',
     icon TEXT NOT NULL DEFAULT ''
   );
 
   CREATE TABLE IF NOT EXISTS user_badges (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId TEXT NOT NULL,
-    badgeKey TEXT NOT NULL,
-    awardedAt INTEGER NOT NULL DEFAULT 0,
-    UNIQUE(userId, badgeKey)
+    id BIGSERIAL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "badgeKey" TEXT NOT NULL,
+    "awardedAt" BIGINT NOT NULL DEFAULT 0,
+    UNIQUE("userId", "badgeKey")
   );
-  CREATE INDEX IF NOT EXISTS idx_ub_user ON user_badges(userId);
+  CREATE INDEX IF NOT EXISTS idx_ub_user ON user_badges("userId");
 
   CREATE TABLE IF NOT EXISTS streaks (
-    userId TEXT PRIMARY KEY,
-    currentStreak INTEGER NOT NULL DEFAULT 0,
-    bestStreak INTEGER NOT NULL DEFAULT 0,
-    lastDate INTEGER NOT NULL DEFAULT 0
+    "userId" TEXT PRIMARY KEY,
+    "currentStreak" INTEGER NOT NULL DEFAULT 0,
+    "bestStreak" INTEGER NOT NULL DEFAULT 0,
+    "lastDate" BIGINT NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS sync_antrenamente (
     uuid TEXT PRIMARY KEY,
-    userId TEXT NOT NULL,
-    grupaMusculara TEXT NOT NULL DEFAULT '',
-    data INTEGER NOT NULL DEFAULT 0,
+    "userId" TEXT NOT NULL,
+    "grupaMusculara" TEXT NOT NULL DEFAULT '',
+    data BIGINT NOT NULL DEFAULT 0,
     notes TEXT NOT NULL DEFAULT '',
-    totalWeight REAL NOT NULL DEFAULT 0,
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "totalWeight" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_sync_antren_user ON sync_antrenamente(userId);
+  CREATE INDEX IF NOT EXISTS idx_sync_antren_user ON sync_antrenamente("userId");
 
   CREATE TABLE IF NOT EXISTS sync_exercitii (
     uuid TEXT PRIMARY KEY,
-    antrenamentUuid TEXT NOT NULL DEFAULT '',
-    numeExercitiu TEXT NOT NULL DEFAULT '',
-    setIndex INTEGER NOT NULL DEFAULT 0,
-    greutateKg REAL NOT NULL DEFAULT 0,
+    "antrenamentUuid" TEXT NOT NULL DEFAULT '',
+    "numeExercitiu" TEXT NOT NULL DEFAULT '',
+    "setIndex" INTEGER NOT NULL DEFAULT 0,
+    "greutateKg" DOUBLE PRECISION NOT NULL DEFAULT 0,
     repetari INTEGER NOT NULL DEFAULT 0,
     notes TEXT NOT NULL DEFAULT '',
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_sync_exerc_user ON sync_exercitii(antrenamentUuid);
+  CREATE INDEX IF NOT EXISTS idx_sync_exerc_user ON sync_exercitii("antrenamentUuid");
 
   CREATE TABLE IF NOT EXISTS sync_exercises (
     uuid TEXT PRIMARY KEY,
     name TEXT NOT NULL DEFAULT '',
-    groupName TEXT NOT NULL DEFAULT '',
+    "groupName" TEXT NOT NULL DEFAULT '',
     equipment TEXT NOT NULL DEFAULT '',
-    isDefault INTEGER NOT NULL DEFAULT 1,
-    isFavorite INTEGER NOT NULL DEFAULT 0,
-    usageCount INTEGER NOT NULL DEFAULT 0,
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "isDefault" INTEGER NOT NULL DEFAULT 1,
+    "isFavorite" INTEGER NOT NULL DEFAULT 0,
+    "usageCount" INTEGER NOT NULL DEFAULT 0,
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS sync_templates (
     uuid TEXT PRIMARY KEY,
-    userId TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     name TEXT NOT NULL DEFAULT '',
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_sync_templ_user ON sync_templates(userId);
+  CREATE INDEX IF NOT EXISTS idx_sync_templ_user ON sync_templates("userId");
 
   CREATE TABLE IF NOT EXISTS sync_template_exercises (
     uuid TEXT PRIMARY KEY,
-    templateUuid TEXT NOT NULL DEFAULT '',
-    exerciseName TEXT NOT NULL DEFAULT '',
-    groupName TEXT NOT NULL DEFAULT '',
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "templateUuid" TEXT NOT NULL DEFAULT '',
+    "exerciseName" TEXT NOT NULL DEFAULT '',
+    "groupName" TEXT NOT NULL DEFAULT '',
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_sync_templ_ex ON sync_template_exercises(templateUuid);
+  CREATE INDEX IF NOT EXISTS idx_sync_templ_ex ON sync_template_exercises("templateUuid");
 
   CREATE TABLE IF NOT EXISTS sync_personal_records (
     uuid TEXT PRIMARY KEY,
-    userId TEXT NOT NULL,
-    exerciseName TEXT NOT NULL DEFAULT '',
-    weight REAL NOT NULL DEFAULT 0,
+    "userId" TEXT NOT NULL,
+    "exerciseName" TEXT NOT NULL DEFAULT '',
+    weight DOUBLE PRECISION NOT NULL DEFAULT 0,
     reps INTEGER NOT NULL DEFAULT 0,
-    volume REAL NOT NULL DEFAULT 0,
-    date INTEGER NOT NULL DEFAULT 0,
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    volume DOUBLE PRECISION NOT NULL DEFAULT 0,
+    date BIGINT NOT NULL DEFAULT 0,
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_sync_pr_user ON sync_personal_records(userId);
+  CREATE INDEX IF NOT EXISTS idx_sync_pr_user ON sync_personal_records("userId");
 
   CREATE TABLE IF NOT EXISTS sync_muscle_recovery (
     uuid TEXT PRIMARY KEY,
-    userId TEXT NOT NULL DEFAULT '',
-    grupaMusculara TEXT NOT NULL DEFAULT '',
-    level REAL NOT NULL DEFAULT 0,
-    lastUpdated INTEGER NOT NULL DEFAULT 0,
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "userId" TEXT NOT NULL DEFAULT '',
+    "grupaMusculara" TEXT NOT NULL DEFAULT '',
+    level DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "lastUpdated" BIGINT NOT NULL DEFAULT 0,
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS sync_exercise_metadata (
     uuid TEXT PRIMARY KEY,
-    userId TEXT NOT NULL DEFAULT '',
-    exerciseName TEXT NOT NULL DEFAULT '',
-    grupaMusculara TEXT NOT NULL DEFAULT '',
-    isFavorite INTEGER NOT NULL DEFAULT 0,
-    isCustom INTEGER NOT NULL DEFAULT 0,
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "userId" TEXT NOT NULL DEFAULT '',
+    "exerciseName" TEXT NOT NULL DEFAULT '',
+    "grupaMusculara" TEXT NOT NULL DEFAULT '',
+    "isFavorite" INTEGER NOT NULL DEFAULT 0,
+    "isCustom" INTEGER NOT NULL DEFAULT 0,
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS sync_biometric_entries (
     uuid TEXT PRIMARY KEY,
-    userId TEXT NOT NULL,
-    timestamp INTEGER NOT NULL DEFAULT 0,
-    weightKg REAL NOT NULL DEFAULT 0,
-    bodyFatPercent REAL NOT NULL DEFAULT 0,
-    waistCm REAL NOT NULL DEFAULT 0,
-    hipsCm REAL NOT NULL DEFAULT 0,
-    thighsCm REAL NOT NULL DEFAULT 0,
-    chestCm REAL NOT NULL DEFAULT 0,
-    armsCm REAL NOT NULL DEFAULT 0,
+    "userId" TEXT NOT NULL,
+    timestamp BIGINT NOT NULL DEFAULT 0,
+    "weightKg" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "bodyFatPercent" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "waistCm" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "hipsCm" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "thighsCm" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "chestCm" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "armsCm" DOUBLE PRECISION NOT NULL DEFAULT 0,
     notes TEXT NOT NULL DEFAULT '',
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_sync_bio_user ON sync_biometric_entries(userId);
+  CREATE INDEX IF NOT EXISTS idx_sync_bio_user ON sync_biometric_entries("userId");
 
   CREATE TABLE IF NOT EXISTS sync_food_entries (
     uuid TEXT PRIMARY KEY,
-    userId TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     barcode TEXT NOT NULL DEFAULT '',
     name TEXT NOT NULL DEFAULT '',
     brand TEXT NOT NULL DEFAULT '',
-    mealType TEXT NOT NULL DEFAULT 'snack',
-    servingSize REAL NOT NULL DEFAULT 100,
-    servingUnit TEXT NOT NULL DEFAULT 'g',
-    calories REAL NOT NULL DEFAULT 0,
-    proteinG REAL NOT NULL DEFAULT 0,
-    carbsG REAL NOT NULL DEFAULT 0,
-    fatG REAL NOT NULL DEFAULT 0,
-    fiberG REAL NOT NULL DEFAULT 0,
-    timestamp INTEGER NOT NULL DEFAULT 0,
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "mealType" TEXT NOT NULL DEFAULT 'snack',
+    "servingSize" DOUBLE PRECISION NOT NULL DEFAULT 100,
+    "servingUnit" TEXT NOT NULL DEFAULT 'g',
+    calories DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "proteinG" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "carbsG" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "fatG" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "fiberG" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    timestamp BIGINT NOT NULL DEFAULT 0,
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_sync_food_user ON sync_food_entries(userId);
+  CREATE INDEX IF NOT EXISTS idx_sync_food_user ON sync_food_entries("userId");
 
   CREATE TABLE IF NOT EXISTS sync_cardio_routes (
     uuid TEXT PRIMARY KEY,
-    userId TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     name TEXT NOT NULL DEFAULT '',
-    routePoints TEXT NOT NULL DEFAULT '',
-    distanceKm REAL NOT NULL DEFAULT 0,
-    durationMs INTEGER NOT NULL DEFAULT 0,
-    avgSpeedKmh REAL NOT NULL DEFAULT 0,
-    avgPaceMinKm REAL NOT NULL DEFAULT 0,
-    caloriesBurned REAL NOT NULL DEFAULT 0,
-    startTime INTEGER NOT NULL DEFAULT 0,
-    endTime INTEGER NOT NULL DEFAULT 0,
-    activityType TEXT NOT NULL DEFAULT 'running',
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "routePoints" TEXT NOT NULL DEFAULT '',
+    "distanceKm" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "durationMs" BIGINT NOT NULL DEFAULT 0,
+    "avgSpeedKmh" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "avgPaceMinKm" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "caloriesBurned" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "startTime" BIGINT NOT NULL DEFAULT 0,
+    "endTime" BIGINT NOT NULL DEFAULT 0,
+    "activityType" TEXT NOT NULL DEFAULT 'running',
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_sync_cardio_user ON sync_cardio_routes(userId);
+  CREATE INDEX IF NOT EXISTS idx_sync_cardio_user ON sync_cardio_routes("userId");
 
   CREATE TABLE IF NOT EXISTS sync_rest_days (
     uuid TEXT PRIMARY KEY,
-    userId TEXT NOT NULL,
-    date INTEGER NOT NULL DEFAULT 0,
+    "userId" TEXT NOT NULL,
+    date BIGINT NOT NULL DEFAULT 0,
     type TEXT NOT NULL DEFAULT 'rest',
     notes TEXT NOT NULL DEFAULT '',
     activities TEXT NOT NULL DEFAULT '',
     completed INTEGER NOT NULL DEFAULT 0,
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_sync_rest_user ON sync_rest_days(userId);
+  CREATE INDEX IF NOT EXISTS idx_sync_rest_user ON sync_rest_days("userId");
 
   CREATE TABLE IF NOT EXISTS sync_ai_chat_history (
     uuid TEXT PRIMARY KEY,
-    userId TEXT NOT NULL,
-    sessionId INTEGER NOT NULL DEFAULT 0,
+    "userId" TEXT NOT NULL,
+    "sessionId" INTEGER NOT NULL DEFAULT 0,
     role TEXT NOT NULL DEFAULT '',
     message TEXT NOT NULL DEFAULT '',
-    timestamp INTEGER NOT NULL DEFAULT 0,
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    timestamp BIGINT NOT NULL DEFAULT 0,
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_sync_chat_user ON sync_ai_chat_history(userId);
+  CREATE INDEX IF NOT EXISTS idx_sync_chat_user ON sync_ai_chat_history("userId");
 
   CREATE TABLE IF NOT EXISTS sync_subscriptions (
     uuid TEXT PRIMARY KEY,
-    userId TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
     provider TEXT NOT NULL DEFAULT 'stripe',
-    subscriptionId TEXT NOT NULL DEFAULT '',
-    planId TEXT NOT NULL DEFAULT '',
+    "subscriptionId" TEXT NOT NULL DEFAULT '',
+    "planId" TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'inactive',
-    currentPeriodEnd INTEGER NOT NULL DEFAULT 0,
-    createdAt INTEGER NOT NULL DEFAULT 0,
-    updatedAt INTEGER NOT NULL DEFAULT 0
+    "currentPeriodEnd" BIGINT NOT NULL DEFAULT 0,
+    "createdAt" BIGINT NOT NULL DEFAULT 0,
+    "updatedAt" BIGINT NOT NULL DEFAULT 0
   );
-  CREATE INDEX IF NOT EXISTS idx_sync_sub_user ON sync_subscriptions(userId);
-`);
+  CREATE INDEX IF NOT EXISTS idx_sync_sub_user ON sync_subscriptions("userId");
+`;
 
-try {
-  db.prepare('SELECT isActive FROM users LIMIT 1').get();
-} catch (e) {
-  try {
-    db.exec('ALTER TABLE users ADD COLUMN isActive INTEGER NOT NULL DEFAULT 0');
-    db.exec('UPDATE users SET isActive = 1 WHERE lastSeen > 0');
-    console.log('Migration: added isActive column to users table');
-  } catch (e2) {
-    console.log('Migration skipped:', e2.message);
-  }
+async function initSchema() {
+  await q(SCHEMA);
 }
 
 const SEED_BADGES = [
@@ -445,17 +433,22 @@ const SEED_BADGES = [
   { key: 'helping_hand', title: 'Helping Hand', description: 'Commented on 10 posts', icon: '🤝' },
   { key: '1000kg_club', title: '1000kg Club', description: 'Lifted 1000kg total in one session', icon: '💪' },
 ];
-const insertBadge = db.prepare('INSERT OR IGNORE INTO badges (key, title, description, icon) VALUES (?, ?, ?, ?)');
-for (const b of SEED_BADGES) {
-  insertBadge.run(b.key, b.title, b.description, b.icon);
+
+async function seedBadges() {
+  for (const b of SEED_BADGES) {
+    await q(
+      'INSERT INTO badges ("key", title, description, icon) VALUES ($1, $2, $3, $4) ON CONFLICT ("key") DO NOTHING',
+      [b.key, b.title, b.description, b.icon]
+    );
+  }
 }
 
 // =============================================
 // HEALTH CHECK
 // =============================================
-app.get('/health', (_req, res) => {
+app.get('/health', async (_req, res) => {
   try {
-    db.prepare('SELECT 1').get();
+    await q('SELECT 1');
     res.json({ status: 'healthy', uptime: process.uptime() });
   } catch (e) {
     res.status(503).json({ status: 'unhealthy', error: e.message });
@@ -466,51 +459,63 @@ app.get('/health', (_req, res) => {
 // USERS
 // =============================================
 
-app.post('/users', enforceAuth, (req, res) => {
+app.post('/users', enforceAuth, async (req, res) => {
   const { id, name, photoUri, fcmToken, totalVolume, workoutCount } = req.body;
   const userId = sanitizeId(id);
   if (!userId) return res.status(400).json({ error: 'id required' });
   if (requireOwnership(req, res, userId) !== true) return;
   const now = Date.now();
-  db.prepare(`INSERT INTO users (id, name, photoUri, fcmToken, totalVolume, workoutCount, lastSeen, createdAt, isActive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1) ON CONFLICT(id) DO UPDATE SET name=CASE WHEN excluded.name != '' THEN excluded.name ELSE users.name END, photoUri=CASE WHEN excluded.photoUri != '' THEN excluded.photoUri ELSE users.photoUri END, fcmToken=CASE WHEN excluded.fcmToken != '' THEN excluded.fcmToken ELSE users.fcmToken END, totalVolume=CASE WHEN excluded.totalVolume > 0 THEN excluded.totalVolume ELSE users.totalVolume END, workoutCount=CASE WHEN excluded.workoutCount > 0 THEN excluded.workoutCount ELSE users.workoutCount END, lastSeen=excluded.lastSeen, isActive=1`)
-    .run(userId, sanitizeString(name), sanitizeString(photoUri), sanitizeString(fcmToken), sanitizeFloat(totalVolume), sanitizeInt(workoutCount), now, now);
+  await q(
+    `INSERT INTO users (id, name, "photoUri", "fcmToken", "totalVolume", "workoutCount", "lastSeen", "createdAt", "isActive")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1)
+     ON CONFLICT (id) DO UPDATE SET
+       name = CASE WHEN EXCLUDED.name != '' THEN EXCLUDED.name ELSE users.name END,
+       "photoUri" = CASE WHEN EXCLUDED."photoUri" != '' THEN EXCLUDED."photoUri" ELSE users."photoUri" END,
+       "fcmToken" = CASE WHEN EXCLUDED."fcmToken" != '' THEN EXCLUDED."fcmToken" ELSE users."fcmToken" END,
+       "totalVolume" = CASE WHEN EXCLUDED."totalVolume" > 0 THEN EXCLUDED."totalVolume" ELSE users."totalVolume" END,
+       "workoutCount" = CASE WHEN EXCLUDED."workoutCount" > 0 THEN EXCLUDED."workoutCount" ELSE users."workoutCount" END,
+       "lastSeen" = EXCLUDED."lastSeen",
+       "isActive" = 1`,
+    [userId, sanitizeString(name), sanitizeString(photoUri), sanitizeString(fcmToken), sanitizeFloat(totalVolume), sanitizeInt(workoutCount), now, now]
+  );
   res.json({ id: userId, name: sanitizeString(name), photoUri: sanitizeString(photoUri), isActive: 1 });
 });
 
-app.get('/users/search', (req, res) => {
-  const q = sanitizeString(req.query.q || '');
-  if (!q) return res.json([]);
+app.get('/users/search', async (req, res) => {
+  const query = sanitizeString(req.query.q || '');
+  if (!query) return res.json([]);
 
   const normalize = (s) => s.toLowerCase()
-    .replace(/ș/g,'s').replace(/ț/g,'t').replace(/ă/g,'a').replace(/â/g,'a').replace(/î/g,'i')
-    .replace(/ş/g,'s').replace(/ţ/g,'t');
+    .replace(/ș/g, 's').replace(/ț/g, 't').replace(/ă/g, 'a').replace(/â/g, 'a').replace(/î/g, 'i')
+    .replace(/ş/g, 's').replace(/ţ/g, 't');
 
-  const normalizedQ = normalize(q);
+  const normalizedQ = normalize(query);
   const likePattern = `%${normalizedQ}%`;
-  const rows = db.prepare(
+  const rows = await q(
     `SELECT * FROM users
-     WHERE LOWER(name) LIKE ? OR LOWER(id) LIKE ?
-     LIMIT 20`
-  ).all(likePattern, likePattern);
+     WHERE LOWER(name) LIKE $1 OR LOWER(id) LIKE $1
+     LIMIT 20`,
+    [likePattern]
+  );
 
   res.json(rows);
 });
 
-app.get('/users/:id', (req, res) => {
+app.get('/users/:id', async (req, res) => {
   const userId = sanitizeId(req.params.id);
   if (!userId) return res.status(400).json({ error: 'invalid id' });
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+  const user = await qOne('SELECT * FROM users WHERE id = $1', [userId]);
   if (!user) return res.status(404).json({ error: 'not found' });
   res.json(user);
 });
 
-app.delete('/users/:id', enforceAuth, (req, res) => {
+app.delete('/users/:id', enforceAuth, async (req, res) => {
   const targetId = sanitizeId(req.params.id);
   if (!targetId) return res.status(400).json({ error: 'invalid id' });
   if (req.authUserId !== targetId) {
     return res.status(403).json({ error: 'can only delete your own account' });
   }
-  db.prepare('DELETE FROM users WHERE id = ?').run(targetId);
+  await qRun('DELETE FROM users WHERE id = $1', [targetId]);
   res.json({ success: true });
 });
 
@@ -518,7 +523,7 @@ app.delete('/users/:id', enforceAuth, (req, res) => {
 // FRIENDSHIPS
 // =============================================
 
-app.post('/friends/request', enforceAuth, (req, res) => {
+app.post('/friends/request', enforceAuth, async (req, res) => {
   const { fromUserId, toUserId } = req.body;
   const from = sanitizeId(fromUserId);
   const to = sanitizeId(toUserId);
@@ -526,11 +531,13 @@ app.post('/friends/request', enforceAuth, (req, res) => {
   if (from === to) return res.status(400).json({ error: 'cannot send friend request to yourself' });
   if (requireOwnership(req, res, from) !== true) return;
   const now = Date.now();
-  db.prepare('INSERT OR IGNORE INTO friendships (userId, friendId, status, createdAt) VALUES (?, ?, ?, ?)')
-    .run(from, to, 'pending', now);
+  await q(
+    'INSERT INTO friendships ("userId", "friendId", status, "createdAt") VALUES ($1, $2, $3, $4) ON CONFLICT ("userId", "friendId") DO NOTHING',
+    [from, to, 'pending', now]
+  );
 
-  const sender = db.prepare('SELECT name FROM users WHERE id = ?').get(from);
-  const recipient = db.prepare('SELECT fcmToken FROM users WHERE id = ?').get(to);
+  const sender = await qOne('SELECT name FROM users WHERE id = $1', [from]);
+  const recipient = await qOne('SELECT "fcmToken" FROM users WHERE id = $1', [to]);
   if (recipient && recipient.fcmToken && admin.apps.length > 0) {
     admin.messaging().send({
       token: recipient.fcmToken,
@@ -546,25 +553,30 @@ app.post('/friends/request', enforceAuth, (req, res) => {
   res.json({ success: true });
 });
 
-app.get('/friends/incoming/:userId', (req, res) => {
+app.get('/friends/incoming/:userId', async (req, res) => {
   const userId = sanitizeId(req.params.userId);
   if (!userId) return res.status(400).json({ error: 'invalid userId' });
-  const rows = db.prepare('SELECT * FROM friendships WHERE friendId = ? AND status = ? ORDER BY createdAt DESC')
-    .all(userId, 'pending');
+  const rows = await q(
+    'SELECT * FROM friendships WHERE "friendId" = $1 AND status = $2 ORDER BY "createdAt" DESC',
+    [userId, 'pending']
+  );
   res.json(rows);
 });
 
-app.post('/friends/accept', enforceAuth, (req, res) => {
+app.post('/friends/accept', enforceAuth, async (req, res) => {
   const { userId, friendId } = req.body;
   const uid = sanitizeId(userId);
   const fid = sanitizeId(friendId);
   if (!uid || !fid) return res.status(400).json({ error: 'userId and friendId required' });
   if (requireOwnership(req, res, uid) !== true) return;
-  db.prepare('UPDATE friendships SET status = ? WHERE userId = ? AND friendId = ?').run('accepted', uid, fid);
-  db.prepare('INSERT OR IGNORE INTO friendships (userId, friendId, status, createdAt) VALUES (?, ?, ?, ?)').run(fid, uid, 'accepted', Date.now());
+  await q('UPDATE friendships SET status = $1 WHERE "userId" = $2 AND "friendId" = $3', ['accepted', uid, fid]);
+  await q(
+    'INSERT INTO friendships ("userId", "friendId", status, "createdAt") VALUES ($1, $2, $3, $4) ON CONFLICT ("userId", "friendId") DO NOTHING',
+    [fid, uid, 'accepted', Date.now()]
+  );
 
-  const acceptor = db.prepare('SELECT name FROM users WHERE id = ?').get(uid);
-  const recipient = db.prepare('SELECT fcmToken FROM users WHERE id = ?').get(fid);
+  const acceptor = await qOne('SELECT name FROM users WHERE id = $1', [uid]);
+  const recipient = await qOne('SELECT "fcmToken" FROM users WHERE id = $1', [fid]);
   if (recipient && recipient.fcmToken && admin.apps.length > 0) {
     admin.messaging().send({
       token: recipient.fcmToken,
@@ -577,33 +589,35 @@ app.post('/friends/accept', enforceAuth, (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/friends/reject', enforceAuth, (req, res) => {
+app.post('/friends/reject', enforceAuth, async (req, res) => {
   const { userId, friendId } = req.body;
   const uid = sanitizeId(userId);
   const fid = sanitizeId(friendId);
   if (!uid || !fid) return res.status(400).json({ error: 'userId and friendId required' });
   if (requireOwnership(req, res, uid) !== true) return;
-  db.prepare('DELETE FROM friendships WHERE userId = ? AND friendId = ?').run(uid, fid);
-  db.prepare('DELETE FROM friendships WHERE userId = ? AND friendId = ?').run(fid, uid);
+  await q('DELETE FROM friendships WHERE "userId" = $1 AND "friendId" = $2', [uid, fid]);
+  await q('DELETE FROM friendships WHERE "userId" = $1 AND "friendId" = $2', [fid, uid]);
   res.json({ success: true });
 });
 
-app.post('/friends/remove', enforceAuth, (req, res) => {
+app.post('/friends/remove', enforceAuth, async (req, res) => {
   const { userId, friendId } = req.body;
   const uid = sanitizeId(userId);
   const fid = sanitizeId(friendId);
   if (!uid || !fid) return res.status(400).json({ error: 'userId and friendId required' });
   if (requireOwnership(req, res, uid) !== true) return;
-  db.prepare('DELETE FROM friendships WHERE userId = ? AND friendId = ? AND status = ?').run(uid, fid, 'accepted');
-  db.prepare('DELETE FROM friendships WHERE userId = ? AND friendId = ? AND status = ?').run(fid, uid, 'accepted');
+  await q('DELETE FROM friendships WHERE "userId" = $1 AND "friendId" = $2 AND status = $3', [uid, fid, 'accepted']);
+  await q('DELETE FROM friendships WHERE "userId" = $1 AND "friendId" = $2 AND status = $3', [fid, uid, 'accepted']);
   res.json({ success: true });
 });
 
-app.get('/friends/:userId', (req, res) => {
+app.get('/friends/:userId', async (req, res) => {
   const userId = sanitizeId(req.params.userId);
   if (!userId) return res.status(400).json({ error: 'invalid userId' });
-  const rows = db.prepare('SELECT * FROM friendships WHERE (userId = ? OR friendId = ?) AND status = ? ORDER BY createdAt DESC')
-    .all(userId, userId, 'accepted');
+  const rows = await q(
+    'SELECT * FROM friendships WHERE ("userId" = $1 OR "friendId" = $1) AND status = $2 ORDER BY "createdAt" DESC',
+    [userId, 'accepted']
+  );
   res.json(rows);
 });
 
@@ -611,34 +625,40 @@ app.get('/friends/:userId', (req, res) => {
 // FEED & POSTS (with pagination)
 // =============================================
 
-app.post('/posts', postLimiter, enforceAuth, (req, res) => {
+app.post('/posts', postLimiter, enforceAuth, async (req, res) => {
   const { authorId, content, activityType } = req.body;
   const author = sanitizeId(authorId);
   const text = sanitizeString(content);
   if (!author || !text) return res.status(400).json({ error: 'authorId and content required' });
   if (requireOwnership(req, res, author) !== true) return;
   const now = Date.now();
-  const result = db.prepare('INSERT INTO feed_posts (authorId, content, activityType, createdAt) VALUES (?, ?, ?, ?)')
-    .run(author, text, sanitizeString(activityType) || 'post', now);
-  res.json({ postId: result.lastInsertRowid });
+  const result = await qOne(
+    'INSERT INTO feed_posts ("authorId", content, "activityType", "createdAt") VALUES ($1, $2, $3, $4) RETURNING id',
+    [author, text, sanitizeString(activityType) || 'post', now]
+  );
+  res.json({ postId: result.id });
 });
 
-app.get('/feed', (req, res) => {
+app.get('/feed', async (req, res) => {
   const limit = sanitizeInt(req.query.limit, 50, 1, 100);
   const offset = sanitizeInt(req.query.offset, 0, 0, 10000);
-  const rows = db.prepare('SELECT * FROM feed_posts ORDER BY createdAt DESC LIMIT ? OFFSET ?').all(limit, offset);
-  const total = db.prepare('SELECT COUNT(*) as c FROM feed_posts').get().c;
+  const rows = await q('SELECT * FROM feed_posts ORDER BY "createdAt" DESC LIMIT $1 OFFSET $2', [limit, offset]);
+  const totalRow = await qOne('SELECT COUNT(*)::int AS c FROM feed_posts');
+  const total = totalRow.c;
   res.json({ posts: rows, total, hasMore: offset + limit < total });
 });
 
-app.get('/posts/author/:authorId', (req, res) => {
+app.get('/posts/author/:authorId', async (req, res) => {
   const authorId = sanitizeId(req.params.authorId);
   if (!authorId) return res.status(400).json({ error: 'invalid authorId' });
   const limit = sanitizeInt(req.query.limit, 50, 1, 100);
   const offset = sanitizeInt(req.query.offset, 0, 0, 10000);
-  const rows = db.prepare('SELECT * FROM feed_posts WHERE authorId = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?')
-    .all(authorId, limit, offset);
-  const total = db.prepare('SELECT COUNT(*) as c FROM feed_posts WHERE authorId = ?').get(authorId).c;
+  const rows = await q(
+    'SELECT * FROM feed_posts WHERE "authorId" = $1 ORDER BY "createdAt" DESC LIMIT $2 OFFSET $3',
+    [authorId, limit, offset]
+  );
+  const totalRow = await qOne('SELECT COUNT(*)::int AS c FROM feed_posts WHERE "authorId" = $1', [authorId]);
+  const total = totalRow.c;
   res.json({ posts: rows, total, hasMore: offset + limit < total });
 });
 
@@ -646,7 +666,7 @@ app.get('/posts/author/:authorId', (req, res) => {
 // COMMENTS & LIKES
 // =============================================
 
-app.post('/comments', postLimiter, enforceAuth, (req, res) => {
+app.post('/comments', postLimiter, enforceAuth, async (req, res) => {
   const { postId, authorId, content } = req.body;
   const pid = sanitizeInt(postId, 0, 1, 1e9);
   const author = sanitizeId(authorId);
@@ -654,48 +674,53 @@ app.post('/comments', postLimiter, enforceAuth, (req, res) => {
   if (!pid || !author || !text) return res.status(400).json({ error: 'postId, authorId and content required' });
   if (requireOwnership(req, res, author) !== true) return;
   const now = Date.now();
-  const result = db.prepare('INSERT INTO comments (postId, authorId, content, createdAt) VALUES (?, ?, ?, ?)')
-    .run(pid, author, text, now);
-  res.json({ commentId: result.lastInsertRowid });
+  const result = await qOne(
+    'INSERT INTO comments ("postId", "authorId", content, "createdAt") VALUES ($1, $2, $3, $4) RETURNING id',
+    [pid, author, text, now]
+  );
+  res.json({ commentId: result.id });
 });
 
-app.get('/comments/:postId', (req, res) => {
+app.get('/comments/:postId', async (req, res) => {
   const postId = sanitizeInt(req.params.postId, 0, 1, 1e9);
   if (!postId) return res.status(400).json({ error: 'invalid postId' });
-  const rows = db.prepare('SELECT * FROM comments WHERE postId = ? ORDER BY createdAt ASC').all(postId);
+  const rows = await q('SELECT * FROM comments WHERE "postId" = $1 ORDER BY "createdAt" ASC', [postId]);
   res.json(rows);
 });
 
-app.post('/posts/:postId/like', enforceAuth, (req, res) => {
+app.post('/posts/:postId/like', enforceAuth, async (req, res) => {
   const postId = sanitizeInt(req.params.postId, 0, 1, 1e9);
   const { userId } = req.body;
   const uid = sanitizeId(userId);
   if (!uid) return res.status(400).json({ error: 'userId required' });
   if (requireOwnership(req, res, uid) !== true) return;
-  db.prepare('INSERT OR IGNORE INTO likes (postId, userId, createdAt) VALUES (?, ?, ?)').run(postId, uid, Date.now());
+  await q(
+    'INSERT INTO likes ("postId", "userId", "createdAt") VALUES ($1, $2, $3) ON CONFLICT ("postId", "userId") DO NOTHING',
+    [postId, uid, Date.now()]
+  );
   res.json({ success: true });
 });
 
-app.delete('/posts/:postId/like', enforceAuth, (req, res) => {
+app.delete('/posts/:postId/like', enforceAuth, async (req, res) => {
   const postId = sanitizeInt(req.params.postId, 0, 1, 1e9);
   const userId = sanitizeId(req.query.userId);
   if (!userId) return res.status(400).json({ error: 'userId required' });
   if (requireOwnership(req, res, userId) !== true) return;
-  db.prepare('DELETE FROM likes WHERE postId = ? AND userId = ?').run(postId, userId);
+  await q('DELETE FROM likes WHERE "postId" = $1 AND "userId" = $2', [postId, userId]);
   res.json({ success: true });
 });
 
-app.get('/posts/:postId/likes/count', (req, res) => {
+app.get('/posts/:postId/likes/count', async (req, res) => {
   const postId = sanitizeInt(req.params.postId, 0, 1, 1e9);
-  const row = db.prepare('SELECT COUNT(*) as count FROM likes WHERE postId = ?').get(postId);
+  const row = await qOne('SELECT COUNT(*)::int AS count FROM likes WHERE "postId" = $1', [postId]);
   res.json({ count: row.count });
 });
 
-app.get('/posts/:postId/liked/:userId', (req, res) => {
+app.get('/posts/:postId/liked/:userId', async (req, res) => {
   const postId = sanitizeInt(req.params.postId, 0, 1, 1e9);
   const userId = sanitizeId(req.params.userId);
   if (!userId) return res.status(400).json({ error: 'userId required' });
-  const liked = db.prepare('SELECT 1 FROM likes WHERE postId = ? AND userId = ?').get(postId, userId);
+  const liked = await qOne('SELECT 1 FROM likes WHERE "postId" = $1 AND "userId" = $2', [postId, userId]);
   res.json({ liked: !!liked });
 });
 
@@ -703,34 +728,40 @@ app.get('/posts/:postId/liked/:userId', (req, res) => {
 // LEADERBOARD (with pagination)
 // =============================================
 
-app.post('/leaderboard', enforceAuth, (req, res) => {
+app.post('/leaderboard', enforceAuth, async (req, res) => {
   const { userId, metric, value, periodStart, periodEnd } = req.body;
   const uid = sanitizeId(userId);
   const met = sanitizeString(metric);
   if (!uid || !met) return res.status(400).json({ error: 'userId and metric required' });
   if (requireOwnership(req, res, uid) !== true) return;
   const now = Date.now();
-  db.prepare('INSERT INTO leaderboard_entries (userId, metric, value, periodStart, periodEnd) VALUES (?, ?, ?, ?, ?) ON CONFLICT(userId, metric, periodStart) DO UPDATE SET value=excluded.value')
-    .run(uid, met, sanitizeFloat(value), sanitizeInt(periodStart, now), sanitizeInt(periodEnd, now));
+  await q(
+    'INSERT INTO leaderboard_entries ("userId", metric, value, "periodStart", "periodEnd") VALUES ($1, $2, $3, $4, $5) ON CONFLICT ("userId", metric, "periodStart") DO UPDATE SET value = EXCLUDED.value',
+    [uid, met, sanitizeFloat(value), sanitizeInt(periodStart, now), sanitizeInt(periodEnd, now)]
+  );
   res.json({ success: true });
 });
 
-app.get('/leaderboard', (req, res) => {
+app.get('/leaderboard', async (req, res) => {
   const metric = sanitizeString(req.query.metric) || 'workouts';
   const limit = sanitizeInt(req.query.limit, 50, 1, 100);
   const offset = sanitizeInt(req.query.offset, 0, 0, 10000);
 
   if (metric === 'volume') {
-    const rows = db.prepare(
-      'SELECT id as userId, name, photoUri, totalVolume as value, workoutCount FROM users WHERE totalVolume > 0 ORDER BY totalVolume DESC LIMIT ? OFFSET ?'
-    ).all(limit, offset);
-    const total = db.prepare('SELECT COUNT(*) as c FROM users WHERE totalVolume > 0').get().c;
+    const rows = await q(
+      'SELECT id AS "userId", name, "photoUri", "totalVolume" AS value, "workoutCount" FROM users WHERE "totalVolume" > 0 ORDER BY "totalVolume" DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+    const totalRow = await qOne('SELECT COUNT(*)::int AS c FROM users WHERE "totalVolume" > 0');
+    const total = totalRow.c;
     res.json({ entries: rows, total, hasMore: offset + limit < total });
   } else {
-    const rows = db.prepare(
-      'SELECT * FROM leaderboard_entries WHERE metric = ? ORDER BY value DESC LIMIT ? OFFSET ?'
-    ).all(metric, limit, offset);
-    const total = db.prepare('SELECT COUNT(*) as c FROM leaderboard_entries WHERE metric = ?').get(metric).c;
+    const rows = await q(
+      'SELECT * FROM leaderboard_entries WHERE metric = $1 ORDER BY value DESC LIMIT $2 OFFSET $3',
+      [metric, limit, offset]
+    );
+    const totalRow = await qOne('SELECT COUNT(*)::int AS c FROM leaderboard_entries WHERE metric = $1', [metric]);
+    const total = totalRow.c;
     res.json({ entries: rows, total, hasMore: offset + limit < total });
   }
 });
@@ -739,14 +770,14 @@ app.get('/leaderboard', (req, res) => {
 // WORKOUTS / STREAKS / BADGES
 // =============================================
 
-app.post('/workouts/log', enforceAuth, (req, res) => {
+app.post('/workouts/log', enforceAuth, async (req, res) => {
   const { userId } = req.body;
   const uid = sanitizeId(userId);
   if (!uid) return res.status(400).json({ error: 'userId required' });
   if (requireOwnership(req, res, uid) !== true) return;
   const now = Date.now();
 
-  const streak = db.prepare('SELECT * FROM streaks WHERE userId = ?').get(uid);
+  const streak = await qOne('SELECT * FROM streaks WHERE "userId" = $1', [uid]);
   let currentStreak = 1;
   let bestStreak = 1;
   let lastDate = now;
@@ -765,23 +796,39 @@ app.post('/workouts/log', enforceAuth, (req, res) => {
     lastDate = now;
   }
 
-  db.prepare('INSERT INTO streaks (userId, currentStreak, bestStreak, lastDate) VALUES (?, ?, ?, ?) ON CONFLICT(userId) DO UPDATE SET currentStreak=excluded.currentStreak, bestStreak=excluded.bestStreak, lastDate=excluded.lastDate')
-    .run(uid, currentStreak, bestStreak, lastDate);
+  await q(
+    `INSERT INTO streaks ("userId", "currentStreak", "bestStreak", "lastDate")
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT ("userId") DO UPDATE SET
+       "currentStreak" = EXCLUDED."currentStreak",
+       "bestStreak" = EXCLUDED."bestStreak",
+       "lastDate" = EXCLUDED."lastDate"`,
+    [uid, currentStreak, bestStreak, lastDate]
+  );
 
-  const workoutCount = db.prepare("SELECT COUNT(*) as c FROM feed_posts WHERE authorId = ? AND activityType = 'workout'").get(uid).c;
-  const commentCount = db.prepare('SELECT COUNT(*) as c FROM comments WHERE authorId = ?').get(uid).c;
-  const friendCount = db.prepare("SELECT COUNT(*) as c FROM friendships WHERE userId = ? AND status = 'accepted'").get(uid).c;
+  const wRow = await qOne(`SELECT COUNT(*)::int AS c FROM feed_posts WHERE "authorId" = $1 AND "activityType" = 'workout'`, [uid]);
+  const cRow = await qOne(`SELECT COUNT(*)::int AS c FROM comments WHERE "authorId" = $1`, [uid]);
+  const fRow = await qOne(`SELECT COUNT(*)::int AS c FROM friendships WHERE "userId" = $1 AND status = 'accepted'`, [uid]);
+  const workoutCount = wRow.c;
+  const commentCount = cRow.c;
+  const friendCount = fRow.c;
 
   const newlyAwardedBadges = [];
-  const hasBadge = (key) => db.prepare('SELECT 1 FROM user_badges WHERE userId = ? AND badgeKey = ?').get(uid, key);
-  const awardBadge = (key) => { db.prepare('INSERT OR IGNORE INTO user_badges (userId, badgeKey, awardedAt) VALUES (?, ?, ?)').run(uid, key, now); newlyAwardedBadges.push(key); };
+  const hasBadge = async (key) => {
+    const r = await qOne('SELECT 1 FROM user_badges WHERE "userId" = $1 AND "badgeKey" = $2', [uid, key]);
+    return !!r;
+  };
+  const awardBadge = async (key) => {
+    await q('INSERT INTO user_badges ("userId", "badgeKey", "awardedAt") VALUES ($1, $2, $3) ON CONFLICT ("userId", "badgeKey") DO NOTHING', [uid, key, now]);
+    newlyAwardedBadges.push(key);
+  };
 
-  if (workoutCount >= 1 && !hasBadge('first_workout')) awardBadge('first_workout');
-  if (currentStreak >= 7 && !hasBadge('7day_streak')) awardBadge('7day_streak');
-  if (currentStreak >= 30 && !hasBadge('30day_streak')) awardBadge('30day_streak');
-  if (workoutCount >= 100 && !hasBadge('century_club')) awardBadge('century_club');
-  if (friendCount >= 10 && !hasBadge('social_butterfly')) awardBadge('social_butterfly');
-  if (commentCount >= 10 && !hasBadge('helping_hand')) awardBadge('helping_hand');
+  if (workoutCount >= 1 && !(await hasBadge('first_workout'))) await awardBadge('first_workout');
+  if (currentStreak >= 7 && !(await hasBadge('7day_streak'))) await awardBadge('7day_streak');
+  if (currentStreak >= 30 && !(await hasBadge('30day_streak'))) await awardBadge('30day_streak');
+  if (workoutCount >= 100 && !(await hasBadge('century_club'))) await awardBadge('century_club');
+  if (friendCount >= 10 && !(await hasBadge('social_butterfly'))) await awardBadge('social_butterfly');
+  if (commentCount >= 10 && !(await hasBadge('helping_hand'))) await awardBadge('helping_hand');
 
   const stats = { workoutCount, commentCount, friendCount };
 
@@ -793,34 +840,34 @@ app.post('/workouts/log', enforceAuth, (req, res) => {
   });
 });
 
-app.get('/streaks/:userId', (req, res) => {
+app.get('/streaks/:userId', async (req, res) => {
   const userId = sanitizeId(req.params.userId);
   if (!userId) return res.status(400).json({ error: 'invalid userId' });
-  const streak = db.prepare('SELECT * FROM streaks WHERE userId = ?').get(userId);
+  const streak = await qOne('SELECT * FROM streaks WHERE "userId" = $1', [userId]);
   res.json(streak || { userId, currentStreak: 0, bestStreak: 0, lastDate: 0 });
 });
 
-app.get('/badges', (_req, res) => {
-  const rows = db.prepare('SELECT * FROM badges').all();
+app.get('/badges', async (_req, res) => {
+  const rows = await q('SELECT * FROM badges');
   res.json(rows);
 });
 
-app.get('/badges/user/:userId', (req, res) => {
+app.get('/badges/user/:userId', async (req, res) => {
   const userId = sanitizeId(req.params.userId);
   if (!userId) return res.status(400).json({ error: 'invalid userId' });
-  const rows = db.prepare('SELECT * FROM user_badges WHERE userId = ? ORDER BY awardedAt DESC').all(userId);
+  const rows = await q('SELECT * FROM user_badges WHERE "userId" = $1 ORDER BY "awardedAt" DESC', [userId]);
   res.json(rows);
 });
 
-app.post('/badges/award', enforceAuth, (req, res) => {
+app.post('/badges/award', enforceAuth, async (req, res) => {
   const { userId, badgeKey } = req.body;
   const uid = sanitizeId(userId);
   const key = sanitizeString(badgeKey);
   if (!uid || !key) return res.status(400).json({ error: 'userId and badgeKey required' });
   if (requireOwnership(req, res, uid) !== true) return;
-  const existing = db.prepare('SELECT 1 FROM user_badges WHERE userId = ? AND badgeKey = ?').get(uid, key);
+  const existing = await qOne('SELECT 1 FROM user_badges WHERE "userId" = $1 AND "badgeKey" = $2', [uid, key]);
   if (existing) return res.json({ success: false, alreadyAwarded: true });
-  db.prepare('INSERT INTO user_badges (userId, badgeKey, awardedAt) VALUES (?, ?, ?)').run(uid, key, Date.now());
+  await q('INSERT INTO user_badges ("userId", "badgeKey", "awardedAt") VALUES ($1, $2, $3)', [uid, key, Date.now()]);
   res.json({ success: true });
 });
 
@@ -901,53 +948,57 @@ const SYNC_TABLES = {
   }
 };
 
+// Coloanele camelCase se pun între ghilimele (identic cu schema).
+const quoteCol = (c) => `"${c}"`;
+
 Object.entries(SYNC_TABLES).forEach(([table, config]) => {
   const tableName = `sync_${table}`;
-  const placeholders = config.upsertCols.map(() => '?').join(',');
-  const updateClauses = config.upsertCols.filter(c => c !== 'uuid').map(c => `${c}=excluded.${c}`).join(', ');
-  const upsertSql = `INSERT INTO ${tableName} (${config.upsertCols.join(',')}) VALUES (${placeholders}) ON CONFLICT(uuid) DO UPDATE SET ${updateClauses}`;
+  const quotedCols = config.upsertCols.map(quoteCol);
+  const placeholders = config.upsertCols.map((_, i) => `$${i + 1}`).join(',');
+  const updateClauses = config.upsertCols.filter(c => c !== 'uuid').map(c => `${quoteCol(c)}=EXCLUDED.${quoteCol(c)}`).join(', ');
+  const upsertSql = `INSERT INTO ${tableName} (${quotedCols.join(',')}) VALUES (${placeholders}) ON CONFLICT (uuid) DO UPDATE SET ${updateClauses}`;
 
-  app.get(`/sync/${table}/:userId`, (req, res) => {
+  const sanitizeRow = (item) => config.upsertCols.map((c) => {
+    if (c === 'uuid') return sanitizeId(item.uuid);
+    const val = item[c];
+    if (typeof val === 'string') return sanitizeString(val);
+    if (typeof val === 'number') return val;
+    if (typeof val === 'boolean') return val ? 1 : 0;
+    return val ?? '';
+  });
+
+  app.get(`/sync/${table}/:userId`, async (req, res) => {
     const userId = sanitizeId(req.params.userId);
     if (!userId) return res.status(400).json({ error: 'invalid userId' });
-    const since = parseInt(req.query.since) || 0;
+    const since = parseInt(req.query.since, 10) || 0;
     let rows;
     if (config.userCol) {
       rows = since > 0
-        ? db.prepare(`SELECT * FROM ${tableName} WHERE ${config.userCol} = ? AND updatedAt > ?`).all(userId, since)
-        : db.prepare(`SELECT * FROM ${tableName} WHERE ${config.userCol} = ?`).all(userId);
+        ? await q(`SELECT * FROM ${tableName} WHERE ${quoteCol(config.userCol)} = $1 AND "updatedAt" > $2`, [userId, since])
+        : await q(`SELECT * FROM ${tableName} WHERE ${quoteCol(config.userCol)} = $1`, [userId]);
     } else {
       rows = since > 0
-        ? db.prepare(`SELECT * FROM ${tableName} WHERE updatedAt > ?`).all(since)
-        : db.prepare(`SELECT * FROM ${tableName}`).all();
+        ? await q(`SELECT * FROM ${tableName} WHERE "updatedAt" > $1`, [since])
+        : await q(`SELECT * FROM ${tableName}`);
     }
     res.json(rows);
   });
 
-  app.post(`/sync/${table}/upsert`, enforceAuth, (req, res) => {
+  app.post(`/sync/${table}/upsert`, enforceAuth, async (req, res) => {
     const item = req.body;
     if (!item || !item.uuid) return res.status(400).json({ error: 'uuid required' });
-    // Tabelele cu coloană de user trebuie să aparțină utilizatorului autentificat.
     if (config.userCol) {
       const owner = sanitizeId(item[config.userCol]);
       if (requireOwnership(req, res, owner) !== true) return;
     }
-    const values = config.upsertCols.map(c => {
-      if (c === 'uuid') return sanitizeId(item.uuid);
-      const val = item[c];
-      if (typeof val === 'string') return sanitizeString(val);
-      if (typeof val === 'number') return val;
-      if (typeof val === 'boolean') return val ? 1 : 0;
-      return val ?? '';
-    });
-    db.prepare(upsertSql).run(...values);
+    const values = sanitizeRow(item);
+    await q(upsertSql, values);
     res.json({ success: true });
   });
 
-  app.post(`/sync/${table}/bulk`, enforceAuth, (req, res) => {
+  app.post(`/sync/${table}/bulk`, enforceAuth, async (req, res) => {
     const items = req.body.items;
     if (!Array.isArray(items)) return res.status(400).json({ error: 'items array required' });
-    // Fiecare element cu userCol trebuie să aparțină utilizatorului autentificat.
     if (config.userCol) {
       for (const item of items) {
         if (!item.uuid) continue;
@@ -955,35 +1006,24 @@ Object.entries(SYNC_TABLES).forEach(([table, config]) => {
         if (requireOwnership(req, res, owner) !== true) return;
       }
     }
-    const stmt = db.prepare(upsertSql);
-    const insertMany = db.transaction((rows) => {
-      for (const item of rows) {
+    await withTransaction(async (client) => {
+      for (const item of items) {
         if (!item.uuid) continue;
-        const values = config.upsertCols.map(c => {
-          if (c === 'uuid') return sanitizeId(item.uuid);
-          const val = item[c];
-          if (typeof val === 'string') return sanitizeString(val);
-          if (typeof val === 'number') return val;
-          if (typeof val === 'boolean') return val ? 1 : 0;
-          return val ?? '';
-        });
-        stmt.run(...values);
+        await client.query(upsertSql, sanitizeRow(item));
       }
     });
-    insertMany(items);
     res.json({ success: true, count: items.length });
   });
 
-  app.delete(`/sync/${table}/:uuid`, enforceAuth, (req, res) => {
+  app.delete(`/sync/${table}/:uuid`, enforceAuth, async (req, res) => {
     const uuid = sanitizeId(req.params.uuid);
     if (!uuid) return res.status(400).json({ error: 'invalid uuid' });
-    // Doar proprietarul poate șterge un rând care are coloană de user.
     if (config.userCol) {
-      const row = db.prepare(`SELECT ${config.userCol} FROM ${tableName} WHERE uuid = ?`).get(uuid);
+      const row = await qOne(`SELECT ${quoteCol(config.userCol)} FROM ${tableName} WHERE uuid = $1`, [uuid]);
       if (!row) return res.status(404).json({ error: 'not found' });
       if (requireOwnership(req, res, sanitizeId(row[config.userCol])) !== true) return;
     }
-    db.prepare(`DELETE FROM ${tableName} WHERE uuid = ?`).run(uuid);
+    await qRun(`DELETE FROM ${tableName} WHERE uuid = $1`, [uuid]);
     res.json({ success: true });
   });
 });
@@ -991,59 +1031,58 @@ Object.entries(SYNC_TABLES).forEach(([table, config]) => {
 // =============================================
 // ADMIN: CLEANUP TEST USERS
 // =============================================
-// Șterge complet conturile de test (id TEST* sau nume care conține „Test") din toate
+// Șterge complet conturile de test (id TEST* sau nume care conține "Test") din toate
 // tabelele: users, friendships, leaderboard, streaks, badges, posts, comments, likes
 // și toate tabelele sync_*. Protejat cu header X-Admin-Key.
-app.post('/admin/cleanup-test-users', (req, res) => {
+app.post('/admin/cleanup-test-users', async (req, res) => {
   const adminKey = process.env.ADMIN_KEY || 'kinetic-cleanup-2024';
   if (req.headers['x-admin-key'] !== adminKey) {
     return res.status(401).json({ error: 'Invalid admin key' });
   }
 
-  const targets = db.prepare(
-    `SELECT id, name FROM users WHERE id LIKE 'TEST%' OR name LIKE '%Test%'`
-  ).all();
+  const targets = await q(`SELECT id, name FROM users WHERE id LIKE 'TEST%' OR name LIKE '%Test%'`);
   if (targets.length === 0) return res.json({ success: true, deleted: 0 });
 
   const ids = targets.map(t => t.id);
-  const ph = ids.map(() => '?').join(',');
+  const ph = ids.map((_, i) => `$${i + 1}`).join(',');
+  const phBoth = ids.map((_, i) => `$${i + 1}`).concat(ids.map((_, i) => `$${ids.length + i + 1}`)).join(',');
+  const dupArgs = [...ids, ...ids];
 
-  const del = db.transaction(() => {
+  await withTransaction(async (client) => {
     // Prietenii (ambele direcții) și cereri pendente
-    db.prepare(`DELETE FROM friendships WHERE userId IN (${ph}) OR friendId IN (${ph})`).run(...ids, ...ids);
+    await client.query(`DELETE FROM friendships WHERE "userId" IN (${phBoth}) OR "friendId" IN (${phBoth})`, [...dupArgs, ...dupArgs]);
     // Leaderboard
-    db.prepare(`DELETE FROM leaderboard_entries WHERE userId IN (${ph})`).run(...ids);
+    await client.query(`DELETE FROM leaderboard_entries WHERE "userId" IN (${ph})`, ids);
     // Streaks + badges
-    db.prepare(`DELETE FROM streaks WHERE userId IN (${ph})`).run(...ids);
-    db.prepare(`DELETE FROM user_badges WHERE userId IN (${ph})`).run(...ids);
+    await client.query(`DELETE FROM streaks WHERE "userId" IN (${ph})`, ids);
+    await client.query(`DELETE FROM user_badges WHERE "userId" IN (${ph})`, ids);
     // Posturi ale userilor de test + comentariile/like-urile lor
-    const posts = db.prepare(`SELECT id FROM feed_posts WHERE authorId IN (${ph})`).all(...ids);
-    const postIds = posts.map(p => p.id);
+    const posts = await client.query(`SELECT id FROM feed_posts WHERE "authorId" IN (${ph})`, ids);
+    const postIds = posts.rows.map(p => p.id);
     if (postIds.length > 0) {
-      const pph = postIds.map(() => '?').join(',');
-      db.prepare(`DELETE FROM comments WHERE postId IN (${pph})`).run(...postIds);
-      db.prepare(`DELETE FROM likes WHERE postId IN (${pph})`).run(...postIds);
-      db.prepare(`DELETE FROM feed_posts WHERE id IN (${pph})`).run(...postIds);
+      const pph = postIds.map((_, i) => `$${i + 1}`).join(',');
+      await client.query(`DELETE FROM comments WHERE "postId" IN (${pph})`, postIds);
+      await client.query(`DELETE FROM likes WHERE "postId" IN (${pph})`, postIds);
+      await client.query(`DELETE FROM feed_posts WHERE id IN (${pph})`, postIds);
     }
-    db.prepare(`DELETE FROM comments WHERE authorId IN (${ph})`).run(...ids);
-    db.prepare(`DELETE FROM likes WHERE userId IN (${ph})`).run(...ids);
+    await client.query(`DELETE FROM comments WHERE "authorId" IN (${ph})`, ids);
+    await client.query(`DELETE FROM likes WHERE "userId" IN (${ph})`, ids);
     // Toate tabelele sync_ cu coloană userId
     for (const [table, cfg] of Object.entries(SYNC_TABLES)) {
       if (cfg.userCol) {
-        db.prepare(`DELETE FROM sync_${table} WHERE ${cfg.userCol} IN (${ph})`).run(...ids);
+        await client.query(`DELETE FROM sync_${table} WHERE ${quoteCol(cfg.userCol)} IN (${ph})`, ids);
       }
     }
-    // Tabele sync cu coloană userId dar definite manual (sync_antrenamente etc.)
-    db.prepare(`DELETE FROM sync_antrenamente WHERE userId IN (${ph})`).run(...ids);
-    db.prepare(`DELETE FROM sync_templates WHERE userId IN (${ph})`).run(...ids);
-    db.prepare(`DELETE FROM sync_personal_records WHERE userId IN (${ph})`).run(...ids);
-    db.prepare(`DELETE FROM sync_muscle_recovery WHERE userId IN (${ph})`).run(...ids);
-    db.prepare(`DELETE FROM sync_exercise_metadata WHERE userId IN (${ph})`).run(...ids);
-    db.prepare(`DELETE FROM sync_biometric_entries WHERE userId IN (${ph})`).run(...ids);
+    // Tabele sync cu coloană userId definite manual
+    await client.query(`DELETE FROM sync_antrenamente WHERE "userId" IN (${ph})`, ids);
+    await client.query(`DELETE FROM sync_templates WHERE "userId" IN (${ph})`, ids);
+    await client.query(`DELETE FROM sync_personal_records WHERE "userId" IN (${ph})`, ids);
+    await client.query(`DELETE FROM sync_muscle_recovery WHERE "userId" IN (${ph})`, ids);
+    await client.query(`DELETE FROM sync_exercise_metadata WHERE "userId" IN (${ph})`, ids);
+    await client.query(`DELETE FROM sync_biometric_entries WHERE "userId" IN (${ph})`, ids);
     // În final, userii înșiși
-    db.prepare(`DELETE FROM users WHERE id IN (${ph})`).run(...ids);
+    await client.query(`DELETE FROM users WHERE id IN (${ph})`, ids);
   });
-  del();
 
   res.json({ success: true, deleted: targets.length, users: targets.map(t => t.id) });
 });
@@ -1070,7 +1109,7 @@ app.post('/notifications/broadcast', async (req, res) => {
     return res.status(400).json({ error: 'body or data required' });
   }
 
-  const tokens = db.prepare("SELECT fcmToken FROM users WHERE fcmToken != ''").all().map(r => r.fcmToken);
+  const tokens = (await q(`SELECT "fcmToken" FROM users WHERE "fcmToken" != ''`)).map(r => r.fcmToken);
   if (tokens.length === 0) {
     return res.json({ success: true, sent: 0, failed: 0, total: 0, dryRun: dryRun === true });
   }
@@ -1121,15 +1160,15 @@ app.use((err, req, res, _next) => {
 // =============================================
 // ROOT / START
 // =============================================
-app.get('/', (_req, res) => {
-  const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
-  const postCount = db.prepare('SELECT COUNT(*) as c FROM feed_posts').get().c;
-  const friendCount = db.prepare('SELECT COUNT(*) as c FROM friendships WHERE status = ?').get('accepted').c;
+app.get('/', async (_req, res) => {
+  const u = await qOne('SELECT COUNT(*)::int AS c FROM users');
+  const p = await qOne('SELECT COUNT(*)::int AS c FROM feed_posts');
+  const f = await qOne(`SELECT COUNT(*)::int AS c FROM friendships WHERE status = 'accepted'`);
   res.json({
     name: 'Kinetic API',
     version: '2.0.0',
     status: 'running',
-    stats: { users: userCount, posts: postCount, friendships: friendCount },
+    stats: { users: u.c, posts: p.c, friendships: f.c },
     endpoints: [
       'GET /health',
       'POST /users', 'GET /users/:id', 'GET /users/search?q=', 'DELETE /users/:id',
@@ -1142,6 +1181,17 @@ app.get('/', (_req, res) => {
   });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Kinetic backend v2.0.0 running on http://0.0.0.0:${PORT}`);
-});
+async function start() {
+  try {
+    await initSchema();
+    await seedBadges();
+    console.log('Schema + seed badges OK');
+  } catch (e) {
+    console.error('Schema init failed:', e.message);
+  }
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Kinetic backend v2.0.0 running on http://0.0.0.0:${PORT}`);
+  });
+}
+
+start();

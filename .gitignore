@@ -31,3 +31,5 @@ brace_log.txt
 .freebuff/
 
 *.bak
+
+backend/.env
