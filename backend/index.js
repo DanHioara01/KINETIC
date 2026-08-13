@@ -1049,6 +1049,65 @@ app.post('/admin/cleanup-test-users', (req, res) => {
 });
 
 // =============================================
+// NOTIFICATIONS: BROADCAST (FCM → toți utilizatorii)
+// =============================================
+// Trimite o notificare push la toți utilizatorii cu fcmToken stocat (ex: anunț
+// pentru un release nou). Protejat cu header X-Admin-Key (același ca la cleanup).
+// Body: { title, body, data?: {k:v}, channelId?, dryRun? }
+app.post('/notifications/broadcast', async (req, res) => {
+  const adminKey = process.env.ADMIN_KEY || 'kinetic-cleanup-2024';
+  if (req.headers['x-admin-key'] !== adminKey) {
+    return res.status(401).json({ error: 'Invalid admin key' });
+  }
+  if (admin.apps.length === 0) {
+    return res.status(503).json({ error: 'Firebase Admin not initialized - push notifications disabled' });
+  }
+
+  const { title, body, data, channelId, dryRun } = req.body || {};
+  const safeTitle = sanitizeString(title || 'Kinetic');
+  const safeBody = sanitizeString(body || '');
+  if (!safeBody && !Object.keys(data || {}).length) {
+    return res.status(400).json({ error: 'body or data required' });
+  }
+
+  const tokens = db.prepare("SELECT fcmToken FROM users WHERE fcmToken != ''").all().map(r => r.fcmToken);
+  if (tokens.length === 0) {
+    return res.json({ success: true, sent: 0, failed: 0, total: 0, dryRun: dryRun === true });
+  }
+
+  const payloadData = {};
+  for (const [k, v] of Object.entries(data || {})) {
+    if (typeof v === 'string') payloadData[k] = sanitizeString(v);
+  }
+
+  const android = { priority: 'high', notification: { channelId: sanitizeString(channelId) || 'kinetic_notifications', priority: 'max' } };
+
+  // FCM acceptă max 500 token-uri pe mesaj multicast → trimitem în bucăți.
+  const CHUNK = 500;
+  let sent = 0;
+  let failed = 0;
+  for (let i = 0; i < tokens.length; i += CHUNK) {
+    const chunk = tokens.slice(i, i + CHUNK);
+    try {
+      const result = await admin.messaging().sendEachForMulticast({
+        tokens: chunk,
+        notification: { title: safeTitle, body: safeBody },
+        data: payloadData,
+        android,
+        dryRun: dryRun === true,
+      });
+      sent += result.successCount;
+      failed += result.failureCount;
+    } catch (e) {
+      console.log('FCM broadcast chunk error:', e.message);
+      failed += chunk.length;
+    }
+  }
+
+  res.json({ success: true, total: tokens.length, sent, failed, dryRun: dryRun === true });
+});
+
+// =============================================
 // ERROR HANDLING MIDDLEWARE
 // =============================================
 app.use((err, req, res, _next) => {
