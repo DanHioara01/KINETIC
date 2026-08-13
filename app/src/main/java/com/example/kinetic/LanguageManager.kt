@@ -614,6 +614,10 @@ object LanguageManager {
         val editProfile: String = m["editProfile"] ?: "Edit Profile"
         val memberSince: String = m["memberSince"] ?: "Member since"
         val changePassword: String = m["changePassword"] ?: "Change Password"
+        val updateTitle: String = m["updateTitle"] ?: "New version available"
+        val updateMessage: String = m["updateMessage"] ?: "Kinetic %s has been released. You have v%s installed.\n\nTap to download the new APK."
+        val updateDownload: String = m["updateDownload"] ?: "Download"
+        val updateLater: String = m["updateLater"] ?: "Later"
     }
     private val strings by lazy {
         mapOf(
@@ -856,6 +860,7 @@ object LanguageManager {
         "startingWorkoutLabel" to "Pornim muzica de antrenament...",
         "signUpSuccessMessage" to "Cont creat cu succes! Te rugam sa te loghezi.",
         "trainingSectionLabel" to "Antrenament", "frequencyLabel" to "Frecvență", "xPerWeek" to "x / săpt", "editProfile" to "Editează profilul", "memberSince" to "Membru din", "changePassword" to "Schimbă parola",
+        "updateTitle" to "Versiune nouă disponibilă", "updateMessage" to "Kinetic %s a fost lansată. Ai instalată versiunea v%s.\n\nApasă pentru a descărca noul APK.", "updateDownload" to "Descarcă", "updateLater" to "Mai târziu",
     ))
 
     private fun createEn() = Strings(enRaw())
@@ -1079,6 +1084,7 @@ object LanguageManager {
         "startingWorkoutLabel" to "Starting workout music...",
         "signUpSuccessMessage" to "Account created! Please log in.",
         "trainingSectionLabel" to "Training", "frequencyLabel" to "Frequency", "xPerWeek" to "x / week", "editProfile" to "Edit Profile", "memberSince" to "Member since", "changePassword" to "Change Password",
+        "updateTitle" to "New version available", "updateMessage" to "Kinetic %s has been released. You have v%s installed.\n\nTap to download the new APK.", "updateDownload" to "Download", "updateLater" to "Later",
     )
 
     private fun createRu() = Strings(enRaw() + mapOf(
@@ -1290,6 +1296,7 @@ object LanguageManager {
         "startingWorkoutLabel" to "Запускаем музыку для тренировки...",
         "signUpSuccessMessage" to "Аккаунт создан! Пожалуйста, войдите.",
         "trainingSectionLabel" to "Тренировки", "frequencyLabel" to "Частота", "xPerWeek" to "x / нед", "editProfile" to "Редактировать профиль", "memberSince" to "Участник с", "changePassword" to "Сменить пароль",
+        "updateTitle" to "Доступна новая версия", "updateMessage" to "Kinetic %s выпущена. У вас установлена версия v%s.\n\nНажмите, чтобы скачать новый APK.", "updateDownload" to "Скачать", "updateLater" to "Позже",
         "activeDesc" to "Тренировки + ежедневная активность",
         "permanentPlan" to "Пожизненный план",
         "vsPrevious" to "по сравнению с прошлым",
@@ -1545,6 +1552,7 @@ object LanguageManager {
         "startingWorkoutLabel" to "Запускаємо музику для тренування...",
         "signUpSuccessMessage" to "Обліковий запис створено! Будь ласка, увійдіть.",
         "trainingSectionLabel" to "Тренування", "frequencyLabel" to "Частота", "xPerWeek" to "x / тижд", "editProfile" to "Редагувати профіль", "memberSince" to "Учасник з", "changePassword" to "Змінити пароль",
+        "updateTitle" to "Доступна нова версія", "updateMessage" to "Kinetic %s випущена. У вас встановлена версія v%s.\n\nНатисніть, щоб завантажити новий APK.", "updateDownload" to "Завантажити", "updateLater" to "Пізніше",
         "activeDesc" to "Тренування + щоденна активність",
         "permanentPlan" to "Довічний план",
         "vsPrevious" to "порівняно з минулим",
@@ -1802,6 +1810,7 @@ object LanguageManager {
         "startingWorkoutLabel" to "Lancement de la musique d'entraînement...",
         "signUpSuccessMessage" to "Compte créé ! Veuillez vous connecter.",
         "trainingSectionLabel" to "Entraînement", "frequencyLabel" to "Fréquence", "xPerWeek" to "x / sem", "editProfile" to "Modifier le profil", "memberSince" to "Membre depuis", "changePassword" to "Changer le mot de passe",
+        "updateTitle" to "Nouvelle version disponible", "updateMessage" to "Kinetic %s a été publiée. Vous avez installé la version v%s.\n\nAppuyez pour télécharger le nouvel APK.", "updateDownload" to "Télécharger", "updateLater" to "Plus tard",
         "activeDesc" to "Entraînement + activité quotidienne",
         "permanentPlan" to "Formule à vie",
         "vsPrevious" to "vs précédent",
@@ -2058,6 +2067,7 @@ object LanguageManager {
         "startingWorkoutLabel" to "Trainingsmusik starten...",
         "signUpSuccessMessage" to "Konto erstellt! Bitte einloggen.",
         "trainingSectionLabel" to "Training", "frequencyLabel" to "Frequenz", "xPerWeek" to "x / Wo", "editProfile" to "Profil bearbeiten", "memberSince" to "Mitglied seit", "changePassword" to "Passwort ändern",
+        "updateTitle" to "Neue Version verfügbar", "updateMessage" to "Kinetic %s wurde veröffentlicht. Sie haben Version v%s installiert.\n\nTippen Sie, um das neue APK herunterzuladen.", "updateDownload" to "Herunterladen", "updateLater" to "Später",
         "activeDesc" to "Training + tägliche Aktivität",
         "permanentPlan" to "Lebenslanger Plan",
         "vsPrevious" to "vs. vorher",
@@ -2317,6 +2327,7 @@ object LanguageManager {
         "startingWorkoutLabel" to "Iniciando música de entrenamiento...",
         "signUpSuccessMessage" to "¡Cuenta creada! Por favor, inicia sesión.",
         "trainingSectionLabel" to "Entrenamiento", "frequencyLabel" to "Frecuencia", "xPerWeek" to "x / sem", "editProfile" to "Editar perfil", "memberSince" to "Miembro desde", "changePassword" to "Cambiar contraseña",
+        "updateTitle" to "Nueva versión disponible", "updateMessage" to "Kinetic %s se ha publicado. Tienes instalada la versión v%s.\n\nToca para descargar el nuevo APK.", "updateDownload" to "Descargar", "updateLater" to "Más tarde",
         "activeDesc" to "Entrenamiento + actividad diaria",
         "permanentPlan" to "Plan vitalicio",
         "vsPrevious" to "vs anterior",
@@ -2574,6 +2585,7 @@ object LanguageManager {
         "startingWorkoutLabel" to "Avvio musica da allenamento...",
         "signUpSuccessMessage" to "Account creato! Effettua il login.",
         "trainingSectionLabel" to "Allenamento", "frequencyLabel" to "Frequenza", "xPerWeek" to "x / sett", "editProfile" to "Modifica profilo", "memberSince" to "Membro dal", "changePassword" to "Cambia password",
+        "updateTitle" to "Nuova versione disponibile", "updateMessage" to "Kinetic %s è stata rilasciata. Hai installata la versione v%s.\n\nTocca per scaricare il nuovo APK.", "updateDownload" to "Scarica", "updateLater" to "Più tardi",
         "activeDesc" to "Allenamento + attività quotidiana",
         "permanentPlan" to "Piano a vita",
         "vsPrevious" to "vs precedente",
@@ -2828,6 +2840,7 @@ object LanguageManager {
         "startingWorkoutLabel" to "Antrenman müziği başlatılıyor...",
         "signUpSuccessMessage" to "Hesap oluşturuldu! Lütfen giriş yapın.",
         "trainingSectionLabel" to "Antrenman", "frequencyLabel" to "Sıklık", "xPerWeek" to "x / hafta", "editProfile" to "Profili Düzenle", "memberSince" to "Üyelik tarihi", "changePassword" to "Şifreyi Değiştir",
+        "updateTitle" to "Yeni sürüm mevcut", "updateMessage" to "Kinetic %s yayınlandı. v%s sürümünü yüklediniz.\n\nYeni APK'yı indirmek için dokunun.", "updateDownload" to "İndir", "updateLater" to "Daha sonra",
         "activeDesc" to "Antrenman + günlük aktivite",
         "permanentPlan" to "Ömür Boyu Plan",
         "vsPrevious" to "öncekine göre",
@@ -3088,6 +3101,7 @@ object LanguageManager {
         "startingWorkoutLabel" to "Iniciando música de treino...",
         "signUpSuccessMessage" to "Conta criada! Por favor, faça login.",
         "trainingSectionLabel" to "Treino", "frequencyLabel" to "Frequência", "xPerWeek" to "x / sem", "editProfile" to "Editar perfil", "memberSince" to "Membro desde", "changePassword" to "Alterar senha",
+        "updateTitle" to "Nova versão disponível", "updateMessage" to "Kinetic %s foi lançada. Você tem instalada a versão v%s.\n\nToque para baixar o novo APK.", "updateDownload" to "Baixar", "updateLater" to "Mais tarde",
         "activeDesc" to "Treino + atividade diária",
         "permanentPlan" to "Plano vitalício",
         "vsPrevious" to "vs anterior",
@@ -3346,6 +3360,7 @@ object LanguageManager {
         "startingWorkoutLabel" to "Uruchamianie muzyki treningowej...",
         "signUpSuccessMessage" to "Konto utworzone! Proszę się zalogować.",
         "trainingSectionLabel" to "Trening", "frequencyLabel" to "Częstotliwość", "xPerWeek" to "x / tydz", "editProfile" to "Edytuj profil", "memberSince" to "Członek od", "changePassword" to "Zmień hasło",
+        "updateTitle" to "Dostępna nowa wersja", "updateMessage" to "Kinetic %s została wydana. Masz zainstalowaną wersję v%s.\n\nKliknij, aby pobrać nowy APK.", "updateDownload" to "Pobierz", "updateLater" to "Później",
         "activeDesc" to "Trening + codzienna aktywność",
         "permanentPlan" to "Plan dożywotni",
         "vsPrevious" to "vs poprzednio",

@@ -3054,10 +3054,10 @@ fun MuscleGroupList(
         AlertDialog(
             onDismissRequest = { updateAvailable = null },
             containerColor = if (isDark) Color(0xFF1E1E1E) else Color.White,
-            title = { Text("Versiune nouă disponibilă", fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Color(0xFF111111)) },
+            title = { Text(strings.updateTitle, fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Color(0xFF111111)) },
             text = {
                 Text(
-                    "Kinetic ${release.tagName} a fost lansată. Ai instalată versiunea v${BuildConfig.VERSION_NAME}.\n\nApasă pentru a descărca noul APK.",
+                    strings.updateMessage.format(release.tagName, BuildConfig.VERSION_NAME),
                     color = if (isDark) Color(0xFFCCCCCC) else Color(0xFF444444)
                 )
             },
@@ -3072,12 +3072,12 @@ fun MuscleGroupList(
                         context.startActivity(intent)
                     } catch (_: Exception) {}
                 }) {
-                    Text("Descarcă", fontWeight = FontWeight.Bold, color = Volcanico)
+                    Text(strings.updateDownload, fontWeight = FontWeight.Bold, color = Volcanico)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { updateAvailable = null }) {
-                    Text("Mai târziu", color = if (isDark) Color(0xFF999999) else Color(0xFF777777))
+                    Text(strings.updateLater, color = if (isDark) Color(0xFF999999) else Color(0xFF777777))
                 }
             }
         )
