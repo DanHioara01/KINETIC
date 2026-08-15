@@ -281,7 +281,7 @@ class PreferencesManager(
 
     fun getWaterHistory7Days(): List<Pair<String, Int>> {
         val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-        val dayFmt = java.text.SimpleDateFormat("EEE", java.util.Locale(getLanguage()))
+        val dayFmt = java.text.SimpleDateFormat("EEE", java.util.Locale(LanguageManager.getLanguage().ifEmpty { "en" }))
         val result = mutableListOf<Pair<String, Int>>()
         val prefs = userPrefs()
         for (i in 6 downTo 0) {

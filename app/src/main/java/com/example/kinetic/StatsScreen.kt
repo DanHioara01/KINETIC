@@ -159,7 +159,7 @@ fun StatsScreen(
                     val setCountMap = if (workoutIds.isNotEmpty()) {
                         db.exercitiuDao().getSetCountsForWorkouts(workoutIds).associate { it.antrenamentId to it.cnt }
                     } else emptyMap()
-                    val appLang = LanguageManager.getLanguage()
+                    val appLang = LanguageManager.getLanguage().ifEmpty { "en" }
                     val dateFmt = if (days <= 7) SimpleDateFormat("EEE", Locale(appLang))
                         else SimpleDateFormat("dd", Locale(appLang))
                     val volumeValues = mutableListOf<Double>()
@@ -213,7 +213,7 @@ fun StatsScreen(
                             }
                             val monthWorkouts = periodWorkouts.filter { it.data >= mStart.timeInMillis && it.data < mEnd.timeInMillis }
                             volumeValues.add(monthWorkouts.sumOf { it.totalWeight })
-                            val monthFmt = SimpleDateFormat("MMM", Locale.getDefault())
+                            val monthFmt = SimpleDateFormat("MMM", Locale(appLang))
                             volumeLabels.add(monthFmt.format(mStart.time).take(3))
                         }
                     }
@@ -279,7 +279,7 @@ fun StatsScreen(
             name = pb.exerciseName,
             weight = if (isLbs) "%.1f".format(pb.maxWeight * 2.20462) else "%.0f".format(pb.maxWeight),
             reps = "${pb.reps}",
-            date = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(pb.achievedAt)),
+            date = SimpleDateFormat("dd MMM yyyy", Locale(LanguageManager.getLanguage().ifEmpty { "en" })).format(Date(pb.achievedAt)),
             color = if (pb.isNew) GoldPR else palette.bl,
             bg = if (pb.isNew) palette.ams else palette.bls
         )
@@ -920,10 +920,20 @@ private fun HeatmapCard(
         accent.copy(alpha = 0.6f),
         accent
     )
+    val appLang = LanguageManager.getLanguage().ifEmpty { "en" }
+    val dayLetters = remember(appLang) {
+        val dayFmt = SimpleDateFormat("EEEEE", Locale(appLang)) // prima literă a zilei, în limba din app
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        (0 until 7).map { i ->
+            val c = (cal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, i) }
+            dayFmt.format(c.time).take(1)
+        }
+    }
     AppGlassCard(p = p, cornerRadius = 18.dp) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                listOf("L", "M", "M", "J", "V", "S", "D").forEach {
+                dayLetters.forEach {
                     Text(
                         it,
                         fontSize = 7.sp,
