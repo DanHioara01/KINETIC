@@ -159,8 +159,9 @@ fun StatsScreen(
                     val setCountMap = if (workoutIds.isNotEmpty()) {
                         db.exercitiuDao().getSetCountsForWorkouts(workoutIds).associate { it.antrenamentId to it.cnt }
                     } else emptyMap()
-                    val dateFmt = if (days <= 7) SimpleDateFormat("EEE", Locale.getDefault())
-                        else SimpleDateFormat("dd", Locale.getDefault())
+                    val appLang = LanguageManager.getLanguage()
+                    val dateFmt = if (days <= 7) SimpleDateFormat("EEE", Locale(appLang))
+                        else SimpleDateFormat("dd", Locale(appLang))
                     val volumeValues = mutableListOf<Double>()
                     val volumeLabels = mutableListOf<String>()
 

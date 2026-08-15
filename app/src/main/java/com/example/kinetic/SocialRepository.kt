@@ -56,8 +56,9 @@ class SocialRepository(private val db: AppDatabase) {
             val reverse = db.friendshipDao().getBetween(f.friendId, f.userId)
             if (reverse != null) db.friendshipDao().deleteById(reverse.id)
 
+            // Backend-ul cere userId = utilizatorul autentificat (care respinge cererea).
             try {
-                api.rejectFriendRequest(mapOf("userId" to f.userId, "friendId" to f.friendId))
+                api.rejectFriendRequest(mapOf("userId" to f.friendId, "friendId" to f.userId))
             } catch (e: Exception) { e.printStackTrace() }
         }
     }
