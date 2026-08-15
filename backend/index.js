@@ -157,18 +157,31 @@ const runQuery = (text, params) => pool.query(text, params);
 // Express 4 doesn't catch rejected promises from async handlers automatically.
 const asyncRoute = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-async function waitForDb(retries = 15, delayMs = 2000) {
+async function waitForDb(retries = 30, delayMs = 3000) {
   for (let i = 1; i <= retries; i++) {
     try {
       await pool.query('SELECT 1');
       console.log('PostgreSQL connection established');
       return;
     } catch (e) {
+      if (i === 1) {
+        console.log('=== DATABASE DIAGNOSTIC ===');
+        if (process.env.DATABASE_URL) {
+          console.log('DATABASE_URL: SET');
+          try {
+            console.log(`DB host: ${new URL(process.env.DATABASE_URL).host}`);
+          } catch (_) {}
+        } else {
+          console.log('DATABASE_URL: NOT SET — falling back to localhost:5432 (fails on Render).');
+          console.log('Create a Render Postgres and add its connection string as the DATABASE_URL env var on this service.');
+        }
+        console.log('=== END DIAGNOSTIC ===');
+      }
       console.log(`Waiting for PostgreSQL (attempt ${i}/${retries}): ${e.message}`);
       await new Promise((r) => setTimeout(r, delayMs));
     }
   }
-  throw new Error('Could not connect to PostgreSQL after retries');
+  throw new Error('Could not connect to PostgreSQL after retries. Check the DATABASE_URL env var on Render.');
 }
 
 // =============================================
@@ -472,6 +485,29 @@ const SCHEMA_SQL = `
   );
   CREATE INDEX IF NOT EXISTS idx_sync_sub_user ON sync_subscriptions(userId);
 `;
+
+// Versiunea de schemă. La prima rulare (sau dacă schema e veche/incompatibilă — de ex.
+// coloane cu ghilimele dintr-o migrare anterioară), tabelele Kinetic se reconstruiesc
+// curat. După prima migrare reușită, guard-ul schema_meta previne orice DROP ulterior,
+// deci datele reale nu se pierd niciodată la restarts/deploy-uri.
+const SCHEMA_VERSION = 'kinetic-schema-v1';
+const SCHEMA_TABLES = [...SCHEMA_SQL.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)].map((m) => m[1]);
+
+async function migrateSchema() {
+  await pool.query('CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+  const existing = await getRow('SELECT value FROM schema_meta WHERE key = $1', ['schema_version']);
+  if (existing && existing.value === SCHEMA_VERSION) return;
+
+  for (const t of SCHEMA_TABLES) {
+    await pool.query('DROP TABLE IF EXISTS "' + t + '" CASCADE');
+  }
+  await pool.query(SCHEMA_SQL);
+  await pool.query(
+    'INSERT INTO schema_meta (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+    ['schema_version', SCHEMA_VERSION]
+  );
+  console.log(`Kinetic schema migrated to ${SCHEMA_VERSION}`);
+}
 
 const SEED_BADGES = [
   { key: 'first_workout', title: 'First Workout', description: 'Completed your first workout', icon: '🏋️' },
@@ -1195,7 +1231,7 @@ app.get('/', asyncRoute(async (_req, res) => {
 
 async function init() {
   await waitForDb();
-  await pool.query(SCHEMA_SQL);
+  await migrateSchema();
   await loadNumericColumns();
   await seedBadges();
   app.listen(PORT, '0.0.0.0', () => {
