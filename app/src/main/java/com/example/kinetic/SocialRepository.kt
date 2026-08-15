@@ -40,8 +40,10 @@ class SocialRepository(private val db: AppDatabase) {
                 db.friendshipDao().upsert(FriendshipEntity(userId = f.friendId, friendId = f.userId, status = "accepted"))
             }
 
+            // Backend-ul cere userId = utilizatorul autentificat (acceptorul). Cererea
+            // primită are userId = expeditor, deci trimitem invers: acceptorul ca userId.
             try {
-                api.acceptFriendRequest(mapOf("userId" to f.userId, "friendId" to f.friendId))
+                api.acceptFriendRequest(mapOf("userId" to f.friendId, "friendId" to f.userId))
             } catch (e: Exception) { e.printStackTrace() }
         }
     }

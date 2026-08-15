@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kinetic.ui.theme.GoldPR
+import com.example.kinetic.ui.theme.LightPrimaryRed
 import com.example.kinetic.ui.theme.RecoveryGreen
 import kotlinx.coroutines.delay
 
@@ -61,6 +62,7 @@ fun PremiumUnlockSheet(
                 onClick = onWatchAd,
                 enabled = isAdReady,
                 modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = LightPrimaryRed),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Filled.PlayCircle, contentDescription = null, modifier = Modifier.size(20.dp))

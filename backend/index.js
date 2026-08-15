@@ -663,14 +663,16 @@ app.get('/friends/incoming/:userId', asyncRoute(async (req, res) => {
 
 app.post('/friends/accept', enforceAuth, asyncRoute(async (req, res) => {
   const { userId, friendId } = req.body;
+  // userId = utilizatorul autentificat (acceptorul), friendId = expeditorul cererii.
   const uid = sanitizeId(userId);
   const fid = sanitizeId(friendId);
   if (!uid || !fid) return res.status(400).json({ error: 'userId and friendId required' });
   if (requireOwnership(req, res, uid) !== true) return;
-  await runQuery("UPDATE friendships SET status = 'accepted' WHERE userId = $1 AND friendId = $2", [uid, fid]);
+  // Cererea pending e stocată (expeditor → acceptor): o acceptăm + creăm rândul invers.
+  await runQuery("UPDATE friendships SET status = 'accepted' WHERE userId = $1 AND friendId = $2 AND status = 'pending'", [fid, uid]);
   await runQuery(
     "INSERT INTO friendships (userId, friendId, status, createdAt) VALUES ($1, $2, 'accepted', $3) ON CONFLICT (userId, friendId) DO NOTHING",
-    [fid, uid, Date.now()]
+    [uid, fid, Date.now()]
   );
 
   const acceptor = await getRow('SELECT name FROM users WHERE id = $1', [uid]);

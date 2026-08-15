@@ -594,7 +594,7 @@ private fun ExperienceStep(
     data class Level(val key: String, val label: String, val icon: androidx.compose.ui.graphics.painter.Painter, val desc: String)
     val beginnerIcon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.ChildCare)
     val intermediateIcon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Person)
-    val advancedIcon = androidx.compose.ui.res.painterResource(R.drawable.trophy_star)
+    val advancedIcon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.EmojiEvents)
     val levels = remember(strings, beginnerIcon, intermediateIcon, advancedIcon) { listOf(
         Level("beginner", strings.beginnerLabel, beginnerIcon, strings.beginnerDesc),
         Level("intermediate", strings.intermediateLabel, intermediateIcon, strings.intermediateDesc),
