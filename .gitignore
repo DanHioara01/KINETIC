@@ -31,3 +31,8 @@ brace_log.txt
 *.bak
 
 backend/.env
+
+# Release signing (KEYS — never commit!)
+keystore.properties
+kinetic-release.jks
+*.jks
