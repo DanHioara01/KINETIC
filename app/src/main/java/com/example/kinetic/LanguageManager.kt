@@ -618,6 +618,24 @@ object LanguageManager {
         val updateMessage: String = m["updateMessage"] ?: "Kinetic %s has been released. You have v%s installed.\n\nTap to download the new APK."
         val updateDownload: String = m["updateDownload"] ?: "Download"
         val updateLater: String = m["updateLater"] ?: "Later"
+        val stop: String = m["stop"] ?: ""
+        val openApp: String = m["openApp"] ?: ""
+        val goal: String = m["goal"] ?: ""
+        val stepGoalChannel: String = m["stepGoalChannel"] ?: ""
+        val stepGoalTitle: String = m["stepGoalTitle"] ?: ""
+        val stepGoalText: String = m["stepGoalText"] ?: ""
+        val stepGoalBig: String = m["stepGoalBig"] ?: ""
+        val stepGoalKeepGoing: String = m["stepGoalKeepGoing"] ?: ""
+        val gpsChannelName: String = m["gpsChannelName"] ?: ""
+        val waterChannelName: String = m["waterChannelName"] ?: ""
+        val biometricChannelName: String = m["biometricChannelName"] ?: ""
+        val friendChannelName: String = m["friendChannelName"] ?: ""
+        val oneRmCalculator: String = m["oneRmCalculator"] ?: ""
+        val plusGoal: String = m["plusGoal"] ?: ""
+        val tierFree: String = m["tierFree"] ?: ""
+        val tierPro: String = m["tierPro"] ?: ""
+        val tierProPlus: String = m["tierProPlus"] ?: ""
+        val tierLifetime: String = m["tierLifetime"] ?: ""
     }
     private val strings by lazy {
         mapOf(
@@ -643,6 +661,7 @@ object LanguageManager {
     }
 
     private fun createRo() = Strings(enRaw() + mapOf(
+         "stop" to "Oprire", "openApp" to "Deschide aplicația", "goal" to "Obiectiv", "stepGoalChannel" to "Obiectiv pași", "stepGoalTitle" to "🏆 Obiectiv de pași atins!", "stepGoalText" to "Felicitări! Ai atins %d pași!", "stepGoalBig" to "Felicitări! Ai atins obiectivul de %d pași!", "stepGoalKeepGoing" to "Continuă tot așa!", "gpsChannelName" to "Urmărire GPS", "waterChannelName" to "Memento apă", "biometricChannelName" to "Memento măsurători", "friendChannelName" to "Cereri de prietenie", "oneRmCalculator" to "Calculator 1RM", "plusGoal" to "+ Obiectiv", "tierFree" to "GRATUIT", "tierPro" to "PRO", "tierProPlus" to "PRO+", "tierLifetime" to "PERMANENT",
          "dashboard" to "Panou",  "acasa" to "Acasă", "workouts" to "Antrenamente", "stats" to "Statistici", "waterIntake" to "Apa", "waterGoal" to "Obiectiv apă", "addWater" to "Adaugă apă",  "height" to "Înălțime", "personalInfo" to "Informații personale",  "ml" to "ml", "templates" to "Șabloane", "recovery" to "Recuperare",
               "everyDay" to "În fiecare zi", "reminder" to "Memento",
             "weeklyHistory" to "Istoric săptămânal", "tips" to "Sfaturi", "customMl" to "ml personalizat", "average" to "Medie", "target" to "Țintă",
@@ -866,6 +885,7 @@ object LanguageManager {
     private fun createEn() = Strings(enRaw())
 
     private fun enRaw(): Map<String, String> = mapOf(
+         "stop" to "Stop", "openApp" to "Open App", "goal" to "Goal", "stepGoalChannel" to "Step Goal", "stepGoalTitle" to "🏆 Step Goal Reached!", "stepGoalText" to "Congratulations! You reached %d steps!", "stepGoalBig" to "Congratulations! You reached your step goal of %d steps!", "stepGoalKeepGoing" to "Keep up the great work!", "gpsChannelName" to "GPS Tracking", "waterChannelName" to "Water Reminders", "biometricChannelName" to "Biometric Reminders", "friendChannelName" to "Friend Requests", "oneRmCalculator" to "1RM Calculator", "plusGoal" to "+ Goal", "tierFree" to "FREE", "tierPro" to "PRO", "tierProPlus" to "PRO+", "tierLifetime" to "LIFETIME",
          "dashboard" to "Dashboard",  "acasa" to "Home", "workouts" to "Workouts", "stats" to "Stats", "waterIntake" to "Water Intake", "waterGoal" to "Water Goal", "addWater" to "Add Water",  "height" to "Height", "personalInfo" to "Personal Info",  "ml" to "ml", "templates" to "Templates", "recovery" to "Recovery",
               "everyDay" to "Every day", "reminder" to "Reminder",
             "weeklyHistory" to "Weekly History", "tips" to "Tips", "customMl" to "Custom ml", "average" to "Average", "target" to "Target",
@@ -1088,6 +1108,7 @@ object LanguageManager {
     )
 
     private fun createRu() = Strings(enRaw() + mapOf(
+         "stop" to "Стоп", "openApp" to "Открыть приложение", "goal" to "Цель", "stepGoalChannel" to "Цель по шагам", "stepGoalTitle" to "🏆 Цель по шагам достигнута!", "stepGoalText" to "Поздравляем! Вы прошли %d шагов!", "stepGoalBig" to "Поздравляем! Вы достигли своей цели в %d шагов!", "stepGoalKeepGoing" to "Продолжайте в том же духе!", "gpsChannelName" to "GPS-трекинг", "waterChannelName" to "Напоминания о воде", "biometricChannelName" to "Напоминания об измерениях", "friendChannelName" to "Запросы в друзья", "oneRmCalculator" to "Калькулятор 1ПМ", "plusGoal" to "+ Цель", "tierFree" to "БЕСПЛАТНО", "tierPro" to "ПРО", "tierProPlus" to "ПРО+", "tierLifetime" to "НАВСЕГДА",
          "dashboard" to "Панель",  "acasa" to "Главная", "workouts" to "Тренировки", "stats" to "Статистика", "waterIntake" to "Потребление воды", "waterGoal" to "Цель воды", "addWater" to "Добавить воду",  "height" to "Рост", "personalInfo" to "Личная информация",  "ml" to "мл", "templates" to "Шаблоны", "recovery" to "Восстановление",
               "everyDay" to "Каждый день", "reminder" to "Напоминание",
             "weeklyHistory" to "Недельная история", "tips" to "Советы", "customMl" to "мл вручную", "average" to "Среднее", "target" to "Цель",
@@ -1344,6 +1365,7 @@ object LanguageManager {
     ))
 
     private fun createUk() = Strings(enRaw() + mapOf(
+         "stop" to "Стоп", "openApp" to "Відкрити застосунок", "goal" to "Ціль", "stepGoalChannel" to "Мета кроків", "stepGoalTitle" to "🏆 Мета кроків досягнута!", "stepGoalText" to "Вітаємо! Ви пройшли %d кроків!", "stepGoalBig" to "Вітаємо! Ви досягли своєї мети в %d кроків!", "stepGoalKeepGoing" to "Продовжуйте в тому ж дусі!", "gpsChannelName" to "GPS-відстеження", "waterChannelName" to "Нагадування про воду", "biometricChannelName" to "Нагадування про вимірювання", "friendChannelName" to "Запити в друзі", "oneRmCalculator" to "Калькулятор 1ПМ", "plusGoal" to "+ Мета", "tierFree" to "БЕЗКОШТОВНО", "tierPro" to "ПРО", "tierProPlus" to "ПРО+", "tierLifetime" to "НАЗАВЖДИ",
          "dashboard" to "Панель",  "acasa" to "Головна", "workouts" to "Тренування", "stats" to "Статистика", "waterIntake" to "Споживання води", "waterGoal" to "Мета води", "addWater" to "Додати воду",  "height" to "Зріст", "personalInfo" to "Особиста інформація",  "ml" to "мл", "templates" to "Шаблони",
               "everyDay" to "Щодня", "reminder" to "Нагадування",
             "weeklyHistory" to "Тижнева історія", "tips" to "Поради", "customMl" to "мл вручну", "average" to "Середня", "target" to "Мета",
@@ -1600,6 +1622,7 @@ object LanguageManager {
     ))
 
     private fun createFr() = Strings(enRaw() + mapOf(
+         "stop" to "Arrêter", "openApp" to "Ouvrir l'app", "goal" to "Objectif", "stepGoalChannel" to "Objectif de pas", "stepGoalTitle" to "🏆 Objectif de pas atteint !", "stepGoalText" to "Félicitations ! Vous avez atteint %d pas !", "stepGoalBig" to "Félicitations ! Vous avez atteint votre objectif de %d pas !", "stepGoalKeepGoing" to "Continuez comme ça !", "gpsChannelName" to "Suivi GPS", "waterChannelName" to "Rappels d'eau", "biometricChannelName" to "Rappels de mensurations", "friendChannelName" to "Demandes d'amis", "oneRmCalculator" to "Calculateur 1RM", "plusGoal" to "+ Objectif", "tierFree" to "GRATUIT", "tierPro" to "PRO", "tierProPlus" to "PRO+", "tierLifetime" to "À VIE",
          "dashboard" to "Tableau de bord",  "acasa" to "Accueil", "workouts" to "Entraînements", "stats" to "Stats", "waterIntake" to "Consommation d'eau", "waterGoal" to "Objectif eau", "addWater" to "Ajouter de l'eau",  "height" to "Taille", "personalInfo" to "Informations personnelles",  "ml" to "ml", "templates" to "Modèles",
               "everyDay" to "Chaque jour", "reminder" to "Rappel",
             "weeklyHistory" to "Historique hebdomadaire", "tips" to "Conseils", "customMl" to "ml personnalisé", "average" to "Moyenne", "target" to "Objectif",
@@ -1858,6 +1881,7 @@ object LanguageManager {
     ))
 
     private fun createDe() = Strings(enRaw() + mapOf(
+         "stop" to "Stopp", "openApp" to "App öffnen", "goal" to "Ziel", "stepGoalChannel" to "Schrittziel", "stepGoalTitle" to "🏆 Schrittziel erreicht!", "stepGoalText" to "Glückwunsch! Sie haben %d Schritte geschafft!", "stepGoalBig" to "Glückwunsch! Sie haben Ihr Ziel von %d Schritten erreicht!", "stepGoalKeepGoing" to "Weiter so!", "gpsChannelName" to "GPS-Tracking", "waterChannelName" to "Wasser-Erinnerungen", "biometricChannelName" to "Messerinnerungen", "friendChannelName" to "Freundschaftsanfragen", "oneRmCalculator" to "1RM-Rechner", "plusGoal" to "+ Ziel", "tierFree" to "KOSTENLOS", "tierPro" to "PRO", "tierProPlus" to "PRO+", "tierLifetime" to "LEBENSLANG",
          "dashboard" to "Dashboard",  "acasa" to "Startseite", "workouts" to "Trainings", "stats" to "Statistiken", "waterIntake" to "Wasseraufnahme", "waterGoal" to "Wasserziel", "addWater" to "Wasser hinzufügen",  "height" to "Größe", "personalInfo" to "Persönliche Infos",  "ml" to "ml", "templates" to "Vorlagen",
               "everyDay" to "Jeden Tag", "reminder" to "Erinnerung",
             "weeklyHistory" to "Wöchentliche Historie", "tips" to "Tipps", "customMl" to "Eigene ml", "average" to "Durchschnitt", "target" to "Ziel",
@@ -2115,6 +2139,7 @@ object LanguageManager {
     ))
 
     private fun createEs() = Strings(enRaw() + mapOf(
+         "stop" to "Detener", "openApp" to "Abrir la app", "goal" to "Objetivo", "stepGoalChannel" to "Objetivo de pasos", "stepGoalTitle" to "🏆 ¡Objetivo de pasos alcanzado!", "stepGoalText" to "¡Felicidades! ¡Has alcanzado %d pasos!", "stepGoalBig" to "¡Felicidades! Has alcanzado tu objetivo de %d pasos!", "stepGoalKeepGoing" to "¡Sigue así!", "gpsChannelName" to "Seguimiento GPS", "waterChannelName" to "Recordatorios de agua", "biometricChannelName" to "Recordatorios de mediciones", "friendChannelName" to "Solicitudes de amistad", "oneRmCalculator" to "Calculadora 1RM", "plusGoal" to "+ Objetivo", "tierFree" to "GRATIS", "tierPro" to "PRO", "tierProPlus" to "PRO+", "tierLifetime" to "DE POR VIDA",
          "dashboard" to "Panel",  "acasa" to "Inicio", "workouts" to "Entrenamientos", "stats" to "Estadísticas", "waterIntake" to "Consumo de agua", "waterGoal" to "Meta de agua", "addWater" to "Agregar agua",  "height" to "Altura", "personalInfo" to "Información personal",  "ml" to "ml", "templates" to "Plantillas",
               "everyDay" to "Cada día", "reminder" to "Recordatorio",
             "weeklyHistory" to "Historial semanal", "tips" to "Consejos", "customMl" to "ml personalizado", "average" to "Promedio", "target" to "Meta",
@@ -2375,6 +2400,7 @@ object LanguageManager {
     ))
 
     private fun createIt() = Strings(enRaw() + mapOf(
+         "stop" to "Ferma", "openApp" to "Apri l'app", "goal" to "Obiettivo", "stepGoalChannel" to "Obiettivo passi", "stepGoalTitle" to "🏆 Obiettivo passi raggiunto!", "stepGoalText" to "Congratulazioni! Hai raggiunto %d passi!", "stepGoalBig" to "Congratulazioni! Hai raggiunto il tuo obiettivo di %d passi!", "stepGoalKeepGoing" to "Continua così!", "gpsChannelName" to "Tracciamento GPS", "waterChannelName" to "Promemoria acqua", "biometricChannelName" to "Promemoria misure", "friendChannelName" to "Richieste di amicizia", "oneRmCalculator" to "Calcolatore 1RM", "plusGoal" to "+ Obiettivo", "tierFree" to "GRATIS", "tierPro" to "PRO", "tierProPlus" to "PRO+", "tierLifetime" to "A VITA",
          "dashboard" to "Pannello",  "acasa" to "Home", "workouts" to "Allenamenti", "stats" to "Statistiche", "waterIntake" to "Assunzione di acqua", "waterGoal" to "Obiettivo acqua", "addWater" to "Aggiungi acqua",  "height" to "Altezza", "personalInfo" to "Info personali",  "ml" to "ml", "templates" to "Modelli",
               "everyDay" to "Ogni giorno", "reminder" to "Promemoria",
             "weeklyHistory" to "Cronologia settimanale", "tips" to "Consigli", "customMl" to "ml personalizzato", "average" to "Media", "target" to "Obiettivo",
@@ -2633,6 +2659,7 @@ object LanguageManager {
     ))
 
     private fun createTr() = Strings(enRaw() + mapOf(
+         "stop" to "Durdur", "openApp" to "Uygulamayı aç", "goal" to "Hedef", "stepGoalChannel" to "Adım hedefi", "stepGoalTitle" to "🏆 Adım hedefine ulaştın!", "stepGoalText" to "Tebrikler! %d adıma ulaştın!", "stepGoalBig" to "Tebrikler! %d adımlık hedefine ulaştın!", "stepGoalKeepGoing" to "Böyle devam et!", "gpsChannelName" to "GPS takibi", "waterChannelName" to "Su hatırlatıcıları", "biometricChannelName" to "Ölçüm hatırlatıcıları", "friendChannelName" to "Arkadaşlık istekleri", "oneRmCalculator" to "1RM Hesaplayıcı", "plusGoal" to "+ Hedef", "tierFree" to "ÜCRETSİZ", "tierPro" to "PRO", "tierProPlus" to "PRO+", "tierLifetime" to "ÖMÜR BOYU",
          "dashboard" to "Gösterge Paneli",  "acasa" to "Ana Sayfa", "workouts" to "Egzersizler", "stats" to "İstatistikler", "waterIntake" to "Su Tüketimi", "waterGoal" to "Su Hedefi", "addWater" to "Su Ekle",  "height" to "Boy", "personalInfo" to "Kişisel Bilgi",  "ml" to "ml", "templates" to "Şablonlar",
               "everyDay" to "Her gün", "reminder" to "Hatırlatıcı",
             "weeklyHistory" to "Haftalık geçmiş", "tips" to "İpuçları", "customMl" to "Özel ml", "average" to "Ortalama", "target" to "Hedef",
@@ -2889,6 +2916,7 @@ object LanguageManager {
     ))
 
     private fun createPt() = Strings(enRaw() + mapOf(
+         "stop" to "Parar", "openApp" to "Abrir o app", "goal" to "Meta", "stepGoalChannel" to "Meta de passos", "stepGoalTitle" to "🏆 Meta de passos atingida!", "stepGoalText" to "Parabéns! Você atingiu %d passos!", "stepGoalBig" to "Parabéns! Você atingiu sua meta de %d passos!", "stepGoalKeepGoing" to "Continue assim!", "gpsChannelName" to "Rastreamento GPS", "waterChannelName" to "Lembretes de água", "biometricChannelName" to "Lembretes de medidas", "friendChannelName" to "Pedidos de amizade", "oneRmCalculator" to "Calculadora 1RM", "plusGoal" to "+ Meta", "tierFree" to "GRÁTIS", "tierPro" to "PRO", "tierProPlus" to "PRO+", "tierLifetime" to "VITALÍCIO",
          "dashboard" to "Painel",  "acasa" to "Início", "workouts" to "Treinos", "stats" to "Estatísticas", "waterIntake" to "Consumo de água", "waterGoal" to "Meta de água", "addWater" to "Adicionar água",  "height" to "Altura", "personalInfo" to "Informações pessoais",  "ml" to "ml", "templates" to "Modelos",
               "everyDay" to "Todos os dias", "reminder" to "Lembrete",
             "weeklyHistory" to "Histórico semanal", "tips" to "Dicas", "customMl" to "ml personalizado", "average" to "Média", "target" to "Meta",
@@ -3149,6 +3177,7 @@ object LanguageManager {
     ))
 
     private fun createPl() = Strings(enRaw() + mapOf(
+         "stop" to "Zatrzymaj", "openApp" to "Otwórz aplikację", "goal" to "Cel", "stepGoalChannel" to "Cel kroków", "stepGoalTitle" to "🏆 Cel kroków osiągnięty!", "stepGoalText" to "Gratulacje! Osiągnąłeś %d kroków!", "stepGoalBig" to "Gratulacje! Osiągnąłeś swój cel %d kroków!", "stepGoalKeepGoing" to "Tak trzymaj!", "gpsChannelName" to "Śledzenie GPS", "waterChannelName" to "Przypomnienia o wodzie", "biometricChannelName" to "Przypomnienia o pomiarach", "friendChannelName" to "Prośby o znajomość", "oneRmCalculator" to "Kalkulator 1RM", "plusGoal" to "+ Cel", "tierFree" to "DARMOWE", "tierPro" to "PRO", "tierProPlus" to "PRO+", "tierLifetime" to "DOŻYWOTNI",
          "dashboard" to "Panel",  "acasa" to "Strona Główna", "workouts" to "Treningi", "stats" to "Statystyki", "waterIntake" to "Spożycie wody", "waterGoal" to "Cel wody", "addWater" to "Dodaj wodę",  "height" to "Wzrost", "personalInfo" to "Informacje osobiste",  "ml" to "ml", "templates" to "Szablony",
               "everyDay" to "Codziennie", "reminder" to "Przypomnienie",
             "weeklyHistory" to "Historia tygodniowa", "tips" to "Wskazówki", "customMl" to "Własne ml", "average" to "Średnia", "target" to "Cel",

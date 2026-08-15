@@ -1,5 +1,6 @@
 package com.example.kinetic.ui.theme
 
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 val Ember = Color(0xFFEC0123)
@@ -97,6 +98,12 @@ val LanguageFlagBg = DeepTealBlack
 
 val LightRed = Ember
 val DividerGray = Color(0xFF616161)
+
+// Gradient coral pentru toate butoanele cu roșu (global, în ambele teme).
+// Se potrivește cu quick-add-ul de apă: coral aprins → roșcat-portocaliu.
+val RedButtonGradientTop = Color(0xFFFF3C3C)
+val RedButtonGradientBottom = Color(0xFFFF6B4A)
+val RedButtonGradient = Brush.verticalGradient(listOf(RedButtonGradientTop, RedButtonGradientBottom))
 
 val GlassSurfaceDark = Color(0xFF1A0000)
 val GlassBorderDark = Ember

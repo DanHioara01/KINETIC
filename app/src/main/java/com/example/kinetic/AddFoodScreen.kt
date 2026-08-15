@@ -1,5 +1,6 @@
 package com.example.kinetic
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -393,10 +394,11 @@ fun AddFoodScreen(
                                 onClick = { saveFromDatabase() },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(50.dp),
+                                    .height(50.dp)
+                                    .background(RedButtonGradient, RoundedCornerShape(14.dp)),
                                 enabled = calculated != null,
                                 shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = p.ac)
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White)
                             ) {
                                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -488,10 +490,12 @@ private fun ModeToggleButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(44.dp),
+        modifier = modifier
+            .height(44.dp)
+            .then(if (selected) Modifier.background(RedButtonGradient, RoundedCornerShape(12.dp)) else Modifier),
         shape = RoundedCornerShape(12.dp),
         colors = if (selected) {
-            ButtonDefaults.buttonColors(containerColor = p.ac)
+            ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White)
         } else {
             ButtonDefaults.outlinedButtonColors(contentColor = p.tp)
         },

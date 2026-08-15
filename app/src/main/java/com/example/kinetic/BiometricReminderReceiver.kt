@@ -61,7 +61,7 @@ class BiometricReminderReceiver : BroadcastReceiver() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Biometric Reminders",
+                LanguageManager.getStrings(context).biometricChannelName,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Weekly reminder to log body measurements"

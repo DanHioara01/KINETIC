@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,9 +46,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private fun makeChatTitle(text: String): String {
+private fun makeChatTitle(text: String, newChatLabel: String): String {
     val line = text.lineSequence().firstOrNull()?.trim().orEmpty()
-    return if (line.isEmpty()) "New chat"
+    return if (line.isEmpty()) newChatLabel
     else if (line.length > 40) line.take(40).trimEnd() + "…"
     else line
 }
@@ -153,10 +154,20 @@ fun AiTrainerScreen(
                     onBack = onBack,
                     actions = {
                         IconButton(onClick = { startNewChat() }) {
-                            Icon(Icons.Default.Add, contentDescription = strings.newChat, tint = accent)
+                            Icon(
+                                painterResource(R.drawable.ic_ai_new_chat),
+                                contentDescription = strings.newChat,
+                                tint = p.tp,
+                                modifier = Modifier.size(28.dp)
+                            )
                         }
                         IconButton(onClick = { showHistoryDrawer = true }) {
-                            Icon(Icons.Default.History, contentDescription = strings.history, tint = accent)
+                            Icon(
+                                painterResource(R.drawable.ic_ai_history),
+                                contentDescription = strings.history,
+                                tint = p.tp,
+                                modifier = Modifier.size(28.dp)
+                            )
                         }
                     }
                 )
@@ -441,7 +452,7 @@ fun AiTrainerScreen(
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                makeChatTitle(preview),
+                                                makeChatTitle(preview, strings.newChat),
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = textPrimary,

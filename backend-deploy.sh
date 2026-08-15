@@ -10,9 +10,11 @@ set -e
 LOG_DIR="./logs"
 LOG_FILE="$LOG_DIR/server.log"
 PID_FILE="$LOG_DIR/server.pid"
-SHARED_DATA_DIR="./shared-data/db"
-DATABASE_FILE="$SHARED_DATA_DIR/kinetic.db"
 MAX_LOG_SIZE=10M
+
+# PostgreSQL connection string. Override with DATABASE_URL env var
+# (e.g. the connection string from Render managed Postgres or Supabase).
+DATABASE_URL="${DATABASE_URL:-postgres://postgres:postgres@localhost:5432/kinetic}"
 
 # ==============================================================================
 # FUNCTIONS
@@ -33,12 +35,12 @@ log_structured() {
 }
 
 check_database() {
-    if [ ! -f "$DATABASE_FILE" ]; then
-        log "INFO" "Creating new database at $DATABASE_FILE"
-        mkdir -p "$SHARED_DATA_DIR"
-    else
-        log "INFO" "Using existing database at $DATABASE_FILE (size: $(du -h "$DATABASE_FILE" | cut -d'\t' -f1))"
+    if [ -z "$DATABASE_URL" ]; then
+        log "ERROR" "DATABASE_URL is not set"
+        return 1
     fi
+    local db_host=$(echo "$DATABASE_URL" | sed -E 's|^[a-z]+://[^@]*@?([^:/]+).*|\1|')
+    log "INFO" "Using PostgreSQL at $db_host (set DATABASE_URL to override)"
 }
 
 start_server() {
@@ -47,6 +49,7 @@ start_server() {
     log "INFO" "npm version: $(npm --version)"
     
     export NODE_ENV=production
+    export DATABASE_URL="$DATABASE_URL"
     
     node index.js >> "$LOG_FILE" 2>&1 &
     local server_pid=$!

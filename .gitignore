@@ -13,9 +13,7 @@ serviceAccountKey.json
 local.properties
 app/build
 backend/node_modules
-backend/kinetic.db
-backend/kinetic.db-wal
-backend/kinetic.db-shm
+backend/*.db*
 functions/node_modules
 functions/lib
 .ai_server/__pycache__

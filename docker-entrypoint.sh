@@ -6,13 +6,6 @@ set -e
 # Create logs directory
 mkdir -p logs
 
-# Copy database from shared volume if available
-mkdir -p shared-data/db
-if [ -f "/app/kinetic.db" ]; then
-    echo "Loading external database from /app/kinetic.db"
-    cp /app/kinetic.db shared-data/db/kinetic.db
-fi
-
 # Set permissions — do this only when running as root (the Dockerfile already
 # chowns at build time; as USER node these would fail with EPERM and exit 1).
 if [ "$(id -u)" = "0" ]; then

@@ -62,7 +62,6 @@ fun TodayWorkoutScreen(
     onSaveExercise: (String, String) -> Unit,
     onBack: () -> Unit,
     onOpenSpotify: () -> Unit = {},
-    exerciseSummaries: Map<String, ExerciseSummary> = emptyMap(),
     recoveryMap: Map<String, Double> = emptyMap()
 ) {
     val p = appPalette(isDark)
@@ -111,7 +110,6 @@ fun TodayWorkoutScreen(
             onSaveExercise = onSaveExercise,
             onBack = onBack,
             onOpenSpotify = onOpenSpotify,
-            exerciseSummaries = exerciseSummaries,
             recoveryMap = recoveryMap
         )
     }
@@ -225,7 +223,6 @@ private fun CycleWorkoutContent(
     onSaveExercise: (String, String) -> Unit,
     onBack: () -> Unit,
     onOpenSpotify: () -> Unit = {},
-    exerciseSummaries: Map<String, ExerciseSummary> = emptyMap(),
     recoveryMap: Map<String, Double> = emptyMap()
 ) {
     val regularExercises = remember(todayWorkout) {

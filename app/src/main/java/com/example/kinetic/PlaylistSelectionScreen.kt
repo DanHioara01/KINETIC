@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kinetic.ui.components.GlassCard
 import com.example.kinetic.ui.theme.DarkBackground
 import com.example.kinetic.ui.theme.LightBackground
+import com.example.kinetic.ui.theme.RedButtonGradient
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.res.painterResource
 
@@ -183,11 +184,12 @@ fun PlaylistSelectionScreen(
                                 val authIntent = SpotifyManager.buildAuthIntent(context)
                                 authLauncher.launch(authIntent)
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = accent),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                             shape = RoundedCornerShape(24.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp)
+                                .background(RedButtonGradient, RoundedCornerShape(24.dp))
                         ) {
                             Image(
                                 painter = rememberAsyncImagePainter(

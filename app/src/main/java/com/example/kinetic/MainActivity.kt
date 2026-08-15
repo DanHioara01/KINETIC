@@ -491,7 +491,7 @@ fun MuscleGroupList(
                         if (profileName.isNotBlank()) {
                             val db = AppDatabase.getDatabase(context)
                             // Dacă poza e un path local (file:// / content://), o urcăm în
-                            // Firebase Storage ca să fie vizibilă și pentru ceilalți (leaderboard,
+                            // Supabase Storage ca să fie vizibilă și pentru ceilalți (leaderboard,
                             // căutare); altfel trimitem URL-ul direct.
                             var photoToSync = profilePhoto
                             if (photoToSync.startsWith("file://") || photoToSync.startsWith("content://")) {
@@ -794,7 +794,30 @@ fun MuscleGroupList(
         }
     }
 
-    DisposableEffect(Unit) {
+    // Android 10+ requires ACTIVITY_RECOGNITION to read the step counter.
+    // Without it the sensor enable fails silently and steps stay at 0.
+    var stepSensorPermissionGranted by remember {
+        mutableStateOf(
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACTIVITY_RECOGNITION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val stepSensorPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted -> stepSensorPermissionGranted = granted }
+
+    LaunchedEffect(Unit) {
+        if (!stepSensorPermissionGranted) {
+            stepSensorPermissionLauncher.launch(android.Manifest.permission.ACTIVITY_RECOGNITION)
+        }
+    }
+
+    DisposableEffect(stepSensorPermissionGranted) {
+        if (!stepSensorPermissionGranted) {
+            // Re-runs once the user answers the runtime permission dialog
+            onDispose {}
+        } else {
         val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
         val stepCounter = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
         val prefs = context.getSharedPreferences("pedometer_prefs", android.content.Context.MODE_PRIVATE)
@@ -816,6 +839,8 @@ fun MuscleGroupList(
                     lastPersistedSteps = pedometerSteps
                     preferencesManager.setTodaySteps(pedometerSteps)
                 }
+                // Congratulation notification when the daily step goal is reached (once per day)
+                StepGoalNotifier.notifyIfGoalReached(context, pedometerSteps, stepGoal)
                 // Refresh the steps widget at most once a minute
                 val now = System.currentTimeMillis()
                 if (now - lastWidgetBroadcast > 60_000L) {
@@ -832,6 +857,7 @@ fun MuscleGroupList(
 
         onDispose {
             sensorManager.unregisterListener(listener)
+        }
         }
     }
 
@@ -1889,7 +1915,6 @@ fun MuscleGroupList(
                     val equipKey = preferencesManager.getEquipmentAvailable()
                     val onboardingProfile = remember(equipKey, profileChangedTrigger) { preferencesManager.getOnboardingProfile() }
                     val todayWorkoutData = mainViewModel.todayWorkout.collectAsState()
-                    val exerciseSummaries by mainViewModel.exerciseSummaries.collectAsState()
                     var isTodayScheduledRest by remember { mutableStateOf(false) }
                     LaunchedEffect(showTodayWorkout, equipKey, profileChangedTrigger) {
                         val db = AppDatabase.getDatabase(context)
@@ -1906,12 +1931,6 @@ fun MuscleGroupList(
                             isTodayScheduledRest = todayRestDay != null
                         }
                         mainViewModel.computeTodayWorkout(preferencesManager)
-                        val workout = mainViewModel.todayWorkout.value
-                        if (workout != null) {
-                            val names = workout.exercises.map { it.name }
-                            val userId = UserProfileManager(context).getOwnUserId()
-                            mainViewModel.loadExerciseSummaries(userId, names)
-                        }
                     }
                             TodayWorkoutScreen(
                                 todayWorkout = if (isTodayScheduledRest) null else todayWorkoutData.value,
@@ -1931,7 +1950,6 @@ fun MuscleGroupList(
                                 },
                                 onOpenSpotify = { openSpotifyApp(context) },
                                 onBack = { showTodayWorkout = false },
-                                exerciseSummaries = exerciseSummaries,
                                 recoveryMap = recoveryMap
                             )
                 } else if (isWorkoutFlowActive) {
@@ -2054,12 +2072,13 @@ fun MuscleGroupList(
                                         Column {
                                             Button(
                                                 onClick = { showTodayWorkout = true },
-                                                colors = ButtonDefaults.buttonColors(containerColor = accent),
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                                                 shape = RoundedCornerShape(14.dp),
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                                                     .height(48.dp)
+                                                    .background(RedButtonGradient, RoundedCornerShape(14.dp))
                                             ) {
                                                 Icon(
                                                     Icons.Default.PlayArrow,
@@ -4682,7 +4701,7 @@ fun ProfileScreen(
                     photoVersion++
                 }
                 userProfileManager.saveOwnProfile(profileName, downloadUrl, profileBio)
-                // Doar URL-urile reale (Firebase Storage) se sincronizează în cloud;
+                // Doar URL-urile reale (Supabase Storage) se sincronizează în cloud;
                 // URI-urile locale file:// rămân doar pe acest device.
                 if (downloadUrl.startsWith("http")) {
                     try { FirestoreHelper().saveUserProfile(uid, profileName, downloadUrl, profileBio) } catch (_: Exception) {}
@@ -4744,10 +4763,10 @@ fun ProfileScreen(
     }
 
     val tierLabel = when (subscriptionTier) {
-        SubscriptionTier.FREE -> "FREE"
-        SubscriptionTier.PREMIUM_MONTHLY -> "PRO"
-        SubscriptionTier.PREMIUM_ANNUAL -> "PRO+"
-        SubscriptionTier.PRO_LIFETIME -> "LIFETIME"
+        SubscriptionTier.FREE -> strings.tierFree
+        SubscriptionTier.PREMIUM_MONTHLY -> strings.tierPro
+        SubscriptionTier.PREMIUM_ANNUAL -> strings.tierProPlus
+        SubscriptionTier.PRO_LIFETIME -> strings.tierLifetime
     }
     val tierColor = when (subscriptionTier) {
         SubscriptionTier.FREE -> p.ts

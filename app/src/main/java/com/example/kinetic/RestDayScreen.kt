@@ -390,7 +390,8 @@ fun RestDayScreen(
                         }
                         showDeloadSetup = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = p.ac),
+                    modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(10.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -413,24 +414,82 @@ fun RestDayScreen(
         val initialDate = editing?.date ?: System.currentTimeMillis()
         val dateState = rememberDatePickerState(initialSelectedDateMillis = localToUtcMillis(initialDate))
 
-        DatePickerDialog(
+        val dialogContainer = if (isDark) Color(0xFF1E1E1E) else Color.White
+        val dialogText = if (isDark) Color(0xFFF0F0F5) else LightTextPrimary
+
+        AlertDialog(
             onDismissRequest = { showScheduleDialog = false; editingRestDay = null },
-            colors = DatePickerDefaults.colors(
-                containerColor = p.bg,
-                titleContentColor = p.tp,
-                headlineContentColor = p.tp,
-                weekdayContentColor = p.ts,
-                subheadContentColor = p.ts,
-                yearContentColor = p.tp,
-                currentYearContentColor = p.ac,
-                selectedYearContainerColor = p.ac,
-                selectedYearContentColor = Color.White,
-                dayContentColor = p.tp,
-                selectedDayContainerColor = p.ac,
-                selectedDayContentColor = Color.White,
-                todayContentColor = p.ac,
-                todayDateBorderColor = p.ac
-            ),
+            containerColor = dialogContainer,
+            tonalElevation = 0.dp,
+            title = {
+                Text(
+                    if (editing != null) strings.editRestDay else strings.tapToSchedule,
+                    fontWeight = FontWeight.Bold,
+                    color = dialogText
+                )
+            },
+            text = {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val types = remember(strings) { listOf("rest" to strings.recovery, "deload" to strings.deloadWeek, "stretching" to strings.stretching) }
+                        types.forEach { (type, label) ->
+                            FilterChip(
+                                selected = selectedType == type,
+                                onClick = { selectedType = type },
+                                label = { Text(label, fontSize = 11.sp, color = if (selectedType == type) p.ac else dialogText) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = Color.Transparent,
+                                    selectedContainerColor = p.ac.copy(alpha = 0.15f),
+                                    labelColor = dialogText,
+                                    selectedLabelColor = p.ac,
+                                    disabledLabelColor = dialogText,
+                                    disabledContainerColor = Color.Transparent
+                                ),
+                                shape = RoundedCornerShape(20.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = notes,
+                        onValueChange = { notes = it },
+                        placeholder = { Text(strings.notes, color = p.ts.copy(alpha = 0.5f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = p.ac,
+                            unfocusedBorderColor = p.ts.copy(alpha = 0.3f),
+                            cursorColor = p.ac,
+                            focusedTextColor = dialogText,
+                            unfocusedTextColor = dialogText
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    DatePicker(
+                        state = dateState,
+                        colors = DatePickerDefaults.colors(
+                            containerColor = Color.Transparent,
+                            titleContentColor = dialogText,
+                            headlineContentColor = dialogText,
+                            weekdayContentColor = p.ts,
+                            subheadContentColor = p.ts,
+                            yearContentColor = dialogText,
+                            currentYearContentColor = p.ac,
+                            selectedYearContainerColor = p.ac,
+                            selectedYearContentColor = Color.White,
+                            dayContentColor = dialogText,
+                            disabledDayContentColor = p.ts.copy(alpha = 0.3f),
+                            selectedDayContainerColor = p.ac,
+                            selectedDayContentColor = Color.White,
+                            todayContentColor = p.ac,
+                            todayDateBorderColor = p.ac
+                        )
+                    )
+                }
+            },
             confirmButton = {
                 TextButton(onClick = {
                     val utc = dateState.selectedDateMillis ?: localToUtcMillis(initialDate)
@@ -474,45 +533,7 @@ fun RestDayScreen(
                     Text(strings.cancel, color = p.ac)
                 }
             }
-        ) {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val types = remember(strings) { listOf("rest" to strings.recovery, "deload" to strings.deloadWeek, "stretching" to strings.stretching) }
-                    types.forEach { (type, label) ->
-                        FilterChip(
-                            selected = selectedType == type,
-                            onClick = { selectedType = type },
-                            label = { Text(label, fontSize = 11.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = p.ac.copy(alpha = 0.15f),
-                                selectedLabelColor = p.ac
-                            ),
-                            shape = RoundedCornerShape(20.dp)
-                        )
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    placeholder = { Text(strings.notes, color = p.ts.copy(alpha = 0.5f)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = p.ac,
-                        unfocusedBorderColor = p.ts.copy(alpha = 0.3f),
-                        cursorColor = p.ac,
-                        focusedTextColor = p.tp,
-                        unfocusedTextColor = p.tp
-                    ),
-                    shape = RoundedCornerShape(10.dp)
-                )
-                Spacer(Modifier.height(8.dp))
-                DatePicker(state = dateState)
-            }
-        }
+        )
     }
 
     Scaffold(
@@ -823,8 +844,10 @@ fun RestDayScreen(
                                             showDeloadSetup = true
                                         }
                                     },
-                                    modifier = Modifier.weight(1f),
-                                    colors = ButtonDefaults.buttonColors(containerColor = p.ac),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .background(RedButtonGradient, RoundedCornerShape(10.dp)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                                     shape = RoundedCornerShape(10.dp)
                                 ) {
                                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -1138,7 +1161,8 @@ fun RestDayScreen(
                                         }
                                         showDeleteConfirm = false
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = RecoveryRed),
+                                    modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(10.dp)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                                     shape = RoundedCornerShape(10.dp)
                                 ) {
                                     Text(strings.delete, color = Color.White)

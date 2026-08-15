@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -101,7 +102,12 @@ fun FriendsScreen(
                 onBack = onBackClick,
                 actions = {
                     IconButton(onClick = onOpenLeaderboard) {
-                        Icon(Icons.Default.EmojiEvents, contentDescription = strings.leaderboard, tint = p.ac)
+                        Icon(
+                            painterResource(R.drawable.ic_leaderboard_trophy),
+                            contentDescription = strings.leaderboard,
+                            tint = p.tp,
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
                 }
             )
@@ -400,7 +406,8 @@ private fun SearchResultCard(
                         }
                     },
                     enabled = !sending,
-                    colors = ButtonDefaults.buttonColors(containerColor = p.ac),
+                    modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(10.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                     shape = RoundedCornerShape(10.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                 ) {
@@ -501,7 +508,8 @@ private fun IncomingRequestCard(
                             onAccepted()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = p.ac),
+                    modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(10.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                     shape = RoundedCornerShape(10.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                 ) {

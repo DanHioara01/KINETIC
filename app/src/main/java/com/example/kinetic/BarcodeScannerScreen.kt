@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -146,7 +147,8 @@ fun BarcodeScannerScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = { startScan() },
-                        colors = ButtonDefaults.buttonColors(containerColor = accent),
+                        modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(12.dp)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = null)

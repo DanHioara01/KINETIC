@@ -337,8 +337,10 @@ fun BodyFatCalculatorScreen(
 
             Button(
                 onClick = { showResult = true },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = p.ac),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(RedButtonGradient, RoundedCornerShape(12.dp)),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Default.Calculate, contentDescription = null, tint = Color.White)

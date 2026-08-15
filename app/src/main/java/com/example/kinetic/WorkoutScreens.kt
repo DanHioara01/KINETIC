@@ -1591,7 +1591,8 @@ fun DailyActivityCard(
                                     showSetGoalDialog = false
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = accent),
+                            modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(10.dp)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                             shape = RoundedCornerShape(10.dp)
                         ) {
                             Text(strings.save, color = Color.White, fontWeight = FontWeight.SemiBold)
@@ -1690,6 +1691,7 @@ fun DailyActivityCard(
                     goalText = "/ ${formatStepGoalShort(currentStepGoal)}",
                     textPrimary = textPrimary,
                     textSecondary = textSecondary,
+                    goalLabel = strings.plusGoal,
                     onSetGoal = onSetStepGoal?.let { { showSetGoalDialog = true } }
                 )
                 DailyMetricRow(
@@ -1723,6 +1725,7 @@ private fun DailyMetricRow(
     textPrimary: Color,
     textSecondary: Color,
     unit: String? = null,
+    goalLabel: String = "+ Goal",
     onSetGoal: (() -> Unit)? = null
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1778,7 +1781,7 @@ private fun DailyMetricRow(
                             .padding(horizontal = 8.dp, vertical = 2.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("+ Goal", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = color)
+                        Text(goalLabel, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = color)
                     }
                 }
             }

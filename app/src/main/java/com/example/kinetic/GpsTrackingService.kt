@@ -24,9 +24,7 @@ class GpsTrackingService : Service() {
 
     companion object {
         const val CHANNEL_ID = "gps_tracking"
-        const val STEP_GOAL_CHANNEL_ID = "step_goal"
         const val NOTIFICATION_ID = 1001
-        const val STEP_GOAL_NOTIFICATION_ID = 1002
         const val ACTION_STOP = "com.example.kinetic.STOP_TRACKING"
         const val ACTION_START = "com.example.kinetic.START_TRACKING"
         const val ACTION_PAUSE = "com.example.kinetic.PAUSE_TRACKING"
@@ -288,7 +286,7 @@ class GpsTrackingService : Service() {
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "GPS Tracking",
+            LanguageManager.getStrings(this).gpsChannelName,
             NotificationManager.IMPORTANCE_LOW
         ).apply {
             description = "GPS tracking notification"
@@ -296,16 +294,8 @@ class GpsTrackingService : Service() {
         }
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
 
-        val stepGoalChannel = NotificationChannel(
-            STEP_GOAL_CHANNEL_ID,
-            "Step Goal",
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = "Notifications when you reach your step goal"
-            enableVibration(true)
-            vibrationPattern = longArrayOf(0, 300, 200, 300)
-        }
-        getSystemService(NotificationManager::class.java).createNotificationChannel(stepGoalChannel)
+        // Step Goal channel is created by StepGoalNotifier.ensureChannel()
+        StepGoalNotifier.ensureChannel(this)
     }
 
     private fun buildNotification(time: String, speed: String): android.app.Notification {
@@ -340,7 +330,7 @@ class GpsTrackingService : Service() {
             "running" -> strings.running
             "cycling" -> strings.cycling
             "walking" -> strings.walking
-            else -> "Cardio"
+            else -> strings.cardio
         }
 
         val distance = String.format(Locale.US, "%.2f", GpsTrackingState.totalDistance)
@@ -358,9 +348,9 @@ class GpsTrackingService : Service() {
         } else "--:--"
 
         val expandedText = buildString {
-            appendLine("Speed: $speed km/h    Distance: $distance km")
-            appendLine("Pace: $pace    Steps: $steps")
-            appendLine("Goal: ${GpsTrackingState.stepGoal} ${strings.steps}")
+            appendLine("${strings.speed}: $speed km/h    ${strings.distance}: $distance km")
+            appendLine("${strings.pace}: $pace    ${strings.steps}: $steps")
+            appendLine("${strings.goal}: ${GpsTrackingState.stepGoal} ${strings.steps}")
         }.trimEnd()
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
@@ -370,8 +360,8 @@ class GpsTrackingService : Service() {
             .setStyle(NotificationCompat.BigTextStyle().bigText(expandedText))
             .setOngoing(true)
             .setContentIntent(pendingIntent)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", stopPendingIntent)
-            .addAction(android.R.drawable.ic_menu_mapmode, "Open App", openPendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, strings.stop, stopPendingIntent)
+            .addAction(android.R.drawable.ic_menu_mapmode, strings.openApp, openPendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
@@ -394,33 +384,7 @@ class GpsTrackingService : Service() {
     }
 
     private fun showStepGoalNotification() {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("open_gps_cardio", true)
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            this, 3, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notification = NotificationCompat.Builder(this, STEP_GOAL_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("🏆 Step Goal Reached!")
-            .setContentText("Congratulations! You reached ${GpsTrackingState.stepGoal} steps!")
-            .setStyle(NotificationCompat.BigTextStyle().bigText(
-                "Congratulations! You reached your step goal of ${GpsTrackingState.stepGoal} steps!\n" +
-                "Total distance: ${String.format(Locale.US, "%.2f", GpsTrackingState.totalDistance)} km\n" +
-                "Keep up the great work!"
-            ))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
-
-        try {
-            val nm = getSystemService(NotificationManager::class.java)
-            nm.notify(STEP_GOAL_NOTIFICATION_ID, notification)
-        } catch (_: SecurityException) { }
+        // Shared notifier: shows the congratulation once per day, no matter the counting source.
+        StepGoalNotifier.notifyIfGoalReached(this, GpsTrackingState.estimatedSteps, GpsTrackingState.stepGoal)
     }
 }

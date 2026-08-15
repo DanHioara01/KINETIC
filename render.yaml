@@ -1,3 +1,9 @@
+databases:
+  - name: kinetic-db
+    databaseName: kinetic
+    user: kinetic
+    plan: free
+
 services:
   - type: web
     name: kinetic-ai-trainer
@@ -24,3 +30,7 @@ services:
     envVars:
       - key: PORT
         value: "4242"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kinetic-db
+          property: connectionString

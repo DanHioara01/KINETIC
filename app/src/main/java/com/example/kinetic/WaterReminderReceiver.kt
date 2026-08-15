@@ -71,7 +71,7 @@ class WaterReminderReceiver : BroadcastReceiver() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Water Reminders",
+                LanguageManager.getStrings(context).waterChannelName,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Notifications to remind you to drink water"

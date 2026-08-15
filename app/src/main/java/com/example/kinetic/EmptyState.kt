@@ -1,7 +1,9 @@
 package com.example.kinetic
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import com.example.kinetic.ui.theme.RedButtonGradient
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,11 +87,13 @@ fun EmptyState(
 
             Button(
                 onClick = onAction,
+                modifier = Modifier
+                    .height(44.dp)
+                    .then(if (accent != null) Modifier.background(RedButtonGradient, MaterialTheme.shapes.medium) else Modifier),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = accent ?: textSecondary
+                    containerColor = if (accent != null) Color.Transparent else textSecondary
                 ),
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.height(44.dp)
+                shape = MaterialTheme.shapes.medium
             ) {
                 Text(
                     actionLabel,

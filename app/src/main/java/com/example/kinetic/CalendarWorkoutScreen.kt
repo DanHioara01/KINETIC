@@ -281,7 +281,7 @@ fun CalendarWorkoutScreen(
                     if (showDeleteDialog) {
                         AlertDialog(
                             onDismissRequest = { showDeleteDialog = false },
-                            containerColor = Color(0xFF1A1A1A),
+                            containerColor = p.card,
                             title = { Text(strings.delete ?: "Delete", color = p.tp, fontWeight = FontWeight.Bold) },
                             text = { Text(strings.confirm ?: "Confirm?", color = p.ts) },
                             confirmButton = {

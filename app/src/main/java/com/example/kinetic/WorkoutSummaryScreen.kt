@@ -233,8 +233,10 @@ fun WorkoutSummaryScreen(
 
         Button(
             onClick = onDismiss,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = accent),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(RedButtonGradient, RoundedCornerShape(12.dp)),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
             shape = RoundedCornerShape(12.dp)
         ) {
             Text(strings.done ?: "Done", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)

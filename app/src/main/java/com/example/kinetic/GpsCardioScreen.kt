@@ -97,7 +97,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -105,6 +107,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kinetic.ui.components.KineticAppBar
 import com.example.kinetic.ui.theme.RecoveryRed
+import com.example.kinetic.ui.theme.RedButtonGradient
 import com.example.kinetic.ui.theme.Varien
 import com.example.kinetic.ui.theme.appPalette
 import com.example.kinetic.ui.theme.LightTextPrimary
@@ -465,7 +468,8 @@ fun GpsCardioScreen(
                             context.startActivity(android.content.Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                         } catch (_: Exception) {}
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = accent),
+                    modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(10.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(strings.openSettings, color = Color.White, fontWeight = FontWeight.SemiBold)
@@ -498,7 +502,8 @@ fun GpsCardioScreen(
                             context.startActivity(intent)
                         } catch (_: Exception) {}
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = accent),
+                    modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(10.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(strings.openSettings, color = Color.White, fontWeight = FontWeight.SemiBold)
@@ -575,7 +580,8 @@ fun GpsCardioScreen(
                             showSaveDialog = false
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = accent),
+                    modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(10.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(strings.save, color = Color.White, fontWeight = FontWeight.SemiBold)
@@ -634,7 +640,12 @@ fun GpsCardioScreen(
                 actions = {
                     if (selectedRoute == null && !gpsState.isTracking) {
                         IconButton(onClick = { showSavedRoutes = !showSavedRoutes }) {
-                            Icon(Icons.Default.Route, contentDescription = strings.savedRoutes, tint = accent)
+                            Icon(
+                                painterResource(R.drawable.ic_route_map),
+                                contentDescription = strings.savedRoutes,
+                                tint = p.tp,
+                                modifier = Modifier.size(28.dp)
+                            )
                         }
                     }
                 }
@@ -696,7 +707,7 @@ fun GpsCardioScreen(
                                     FilterChip(
                                         selected = isActive,
                                         onClick = { if (!gpsState.isTracking) gpsState.activityType = type },
-                                        label = { Text(when(type) { "running" -> strings.running; "cycling" -> strings.cycling; "walking" -> strings.walking; else -> type }, fontSize = 12.sp) },
+                                        label = { Text(when(type) { "running" -> strings.running; "cycling" -> strings.cycling; "walking" -> strings.walking; else -> strings.cardio }, fontSize = 12.sp) },
                                         leadingIcon = {
                                             Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp))
                                         },
@@ -783,7 +794,7 @@ fun GpsCardioScreen(
                         ) {
                             StatCard(
                                 modifier = Modifier.weight(1f),
-                                icon = Icons.Default.Speed,
+                                iconPainter = painterResource(R.drawable.ic_distance),
                                 value = String.format(Locale.US, "%.2f", gpsState.totalDistance),
                                 unit = "km",
                                 label = strings.distance,
@@ -791,7 +802,7 @@ fun GpsCardioScreen(
                                 accent = accent,
                                 textPrimary = textPrimary,
                                 textSecondary = textSecondary,
-                                iconBgColor = accent,
+                                iconBgColor = Color.White,
                                 isPrimary = true
                             )
                             StatCard(
@@ -804,7 +815,7 @@ fun GpsCardioScreen(
                                 accent = accent,
                                 textPrimary = textPrimary,
                                 textSecondary = textSecondary,
-                                iconBgColor = accent,
+                                iconBgColor = Color.White,
                                 isPrimary = true
                             )
                         }
@@ -865,10 +876,10 @@ fun GpsCardioScreen(
                             )
                             StatCard(
                                 modifier = Modifier.weight(1f),
-                                icon = Icons.Default.FitnessCenter,
-                                value = gpsState.routePoints.size.toString(),
-                                unit = "pts",
-                                label = strings.routePoints,
+                                icon = Icons.Default.DirectionsWalk,
+                                value = gpsState.estimatedSteps.toString(),
+                                unit = "",
+                                label = strings.steps,
                                 cardBg = cardBg,
                                 accent = accent,
                                 textPrimary = textPrimary,
@@ -1008,7 +1019,7 @@ fun GpsCardioScreen(
                                     Box(
                                         modifier = Modifier
                                             .size(56.dp)
-                                            .background(RecoveryRed, CircleShape)
+                                            .background(RedButtonGradient, CircleShape)
                                             .clickable { showSaveDialog = true },
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -1020,11 +1031,12 @@ fun GpsCardioScreen(
                             } else {
                                 Button(
                                     onClick = { tryStartTracking() },
-                                    colors = ButtonDefaults.buttonColors(containerColor = accent),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                                     shape = RoundedCornerShape(16.dp),
                                     modifier = Modifier
                                         .weight(1f)
                                         .height(52.dp)
+                                        .background(RedButtonGradient, RoundedCornerShape(16.dp))
                                 ) {
                                     Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
                                     Spacer(Modifier.width(8.dp))
@@ -1238,7 +1250,8 @@ private fun RouteCanvas(
 @Composable
 private fun StatCard(
     modifier: Modifier = Modifier,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    iconPainter: Painter? = null,
     value: String,
     unit: String,
     label: String,
@@ -1267,12 +1280,21 @@ private fun StatCard(
                                         .background(iconBgColor.copy(alpha = 0.18f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = iconBgColor,
-                    modifier = Modifier.size(if (isPrimary) 22.dp else 18.dp)
-                )
+                if (iconPainter != null) {
+                    Icon(
+                        iconPainter,
+                        contentDescription = null,
+                        tint = iconBgColor,
+                        modifier = Modifier.size(if (isPrimary) 22.dp else 18.dp)
+                    )
+                } else {
+                    Icon(
+                        icon!!,
+                        contentDescription = null,
+                        tint = iconBgColor,
+                        modifier = Modifier.size(if (isPrimary) 22.dp else 18.dp)
+                    )
+                }
             }
             Spacer(Modifier.width(10.dp))
             Column {
@@ -1355,10 +1377,10 @@ private fun RouteDetailContent(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
-                            Icons.Default.Map,
+                            painterResource(R.drawable.ic_route_map),
                             contentDescription = null,
-                            tint = textSecondary.copy(alpha = 0.4f),
-                            modifier = Modifier.size(48.dp)
+                            tint = textPrimary,
+                            modifier = Modifier.size(28.dp)
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
@@ -1380,14 +1402,15 @@ private fun RouteDetailContent(
         ) {
             StatCard(
                 modifier = Modifier.weight(1f),
-                icon = Icons.Default.Speed,
+                iconPainter = painterResource(R.drawable.ic_distance),
                 value = String.format(Locale.US, "%.2f", route.distanceKm),
                 unit = "km",
                 label = strings.distance,
                 cardBg = cardBg,
                 accent = accent,
                 textPrimary = textPrimary,
-                textSecondary = textSecondary
+                textSecondary = textSecondary,
+                iconBgColor = textPrimary
             )
             StatCard(
                 modifier = Modifier.weight(1f),
@@ -1398,7 +1421,8 @@ private fun RouteDetailContent(
                 cardBg = cardBg,
                 accent = accent,
                 textPrimary = textPrimary,
-                textSecondary = textSecondary
+                textSecondary = textSecondary,
+                iconBgColor = textPrimary
             )
         }
 
@@ -1527,7 +1551,7 @@ private fun SavedRoutesSection(
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Default.Route, contentDescription = null, tint = textSecondary.copy(alpha = 0.4f), modifier = Modifier.size(40.dp))
+                    Icon(painterResource(R.drawable.ic_route_map), contentDescription = null, tint = textSecondary, modifier = Modifier.size(40.dp))
                     Spacer(Modifier.height(8.dp))
                     Text(strings.noSavedRoutes, color = textSecondary, fontSize = 13.sp, textAlign = TextAlign.Center)
                 }
@@ -1597,7 +1621,8 @@ private fun SavedRoutesSection(
                         confirmButton = {
                             Button(
                                 onClick = { onDelete(route); showDeleteConfirm = false },
-                                colors = ButtonDefaults.buttonColors(containerColor = RecoveryRed),
+                                modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(10.dp)),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                                 shape = RoundedCornerShape(10.dp)
                             ) {
                                 Text(strings.delete, color = Color.White)

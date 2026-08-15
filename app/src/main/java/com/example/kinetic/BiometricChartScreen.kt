@@ -142,6 +142,9 @@ fun BiometricChartScreen(
     showDeleteDialog?.let { entry ->
         AlertDialog(
             onDismissRequest = { showDeleteDialog = null },
+            containerColor = p.card,
+            titleContentColor = p.tp,
+            textContentColor = p.ts,
             title = { Text(strings.deleteMeasurement) },
             text = { Text(strings.confirm + "?") },
             confirmButton = {

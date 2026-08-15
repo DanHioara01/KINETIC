@@ -377,7 +377,7 @@ fun DrawerMenu(
                 )
                 DrawerNavItem(
                     icon = Icons.Default.EmojiEvents,
-                    label = "1RM Calculator",
+                    label = strings.oneRmCalculator,
                     selected = currentPage == DrawerPage.ONE_RM_CALCULATOR,
                     accent = accent,
                     selectedBg = selectedBg,
@@ -1174,7 +1174,8 @@ fun ServerUrlDialog(
         confirmButton = {
             Button(
                 onClick = { onSave(url.trim(), apiKey.trim()) },
-                colors = ButtonDefaults.buttonColors(containerColor = accent),
+                modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(10.dp)),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Text(strings.save, color = Color.White, fontWeight = FontWeight.SemiBold)

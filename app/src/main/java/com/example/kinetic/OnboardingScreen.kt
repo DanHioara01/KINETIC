@@ -273,9 +273,10 @@ fun OnboardingScreen(
                     },
                     modifier = Modifier
                         .then(if (step > 0) Modifier.weight(1f) else Modifier.fillMaxWidth())
-                        .height(50.dp),
+                        .height(50.dp)
+                        .background(RedButtonGradient, RoundedCornerShape(14.dp)),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = accent),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                     enabled = true
                 ) {
                     Text(

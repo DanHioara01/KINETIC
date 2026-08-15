@@ -2,7 +2,7 @@
 
 ## Project Structure
 - **`app/src/main/java/com/example/kinetic/`** - Main Kotlin source code (85+ files)
-- **`backend/`** - Node.js Express server (SQLite + Firebase Auth)
+- **`backend/`** - Node.js Express server (PostgreSQL + Firebase Auth)
 - **`functions/`** - Firebase Cloud Functions (TypeScript)
 - **`ai_server/`** - Python AI server (at Desktop level, not in this folder)
 - **`gradle/`** - Gradle wrapper and version catalog

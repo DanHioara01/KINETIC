@@ -89,7 +89,7 @@
 ### Backend Services
 | Service | Stack | Purpose |
 |---|---|---|
-| `backend/` | **Node.js + Express + SQLite** (`better-sqlite3`) | Social API — friends, feed, leaderboard, badges, sync |
+| `backend/` | **Node.js + Express + PostgreSQL** (`pg`) | Social API — friends, feed, leaderboard, badges, sync |
 | `functions/` | **Firebase Cloud Functions** (TypeScript) | Trigger-based logic (e.g., friend-request notifications) |
 | `ai_server/` | **FastAPI** (Python) | AI Trainer chat assistant |
 
@@ -145,8 +145,11 @@ cd KINETIC
 ### 3. Backend services (optional, for social features)
 
 ```bash
-# Social API — Node.js + SQLite
+# Social API — Node.js + PostgreSQL (needs DATABASE_URL or a local Postgres)
 cd backend && npm install && npm start      # listens on http://localhost:4242
+
+# Or run backend + Postgres together with Docker Compose
+docker compose up -d --build
 
 # Firebase Cloud Functions
 cd functions && npm install && npm run deploy
@@ -211,7 +214,7 @@ KINETIC/
 │   │   ├── *Manager.kt           # Feature managers (auth, food, AI, ads…)
 │   │   └── ui/theme/             # Design system (palette, type, colors)
 │   └── src/main/res/             # Resources (drawables, fonts, strings)
-├── backend/                      # Node.js social API (Express + SQLite)
+├── backend/                      # Node.js social API (Express + PostgreSQL)
 ├── functions/                    # Firebase Cloud Functions (TypeScript)
 ├── ai_server/                    # Python AI Trainer (FastAPI)
 ├── scripts/                      # Dev tooling scripts

@@ -14,8 +14,8 @@ android {
         applicationId = "com.example.kinetic"
         minSdk = 24
         targetSdk = 35
-        versionCode = 23
-        versionName = "2.3"
+        versionCode = 24
+        versionName = "2.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -82,7 +82,6 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-messaging")
-    implementation("com.google.firebase:firebase-storage")
 
     // Google Sign-In
     implementation(libs.play.services.auth)

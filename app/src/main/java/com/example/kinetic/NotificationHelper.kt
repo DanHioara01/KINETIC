@@ -12,11 +12,10 @@ import androidx.core.app.NotificationManagerCompat
 class NotificationHelper(private val context: Context) {
     companion object {
         private const val CHANNEL_ID = "friend_requests"
-        private const val CHANNEL_NAME = "Friend Requests"
     }
     init {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH).apply {
+            val channel = NotificationChannel(CHANNEL_ID, LanguageManager.getStrings(context).friendChannelName, NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Notifications for incoming friend requests"
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 300, 200, 300)

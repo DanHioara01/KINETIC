@@ -1,24 +1,39 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kinetic
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d kinetic"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
   kinetic-backend:
     build:
       context: ./backend
       dockerfile: ../Dockerfile.backend
       args:
         NODE_ENV: production
-    
-    # Persistent storage configuration
-    volumes:
-      - ./shared-data/db:/app/shared-data/db
-      - ./logs:/app/logs
-    
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
     # Environment variables
     environment:
       NODE_ENV: production
       PORT: 4242
       LOG_LEVEL: info
-      # Database configuration
-      DB_PATH: /app/shared-data/db/kinetic.db
-    
+      # Database configuration (managed Postgres container above)
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/kinetic
+
     # Resource limits
     deploy:
       resources:
@@ -28,7 +43,7 @@ services:
         reservations:
           cpus: '0.2'
           memory: 128M
-    
+
     # Health check configuration
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4242/health"]
@@ -36,18 +51,16 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    
+
     # Restart policy
     restart: unless-stopped
-    
+
     # Network configuration
     networks:
       - backend
 
 volumes:
   db_data:
-    driver: local
-  logs_data:
     driver: local
 
 networks:

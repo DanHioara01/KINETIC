@@ -255,9 +255,11 @@ private fun PricingCard(
                 Button(
                     onClick = onClick,
                     enabled = buttonEnabled,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(RedButtonGradient, RoundedCornerShape(12.dp)),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = accent,
+                        containerColor = Color.Transparent,
                         contentColor = Color.White,
                         disabledContainerColor = cardBorder,
                         disabledContentColor = if (isDark) Color.White.copy(alpha = 0.6f) else LightTextSecondary

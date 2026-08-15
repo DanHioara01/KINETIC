@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kinetic.ui.components.AppGlassCard
 import com.example.kinetic.ui.components.AppSectionLabel
 import com.example.kinetic.ui.theme.AppPalette
+import com.example.kinetic.ui.theme.RedButtonGradient
 import com.example.kinetic.ui.theme.appPalette
 import kotlinx.coroutines.delay
 import kotlin.math.sin
@@ -350,7 +351,8 @@ fun WaterTrackingScreen(
                         WaterReminderReceiver().scheduleAllEnabledAlarms(context)
                         showTimePicker = false
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = p.ac),
+                    modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(12.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(strings.confirm, color = Color.White, fontWeight = FontWeight.Bold)
@@ -384,7 +386,7 @@ private fun QuickAddRow(strings: LanguageManager.Strings, p: AppPalette, onAdd: 
                     .weight(1f)
                     .height(44.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Brush.horizontalGradient(listOf(p.ac, Color(0xFFFF6B4A).copy(alpha = 0.9f))))
+                    .background(RedButtonGradient)
                     .clickable { onAdd(ml) },
                 contentAlignment = Alignment.Center
             ) {
@@ -541,8 +543,8 @@ private fun HistoryCard(
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("${strings.average}: $avg ml/zi", fontSize = 9.sp, color = p.ts)
-                Text("${strings.target}: $waterGoal ml", fontSize = 9.sp, color = p.ts)
+                Text("${strings.average}: $avg ${strings.ml}", fontSize = 9.sp, color = p.ts)
+                Text("${strings.target}: $waterGoal ${strings.ml}", fontSize = 9.sp, color = p.ts)
             }
         }
     }
