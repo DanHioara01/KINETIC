@@ -33,6 +33,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,7 +44,8 @@ fun FriendsScreen(
     isLbs: Boolean,
     strings: LanguageManager.Strings,
     onBackClick: () -> Unit,
-    onOpenLeaderboard: () -> Unit
+    onOpenLeaderboard: () -> Unit,
+    onRequestsChanged: (Int) -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
@@ -93,6 +97,25 @@ fun FriendsScreen(
             friendsVolume = friendsVolume + (f.friendId to volData)
         }
         loading = false
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scope.launch {
+                    friends = socialRepository.getFriends(currentUserId)
+                    incomingRequests = socialRepository.getIncomingRequests(currentUserId)
+                    val friendIds = friends.filter { it.friendId != currentUserId }.map { it.friendId }.distinct()
+                    for (id in friendIds) {
+                        val volData = socialRepository.getUserVolume(id)
+                        friendsVolume = friendsVolume + (id to volData)
+                    }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Scaffold(
@@ -220,13 +243,17 @@ fun FriendsScreen(
                         socialRepository = socialRepository,
                         onAccepted = {
                             scope.launch {
-                                incomingRequests = socialRepository.getIncomingRequests(currentUserId)
+                                val updated = socialRepository.getIncomingRequests(currentUserId)
+                                incomingRequests = updated
                                 friends = socialRepository.getFriends(currentUserId)
+                                onRequestsChanged(updated.size)
                             }
                         },
                         onRejected = {
                             scope.launch {
-                                incomingRequests = socialRepository.getIncomingRequests(currentUserId)
+                                val updated = socialRepository.getIncomingRequests(currentUserId)
+                                incomingRequests = updated
+                                onRequestsChanged(updated.size)
                             }
                         },
                         strings = strings

@@ -79,6 +79,16 @@ class SocialRepository(private val db: AppDatabase) {
                 }
                 for (req in serverRequests) {
                     val existing = db.friendshipDao().getBetween(req.userId, req.friendId)
+                    // Dacă între cei doi există deja o relație accepted (în orice direcție),
+                    // cererea pending de pe server e rezolvată local (accept deja făcut) —
+                    // nu o mai re-insertăm, altfel cererea ar reapărea după Accept.
+                    val acceptedBothWays = existing?.status == "accepted" ||
+                        db.friendshipDao().getBetween(req.friendId, req.userId)?.status == "accepted"
+                    if (acceptedBothWays) {
+                        // Rând pending vechi, deja rezolvat local → îl curățăm ca să nu mai apară.
+                        if (existing != null && existing.status == "pending") db.friendshipDao().deleteById(existing.id)
+                        continue
+                    }
                     if (existing == null || existing.status != "pending") {
                         if (existing != null) db.friendshipDao().deleteById(existing.id)
                         // Row nou cu id local (nu id-ul de pe server) ca să nu suprascrie alte relații.
@@ -93,6 +103,16 @@ class SocialRepository(private val db: AppDatabase) {
                     }
                 }
             } catch (e: Exception) { e.printStackTrace() }
+            // Curățare locală robustă, independentă de server: orice cerere pending
+            // între doi oameni care au deja o relație accepted (în orice direcție) e
+            // reziduală (accept deja făcut local) — o ștergem. Altfel, când serverul
+            // e gol/tranzitoriu, cererea ar reapărea în INCOMING după Accept.
+            val localIncoming = db.friendshipDao().getIncomingRequests(userId)
+            for (local in localIncoming) {
+                val acceptedAny = db.friendshipDao().getBetween(local.userId, local.friendId)?.status == "accepted" ||
+                    db.friendshipDao().getBetween(local.friendId, local.userId)?.status == "accepted"
+                if (acceptedAny) db.friendshipDao().deleteById(local.id)
+            }
             // Păstrăm o singură cerere per expeditor (cea mai recentă).
             db.friendshipDao().getIncomingRequests(userId)
                 .sortedByDescending { it.createdAt }
@@ -146,7 +166,21 @@ class SocialRepository(private val db: AppDatabase) {
                 byFriend[key] = keep
                 if (drop != null) db.friendshipDao().deleteById(drop.id)
             }
-            byFriend.values.toList()
+            // Normalizăm orientarea: rândul păstrat trebuie să fie canonic
+            // (userId = mine), ca UI-ul să citească friendId direct. Un rând invers
+            // (friendId = mine) e convertit: inserăm canonicul și ștergem inversul.
+            val result = ArrayList<FriendshipEntity>(byFriend.size)
+            for ((friendId, f) in byFriend) {
+                if (f.userId == userId) {
+                    result.add(f)
+                } else {
+                    val canonical = FriendshipEntity(userId = userId, friendId = friendId, status = "accepted")
+                    db.friendshipDao().upsert(canonical)
+                    db.friendshipDao().deleteById(f.id)
+                    result.add(canonical)
+                }
+            }
+            result
         }
     }
 

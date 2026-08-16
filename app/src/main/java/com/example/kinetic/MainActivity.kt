@@ -1473,7 +1473,8 @@ fun MuscleGroupList(
         CompositionLocalProvider(
             LocalKineticHeader provides KineticHeaderController(
                 isDark = isDark,
-                onOpenMenu = { scope.launch { drawerState.open() } }
+                onOpenMenu = { scope.launch { drawerState.open() } },
+                pendingRequestsCount = pendingRequestsCount
             )
         ) {
         Scaffold(
@@ -1699,7 +1700,8 @@ fun MuscleGroupList(
                             isLbs = isLbs,
                             strings = strings,
                             onBackClick = { showFriends = false; currentPage = null },
-                            onOpenLeaderboard = { showFriends = false; showLeaderboard = true }
+                            onOpenLeaderboard = { showFriends = false; showLeaderboard = true },
+                            onRequestsChanged = { count -> pendingRequestsCount = count }
                         )
                     } else {
                         LockedFeatureScreen(

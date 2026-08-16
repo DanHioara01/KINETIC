@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -204,7 +205,8 @@ fun AppBg(
  */
 class KineticHeaderController(
     val isDark: Boolean,
-    val onOpenMenu: () -> Unit
+    val onOpenMenu: () -> Unit,
+    val pendingRequestsCount: Int = 0
 )
 
 val LocalKineticHeader = staticCompositionLocalOf<KineticHeaderController?> { null }
@@ -269,13 +271,28 @@ fun KineticAppBar(
                     )
                 }
             } else {
-                IconButton(onClick = controller?.onOpenMenu ?: {}) {
-                    Icon(
-                        Icons.Default.Menu,
-                        contentDescription = strings.menu,
-                        tint = p.tp,
-                        modifier = Modifier.size(28.dp)
-                    )
+                val hasPending = (controller?.pendingRequestsCount ?: 0) > 0
+                Box {
+                    IconButton(onClick = controller?.onOpenMenu ?: {}) {
+                        Icon(
+                            Icons.Default.Menu,
+                            contentDescription = strings.menu,
+                            tint = p.tp,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                    // Dot roșu pe hamburger când există cereri de prietenie primite
+                    if (hasPending) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 10.dp, end = 10.dp)
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEC0123))
+                                .border(2.dp, p.bg, CircleShape)
+                        )
+                    }
                 }
             }
         }
