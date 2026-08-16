@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.*
@@ -281,12 +282,12 @@ fun DashboardScreen(
                         if (currentTip != null) {
                             val (tipLabel, tipIcon) = when (currentTip.category) {
                                 "performanta" -> Pair(strings.performLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.TrendingUp))
-                                "sfat_obiectiv" -> Pair(strings.goalLabel, androidx.compose.ui.res.painterResource(R.drawable.trophy_star))
+                                "sfat_obiectiv" -> Pair(strings.goalLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.EmojiEvents))
                                 "sfat_tehnic" -> Pair(strings.technicalTip, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Lightbulb))
                                 "nutritie" -> Pair(strings.nutritionLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Restaurant))
                                 "energie" -> Pair(strings.energizeLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Battery1Bar))
                                 "recuperare" -> Pair(strings.recovery, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Accessibility))
-                                "motivatie" -> Pair(strings.motivationLabel, androidx.compose.ui.res.painterResource(R.drawable.trophy_star))
+                                "motivatie" -> Pair(strings.motivationLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.EmojiEvents))
                                 "forteaza_te" -> Pair(strings.pushItLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.BatteryFull))
                                 else -> Pair(strings.performLabel, androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.TrendingUp))
                             }

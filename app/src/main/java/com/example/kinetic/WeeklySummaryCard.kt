@@ -172,8 +172,8 @@ fun WeeklySummaryCard(
                 )
                 SummaryProgressCard(
                     modifier = Modifier.weight(1f),
-                    icon = androidx.compose.ui.res.painterResource(R.drawable.trophy_star),
-                    iconTint = Color.Unspecified,
+                    icon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.EmojiEvents),
+                    iconTint = streakColor,
                     iconBg = streakColor.copy(alpha = 0.15f),
                     label = strings.bestStreakLabel.uppercase(),
                     value = bestStreak.toString(),
