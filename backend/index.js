@@ -35,6 +35,13 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '512kb' }));
 
+// Map PostgreSQL lowercase column names back to camelCase for every response.
+app.use((req, res, next) => {
+  const origJson = res.json.bind(res);
+  res.json = (data) => origJson(camelizeJson(data));
+  next();
+});
+
 // =============================================
 // RATE LIMITING
 // =============================================
@@ -153,6 +160,33 @@ const pool = new Pool({
 const getRow = async (text, params) => (await pool.query(text, params)).rows[0];
 const allRows = async (text, params) => (await pool.query(text, params)).rows;
 const runQuery = (text, params) => pool.query(text, params);
+
+// PostgreSQL lowercases unquoted column names (userId -> userid), but the app
+// expects camelCase keys (userId, friendId, photoUri, createdAt, ...). Map the
+// lowercase forms back to camelCase on every JSON response.
+const CAMEL_MAP = {
+  userid: 'userId', friendid: 'friendId', createdat: 'createdAt',
+  photouri: 'photoUri', fcmtoken: 'fcmToken', totalvolume: 'totalVolume',
+  workoutcount: 'workoutCount', lastseen: 'lastSeen', isactive: 'isActive',
+  authorid: 'authorId', activitytype: 'activityType', postid: 'postId',
+  badgekey: 'badgeKey', awardedat: 'awardedAt',
+  currentstreak: 'currentStreak', beststreak: 'bestStreak', lastdate: 'lastDate',
+  grupamusculara: 'grupaMusculara', totalweight: 'totalWeight',
+  antrenamentuuid: 'antrenamentUuid', numeexercitiu: 'numeExercitiu',
+  setindex: 'setIndex', greutatekg: 'greutateKg',
+  groupname: 'groupName', isdefault: 'isDefault', isfavorite: 'isFavorite',
+  usagecount: 'usageCount', updatedat: 'updatedAt',
+  periodstart: 'periodStart', periodend: 'periodEnd',
+};
+function camelizeJson(v) {
+  if (Array.isArray(v)) return v.map(camelizeJson);
+  if (v && typeof v === 'object') {
+    const out = {};
+    for (const [k, val] of Object.entries(v)) out[CAMEL_MAP[k] || k] = camelizeJson(val);
+    return out;
+  }
+  return v;
+}
 
 // Express 4 doesn't catch rejected promises from async handlers automatically.
 const asyncRoute = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
