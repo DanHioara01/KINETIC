@@ -150,6 +150,15 @@ import androidx.glance.appwidget.updateAll
 // so it does not replay on recomposition or reloadToken refreshes.
 private var navbarEntranceAnimationPlayed = false
 
+// Forțează animațiile Compose să ruleze la viteză normală indiferent de setarea de
+// sistem („Elimină animațiile" / animator_duration_scale=0). Compose citește
+// MotionDurationScale din contextul coroutine al fiecărei animații; furnizând propriul
+// nostru element cu scaleFactor=1f (withContext îl înlocuiește pe cel al framework-ului,
+// care oglindește setarea de sistem), animațiile se văd mereu, indiferent de setare.
+private object FullSpeedMotion : androidx.compose.ui.MotionDurationScale {
+    override val scaleFactor: Float get() = 1f
+}
+
 class MainActivity : ComponentActivity() {
     // Set when the GPS tracking notification is tapped so the app reopens on the Cardio screen.
     var openGpsCardioRequest by mutableStateOf(false)
@@ -2743,15 +2752,9 @@ fun MuscleGroupList(
                 val navbarContext = LocalContext.current
 
                 // ── Entrance animations: navbar fade-in + rise, WORKOUT spin-in (once per session) ──
-                val navbarAnimationsEnabled = remember {
-                    try {
-                        android.provider.Settings.Global.getFloat(
-                            navbarContext.contentResolver,
-                            android.provider.Settings.Global.ANIMATOR_DURATION_SCALE
-                        ) != 0f
-                    } catch (_: Exception) { true }
-                }
-                val playNavbarEntrance = !navbarEntranceAnimationPlayed && navbarAnimationsEnabled
+                // Animațiile de intrare rulează mereu, indiferent de setarea de sistem
+                // („Elimină animațiile"): FullSpeedMotion + withContext forțează scala 1f.
+                val playNavbarEntrance = !navbarEntranceAnimationPlayed
                 val navbarEntranceAlpha = remember { Animatable(if (playNavbarEntrance) 0f else 1f) }
                 val navbarEntranceOffsetY = remember { Animatable(if (playNavbarEntrance) 48f else 0f) }
                 val fabEntranceAlpha = remember { Animatable(if (playNavbarEntrance) 0f else 1f) }
@@ -2760,17 +2763,19 @@ fun MuscleGroupList(
                 LaunchedEffect(Unit) {
                     if (playNavbarEntrance) {
                         navbarEntranceAnimationPlayed = true
-                        delay(150)
-                        launch { navbarEntranceAlpha.animateTo(1f, tween(800, easing = FastOutSlowInEasing)) }
-                        launch { navbarEntranceOffsetY.animateTo(0f, tween(800, easing = FastOutSlowInEasing)) }
-                        // WORKOUT button enters after the navbar, spinning into place
-                        delay(500)
-                        launch { fabEntranceAlpha.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
-                        launch { fabEntranceRotation.animateTo(0f, tween(900, easing = FastOutSlowInEasing)) }
-                        fabEntranceScale.animateTo(
-                            1f,
-                            spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
-                        )
+                        withContext(FullSpeedMotion) {
+                            delay(150)
+                            launch { navbarEntranceAlpha.animateTo(1f, tween(800, easing = FastOutSlowInEasing)) }
+                            launch { navbarEntranceOffsetY.animateTo(0f, tween(800, easing = FastOutSlowInEasing)) }
+                            // WORKOUT button enters after the navbar, spinning into place
+                            delay(500)
+                            launch { fabEntranceAlpha.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
+                            launch { fabEntranceRotation.animateTo(0f, tween(900, easing = FastOutSlowInEasing)) }
+                            fabEntranceScale.animateTo(
+                                1f,
+                                spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+                            )
+                        }
                     }
                 }
                 val navbarShape = NavbarCradleShape(
