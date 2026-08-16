@@ -750,5 +750,19 @@ class SyncRepository(
     suspend fun initialSync(userId: String) {
         pushAllToServer(userId)
         syncAllFromServer(userId)
+        // Sincronizează statisticile agregate (volum + nr. antrenamente) în tabela
+        // users — altfel prietenii și leaderboard-ul arată mereu 0, pentru că acest
+        // calcul se făcea doar la salvarea unui antrenament nou / login.
+        try {
+            val totalVolume = db.antrenamentDao().sumVolumeForUser(userId)
+            val workoutCount = db.antrenamentDao().countForUser(userId)
+            if (totalVolume > 0 || workoutCount > 0) {
+                api.upsertUser(mapOf(
+                    "id" to userId,
+                    "totalVolume" to totalVolume.toString(),
+                    "workoutCount" to workoutCount.toString()
+                ))
+            }
+        } catch (_: Exception) {}
     }
 }
