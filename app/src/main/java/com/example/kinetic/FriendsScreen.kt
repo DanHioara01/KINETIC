@@ -99,6 +99,45 @@ fun FriendsScreen(
         loading = false
     }
 
+    // Reîmprospătare live: cât timp pagina e deschisă, lista de prieteni, cererile
+    // primite și dot-ul din header se actualizează singure (la fiecare 5s) — fără să
+    // iasă din pagină. Când cineva îți acceptă cererea, prietenul apare deodată.
+    LaunchedEffect(Unit) {
+        while (true) {
+            try {
+                val f = socialRepository.getFriends(currentUserId)
+                val inc = socialRepository.getIncomingRequests(currentUserId)
+                friends = f
+                incomingRequests = inc
+                onRequestsChanged(inc.size)
+
+                // Doar pentru prietenii NOI (încă fără volum/profil): încărcăm numele,
+                // poza și volumul ca să apară complet din primul moment.
+                val knownIds = friendsVolume.keys
+                val newIds = f.filter { it.friendId != currentUserId }
+                    .map { it.friendId }.distinct().filter { it !in knownIds }
+                for (id in newIds) {
+                    try {
+                        val user = NetworkClient.api.getUser(id)
+                        val name = (user["name"] as? String)?.takeIf { it.isNotBlank() }
+                        if (name != null) {
+                            userProfileManager.saveProfile(
+                                UserProfileManager.UserProfile(
+                                    userId = id,
+                                    name = name,
+                                    photoUri = (user["photoUri"] as? String) ?: ""
+                                )
+                            )
+                            profilesVersion++
+                        }
+                        friendsVolume = friendsVolume + (id to socialRepository.getUserVolume(id))
+                    } catch (_: Exception) {}
+                }
+            } catch (_: Exception) {}
+            kotlinx.coroutines.delay(5000)
+        }
+    }
+
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
