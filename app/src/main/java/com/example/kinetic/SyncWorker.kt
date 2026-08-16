@@ -22,7 +22,9 @@ class SyncWorker(
             val db = AppDatabase.getDatabase(applicationContext)
             val preferencesManager = PreferencesManager(applicationContext, UserProfileManager(applicationContext))
             val syncRepo = SyncRepository(db, NetworkClient.api, preferencesManager)
-            syncRepo.syncAllFromServer(userId)
+            // Push + pull: datele noi (antrenamente, exerciții etc.) se salvează pe
+            // server la fiecare ciclu, ca să nu se piardă la reinstalare.
+            syncRepo.initialSync(userId)
 
             Result.success()
         } catch (e: Exception) {
