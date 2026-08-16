@@ -3,6 +3,7 @@ package com.example.kinetic
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -50,7 +51,7 @@ private fun localToUtcMillis(local: Long): Long = local - TimeZone.getDefault().
 /** Convert the DatePicker's UTC-midnight millis back to local-time millis. */
 private fun utcToLocalMillis(utc: Long): Long = utc + TimeZone.getDefault().getOffset(utc)
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun RestDayScreen(
     isDark: Boolean,
@@ -417,120 +418,129 @@ fun RestDayScreen(
         val dialogContainer = if (isDark) Color(0xFF1E1E1E) else Color.White
         val dialogText = if (isDark) Color(0xFFF0F0F5) else LightTextPrimary
 
-        AlertDialog(
+        BasicAlertDialog(
             onDismissRequest = { showScheduleDialog = false; editingRestDay = null },
-            containerColor = dialogContainer,
-            tonalElevation = 0.dp,
-            title = {
-                Text(
-                    if (editing != null) strings.editRestDay else strings.tapToSchedule,
-                    fontWeight = FontWeight.Bold,
-                    color = dialogText
-                )
-            },
-            text = {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        val types = remember(strings) { listOf("rest" to strings.recovery, "deload" to strings.deloadWeek, "stretching" to strings.stretching) }
-                        types.forEach { (type, label) ->
-                            FilterChip(
-                                selected = selectedType == type,
-                                onClick = { selectedType = type },
-                                label = { Text(label, fontSize = 11.sp, color = if (selectedType == type) p.ac else dialogText) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = Color.Transparent,
-                                    selectedContainerColor = p.ac.copy(alpha = 0.15f),
-                                    labelColor = dialogText,
-                                    selectedLabelColor = p.ac,
-                                    disabledLabelColor = dialogText,
-                                    disabledContainerColor = Color.Transparent
-                                ),
-                                shape = RoundedCornerShape(20.dp)
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = notes,
-                        onValueChange = { notes = it },
-                        placeholder = { Text(strings.notes, color = p.ts.copy(alpha = 0.5f)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = p.ac,
-                            unfocusedBorderColor = p.ts.copy(alpha = 0.3f),
-                            cursorColor = p.ac,
-                            focusedTextColor = dialogText,
-                            unfocusedTextColor = dialogText
-                        ),
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    DatePicker(
-                        state = dateState,
-                        colors = DatePickerDefaults.colors(
-                            containerColor = Color.Transparent,
-                            titleContentColor = dialogText,
-                            headlineContentColor = dialogText,
-                            weekdayContentColor = p.ts,
-                            subheadContentColor = p.ts,
-                            yearContentColor = dialogText,
-                            currentYearContentColor = p.ac,
-                            selectedYearContainerColor = p.ac,
-                            selectedYearContentColor = Color.White,
-                            dayContentColor = dialogText,
-                            disabledDayContentColor = p.ts.copy(alpha = 0.3f),
-                            selectedDayContainerColor = p.ac,
-                            selectedDayContentColor = Color.White,
-                            todayContentColor = p.ac,
-                            todayDateBorderColor = p.ac
+            content = {
+                Surface(
+                    modifier = Modifier.widthIn(min = 340.dp),
+                    shape = AlertDialogDefaults.shape,
+                    color = dialogContainer,
+                    tonalElevation = 0.dp
+                ) {
+                    Column(modifier = Modifier.padding(24.dp)) {
+                        Text(
+                            if (editing != null) strings.editRestDay else strings.tapToSchedule,
+                            fontWeight = FontWeight.Bold,
+                            color = dialogText
                         )
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val utc = dateState.selectedDateMillis ?: localToUtcMillis(initialDate)
-                    val date = utcToLocalMillis(utc)
-                    scope.launch {
-                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                            val db = AppDatabase.getDatabase(context)
-                            val prefs = PreferencesManager(context, UserProfileManager(context))
-                            val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
-                            if (editing != null) {
-                                val updated = editing.copy(
-                                    date = date,
-                                    type = selectedType,
-                                    notes = notes.trim(),
-                                    updatedAt = System.currentTimeMillis()
+                        Spacer(Modifier.height(16.dp))
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            val types = remember(strings) { listOf("rest" to strings.recovery, "deload" to strings.deloadWeek, "stretching" to strings.stretching) }
+                            types.forEach { (type, label) ->
+                                FilterChip(
+                                    selected = selectedType == type,
+                                    onClick = { selectedType = type },
+                                    label = { Text(label, fontSize = 11.sp, color = if (selectedType == type) p.ac else dialogText) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        containerColor = Color.Transparent,
+                                        selectedContainerColor = p.ac.copy(alpha = 0.15f),
+                                        labelColor = dialogText,
+                                        selectedLabelColor = p.ac,
+                                        disabledLabelColor = dialogText,
+                                        disabledContainerColor = Color.Transparent
+                                    ),
+                                    shape = RoundedCornerShape(20.dp)
                                 )
-                                db.restDayDao().update(updated)
-                            } else {
-                                val restDay = RestDayEntity(
-                                    userId = userId,
-                                    date = date,
-                                    type = selectedType,
-                                    notes = notes.trim(),
-                                    activities = stretchingExercises.filter { it.category == selectedType || selectedType == "rest" }
-                                        .joinToString(",") { it.name }
-                                )
-                                syncRepo.saveRestDay(restDay)
                             }
-                            restDays = db.restDayDao().getAllForUser(userId)
-                            nextRestDay = db.restDayDao().getNextRestDay(userId, System.currentTimeMillis())
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            placeholder = { Text(strings.notes, color = p.ts.copy(alpha = 0.5f)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = p.ac,
+                                unfocusedBorderColor = p.ts.copy(alpha = 0.3f),
+                                cursorColor = p.ac,
+                                focusedTextColor = dialogText,
+                                unfocusedTextColor = dialogText
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        DatePicker(
+                            state = dateState,
+                            colors = DatePickerDefaults.colors(
+                                containerColor = Color.Transparent,
+                                titleContentColor = dialogText,
+                                headlineContentColor = dialogText,
+                                weekdayContentColor = p.ts,
+                                subheadContentColor = p.ts,
+                                yearContentColor = dialogText,
+                                currentYearContentColor = p.ac,
+                                selectedYearContainerColor = p.ac,
+                                selectedYearContentColor = Color.White,
+                                dayContentColor = dialogText,
+                                disabledDayContentColor = p.ts.copy(alpha = 0.3f),
+                                selectedDayContainerColor = p.ac,
+                                selectedDayContentColor = Color.White,
+                                todayContentColor = p.ac,
+                                todayDateBorderColor = p.ac
+                            )
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(onClick = { showScheduleDialog = false; editingRestDay = null }) {
+                                Text(strings.cancel, color = p.ac)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            TextButton(onClick = {
+                                val utc = dateState.selectedDateMillis ?: localToUtcMillis(initialDate)
+                                val date = utcToLocalMillis(utc)
+                                scope.launch {
+                                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        val db = AppDatabase.getDatabase(context)
+                                        val prefs = PreferencesManager(context, UserProfileManager(context))
+                                        val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                                        if (editing != null) {
+                                            val updated = editing.copy(
+                                                date = date,
+                                                type = selectedType,
+                                                notes = notes.trim(),
+                                                updatedAt = System.currentTimeMillis()
+                                            )
+                                            db.restDayDao().update(updated)
+                                        } else {
+                                            val restDay = RestDayEntity(
+                                                userId = userId,
+                                                date = date,
+                                                type = selectedType,
+                                                notes = notes.trim(),
+                                                activities = stretchingExercises.filter { it.category == selectedType || selectedType == "rest" }
+                                                    .joinToString(",") { it.name }
+                                            )
+                                            syncRepo.saveRestDay(restDay)
+                                        }
+                                        restDays = db.restDayDao().getAllForUser(userId)
+                                        nextRestDay = db.restDayDao().getNextRestDay(userId, System.currentTimeMillis())
+                                    }
+                                }
+                                showScheduleDialog = false
+                                editingRestDay = null
+                            }) {
+                                Text(if (editing != null) strings.save else strings.confirm, color = p.ac)
+                            }
                         }
                     }
-                    showScheduleDialog = false
-                    editingRestDay = null
-                }) {
-                    Text(if (editing != null) strings.save else strings.confirm, color = p.ac)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showScheduleDialog = false; editingRestDay = null }) {
-                    Text(strings.cancel, color = p.ac)
                 }
             }
         )

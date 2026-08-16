@@ -749,8 +749,8 @@ fun ExerciseInputScreen(
 
     val dark = isDark
     val Bg = if (dark) DarkBackground else LightBackground
-    val S1 = if (dark) DarkCardElevated else LightCard
-    val S2 = if (dark) DarkCardElevatedSub else LightCardHover
+    val S1 = if (dark) Color(0xFF2A2A2A) else LightCard
+    val S2 = if (dark) Color(0xFF222222) else LightCardHover
     val RedC = Ember
     val RedL = EmberLight
     val RedD = Ember.copy(alpha = 0.22f)
@@ -758,7 +758,7 @@ fun ExerciseInputScreen(
     val Mut = secondaryTextColor()
     val Dim = if (dark) Color(0x73E8E8EC) else Color(0x2A1A2E32)
     val Txt = if (dark) textColor() else LightTextPrimary
-    val Bdr = if (dark) RedBorderSoft else LightDividerGray
+    val Bdr = if (dark) Color.White.copy(alpha = 0.08f) else LightDividerGray
     val BdrInput = if (dark) NeutralBorderDark else LightDividerGray
     val Bdr2 = if (dark) DarkDivider else LightDividerGray
 
@@ -1343,12 +1343,14 @@ private fun vibratePhone(context: android.content.Context) {
 @Composable
 fun ExerciseStatsCard(stats: ExerciseStats, volumeSummary: VolumeSummary, isLbs: Boolean = false) {
     val strings = LanguageManager.getStrings(LocalContext.current)
+    val cardBg = if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else surfaceColor()
+    val cardBorder = if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.08f) else dividerColor()
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(surfaceColor())
-            .border(1.dp, dividerColor(), RoundedCornerShape(22.dp))
+            .background(cardBg)
+            .border(1.dp, cardBorder, RoundedCornerShape(22.dp))
             .padding(22.dp)
     ) {
         Text(strings.prAndVolume, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = secondaryTextColor(), letterSpacing = 0.5.sp)
@@ -1369,11 +1371,13 @@ fun ExerciseStatsCard(stats: ExerciseStats, volumeSummary: VolumeSummary, isLbs:
 
 @Composable
 fun StatPill(label: String, value: String, modifier: Modifier = Modifier) {
+    val pillBg = if (isSystemInDarkTheme()) Color(0xFF222222) else surfaceColor().copy(alpha = 0.5f)
+    val pillBorder = if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.05f) else dividerColor().copy(alpha = 0.5f)
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(surfaceColor().copy(alpha = 0.5f))
-            .border(1.dp, dividerColor().copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+            .background(pillBg)
+            .border(1.dp, pillBorder, RoundedCornerShape(12.dp))
             .padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -1394,13 +1398,15 @@ fun ExerciseHistoryCard(
 ) {
     val strings = LanguageManager.getStrings(LocalContext.current)
     // Iconițele DarkRed (#6D0122) sunt invizibile pe fundalul închis → roșu deschis în dark mode
+    val cardBg = if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else surfaceColor()
+    val cardBorder = if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.08f) else dividerColor()
     val deleteTint = if (isSystemInDarkTheme()) EmberLight else DarkRed
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(surfaceColor())
-            .border(1.dp, dividerColor(), RoundedCornerShape(22.dp))
+            .background(cardBg)
+            .border(1.dp, cardBorder, RoundedCornerShape(22.dp))
             .padding(22.dp)
     ) {
         Text(strings.exerciseHistory, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = secondaryTextColor(), letterSpacing = 0.5.sp)
@@ -1439,7 +1445,7 @@ fun ExerciseHistoryCard(
                         Icon(Icons.Default.Delete, contentDescription = strings.delete, tint = deleteTint)
                     }
                 }
-                HorizontalDivider(color = dividerColor().copy(alpha = 0.5f))
+                HorizontalDivider(color = if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.05f) else dividerColor().copy(alpha = 0.5f))
             }
         }
     }
@@ -1460,7 +1466,7 @@ fun EditSetDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = surfaceColor(),
+        containerColor = if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else surfaceColor(),
         titleContentColor = textColor(),
         textContentColor = secondaryTextColor(),
         title = { Text(strings.editSet) },
