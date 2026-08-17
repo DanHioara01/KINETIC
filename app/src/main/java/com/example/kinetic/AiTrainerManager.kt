@@ -222,16 +222,30 @@ $context"""
     /**
      * Removes <think>...</think> reasoning blocks some models (e.g. Qwen)
      * prepend to the answer, so the user only sees the clean final response.
+     * Handles both complete blocks and truncated ones (server cuts at max_tokens,
+     * so the closing </think> tag may be missing).
      */
     private fun cleanReply(reply: String): String {
         var r = reply
-        val thinkRegex = Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL)
-        r = r.replace(thinkRegex, "").trim()
-        // Some models use "Thinking:\n" as a marker instead of <think> tags
+        // 1) Complete <think>...</think> blocks
+        r = r.replace(Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL), "")
+        // 2) Truncated block: <think> opened but never closed (response cut off)
+        val thinkStart = r.indexOf("<think>")
+        if (thinkStart >= 0) {
+            r = r.substring(0, thinkStart)
+        }
+        // 3) Qwen sometimes labels the block "Here's a thinking process:" instead
+        val marker = r.indexOf("Here's a thinking process:")
+        if (marker >= 0) {
+            r = r.substring(0, marker)
+        }
+        // 4) Some models use "Thinking:\n" as a marker instead of <think> tags
         if (r.startsWith("Thinking:", ignoreCase = true)) {
             val idx = r.indexOf("\n")
-            if (idx > 0) r = r.substring(idx + 1).trim()
+            if (idx > 0) r = r.substring(idx + 1)
         }
-        return r
+        r = r.trim()
+        // 5) If everything was reasoning and nothing real remains, ask for a retry
+        return r.ifEmpty { "The trainer got cut off. Please try again." }
     }
 }

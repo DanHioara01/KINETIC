@@ -218,7 +218,7 @@ def chat_groq(message: str, system_prompt: str, history: List[ChatMessage]) -> s
     payload = {
         "model": MODEL,
         "messages": messages,
-        "max_tokens": 512,
+        "max_tokens": 1024,
         "temperature": 0.7,
     }
     # Qwen 3.6 27B has reasoning enabled by default (returns <think> blocks).

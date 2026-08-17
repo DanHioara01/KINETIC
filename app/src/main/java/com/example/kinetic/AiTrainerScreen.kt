@@ -10,6 +10,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -28,7 +30,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -80,6 +84,7 @@ fun AiTrainerScreen(
     var isLoading by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     // Auto-scroll to the latest message when a new one arrives
     LaunchedEffect(messages.size) {
@@ -143,6 +148,22 @@ fun AiTrainerScreen(
     fun startNewChat() {
         currentSessionId = System.currentTimeMillis()
         messages = emptyList()
+    }
+    fun sendMessage() {
+        if (inputText.isNotBlank() && !isLoading) {
+            val msg = inputText.trim()
+            messages = messages + ("user" to msg)
+            saveMessage("user", msg)
+            inputText = ""
+            isLoading = true
+            keyboardController?.hide()
+            scope.launch {
+                val response = aiManager.chat(userId, msg, messages, preferencesManager)
+                messages = messages + ("ai" to response)
+                saveMessage("ai", response)
+                isLoading = false
+            }
+        }
     }
 
     val screenWidthDp = LocalConfiguration.current.screenWidthDp
@@ -337,24 +358,12 @@ fun AiTrainerScreen(
                             focusedTextColor = textPrimary,
                             unfocusedTextColor = textPrimary
                         ),
-                        maxLines = 3
+                        maxLines = 3,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                        keyboardActions = KeyboardActions(onSend = { sendMessage() })
                     )
                     IconButton(
-                        onClick = {
-                            if (inputText.isNotBlank() && !isLoading) {
-                                val msg = inputText.trim()
-                                messages = messages + ("user" to msg)
-                                saveMessage("user", msg)
-                                inputText = ""
-                                isLoading = true
-                                scope.launch {
-                                    val response = aiManager.chat(userId, msg, messages, preferencesManager)
-                                    messages = messages + ("ai" to response)
-                                    saveMessage("ai", response)
-                                    isLoading = false
-                                }
-                            }
-                        },
+                        onClick = { sendMessage() },
                         enabled = inputText.isNotBlank() && !isLoading
                     ) {
                         Icon(
