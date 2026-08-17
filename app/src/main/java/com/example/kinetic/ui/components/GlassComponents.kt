@@ -38,11 +38,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kinetic.LanguageManager
+import com.example.kinetic.R
 import com.example.kinetic.ui.theme.*
 
 /**
@@ -264,7 +266,7 @@ fun KineticAppBar(
             if (onBack != null) {
                 IconButton(onClick = onBack) {
                     Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
+                        painterResource(R.drawable.ic_back_arrow),
                         contentDescription = strings.back,
                         tint = p.tp,
                         modifier = Modifier.size(28.dp)

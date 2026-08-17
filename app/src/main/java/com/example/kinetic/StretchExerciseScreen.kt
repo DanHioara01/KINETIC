@@ -15,6 +15,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Pause
@@ -321,7 +322,7 @@ private fun TopBar(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
+                painterResource(R.drawable.ic_back_arrow),
                 contentDescription = null,
                 tint = Color.White.copy(alpha = 0.6f),
                 modifier = Modifier.size(18.dp)

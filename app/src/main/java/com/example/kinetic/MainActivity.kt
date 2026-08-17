@@ -4229,9 +4229,8 @@ fun CalendarScreen(
                         }
                     }
                 } else {
-                    TextButton(onClick = { selectedGroupFilter = null }) {
-                        IconButton(onClick = { selectedGroupFilter = null }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = strings.back, tint = textSecondary)
+                    TextButton(onClick = { selectedGroupFilter = null }) {                            IconButton(onClick = { selectedGroupFilter = null }) {
+                            Icon(painterResource(R.drawable.ic_back_arrow), contentDescription = strings.back, tint = textSecondary)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("< ${strings.back} ${strings.muscleGroups.lowercase()}", color = accentColor())

@@ -135,7 +135,7 @@ fun PlaylistSelectionScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            painterResource(R.drawable.ic_back_arrow),
                             contentDescription = strings.back,
                             tint = textPrimary
                         )

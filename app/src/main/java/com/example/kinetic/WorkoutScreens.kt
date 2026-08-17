@@ -834,7 +834,7 @@ fun ExerciseInputScreen(
                         .clickable(onClick = onBackClick),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.ArrowBack, null, tint = Dim, modifier = Modifier.size(18.dp))
+                    Icon(painterResource(R.drawable.ic_back_arrow), null, tint = Dim, modifier = Modifier.size(18.dp))
                 }
                 Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(

@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.WorkspacePremium
@@ -52,7 +53,7 @@ fun PricingScreen(
                 title = { Text(strings.subscription, fontWeight = FontWeight.Bold, color = textPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = textPrimary)
+                        Icon(painterResource(R.drawable.ic_back_arrow), contentDescription = null, tint = textPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = surfaceBg)
