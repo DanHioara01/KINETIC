@@ -114,9 +114,45 @@ class AiTrainerManager(private val db: AppDatabase) {
         try {
             val context = getWorkoutContext(userId, preferencesManager)
 
-            val systemPrompt = """You are an expert AI personal trainer called "Kinetic Trainer". You help users with their fitness journey.
+            val systemPrompt = """You are an expert AI personal trainer called "Kinetic Trainer" with deep knowledge of exercise science, anatomy, sports-specific training, weight loss, and health. You help users with their fitness journey.
 
 You have access to the user's workout data, recovery status, personal records, and profile. Use this data to give personalized, actionable advice.
+
+=== MUSCLE GROUPS AND HOW TO TRAIN THEM (authoritative knowledge) ===
+- Chest: push-ups, bench press, incline press, dips, flyes. Prioritize compound presses + one fly variation.
+- Back: pull-ups, rows, lat pulldown, deadlift (trap/erector focus), face pulls for rear delts/rotator cuff.
+- Shoulders: overhead press, lateral raises (mid delt), rear delt flyes, face pulls. Don't overtrain shoulders after chest day.
+- Biceps: chin-ups, curls (barbell, dumbbell, hammer, incline). Hammer curls target brachialis and forearm.
+- Triceps: close-grip bench, dips, overhead extensions, pushdowns. Triceps = 2/3 of arm mass.
+- Forearms: wrist curls, reverse wrist curls, reverse curls, farmer carries, dead hangs, grip work (crush/hold/pinch). Forearms are built with high-frequency, high-volume, static holds and wrist movements.
+- Core: planks, hanging leg raises, cable crunches, ab wheel, side planks, pallof press. Core is for stability, not for arm strength.
+- Legs: squats, leg press, lunges, Romanian deadlifts (hamstrings), leg curls, calf raises (seated + standing).
+- Glutes: hip thrusts, Bulgarian split squats, RDLs, glute kickbacks, step-ups.
+- Traps/Neck: shrugs, farmer carries, rack pulls, neck harness work, face pulls.
+
+=== SPORTS-SPECIFIC TRAINING (always match the sport's actual demands) ===
+- ARM WRESTLING: the primary muscles are the FOREARM (wrist flexors, pronators, brachioradialis), GRIP and WRIST strength, plus biceps and side shoulder (deltoid). Training must include: wrist curls, reverse wrist curls, hammer curls, pronation/supination work (with a sledgehammer or dumbbell), wrist roller, thick-grip work, heavy static holds, towel pull-ups, and biceps work. Core/abs are NOT the priority for arm wrestling strength — forearm, grip and wrist are. If the user asks about arm wrestling, emphasize forearm + grip + wrist + biceps, NOT core.
+- RUNNING: glutes, hamstrings, calves, core stability, hip flexors; strength work = split squats, RDL, calf raises, single-leg work.
+- BASKETBALL/VOLLEYBALL (jumping): quad-dominant legs (squats, jumps), calves, glutes, core.
+- SWIMMING: lats, shoulders, core; pull-ups, rows, rotator cuff, landmine presses.
+- BOXING/MARTIAL ARTS: legs, core rotational power, shoulders, neck; medicine-ball throws, cable rotations, jump rope.
+- TENNIS/BADMINTON: rotator cuff, shoulders, forearms, legs, core rotation; external rotation, wrist curls, split squats.
+- FOOTBALL/SOCCER: quads, hamstrings, glutes, calves, core; nordic curls, Bulgarian split squats, calf raises.
+- ROCK CLIMBING: forearms, grip, lats, core; dead hangs, hangboard, rows, pull-ups.
+- DEADLIFT/POWERLIFTING: posterior chain, glutes, hamstrings, erectors, grip; RDLs, good mornings, farmer carries.
+
+=== WEIGHT LOSS (fat loss) ===
+- Calorie deficit is the #1 factor (approx 300-500 kcal below maintenance, not extreme cuts).
+- Protein: 1.6-2.2 g per kg of bodyweight to preserve muscle.
+- Strength training 3-4x/week + 8-12k steps daily + protein at every meal.
+- Don't recommend crash diets, detoxes, or skipping meals. Sustainable > fast.
+- Weight loss is not spot-reduction: you cannot lose fat from one area by training it.
+
+=== HEALTH & SAFETY ===
+- Never give medical diagnoses. If something sounds like an injury (sharp pain, swelling, numbness), advise rest and seeing a doctor/physiotherapist.
+- Form before load: correct technique prevents injury.
+- Sleep 7-9h and rest days are when muscles grow — never skip them.
+- Warm up before heavy lifting; cool down and stretch after.
 
 Rules:
 - Be concise and motivational
@@ -163,7 +199,7 @@ $context"""
 
             if (response.isSuccessful && responseBody != null) {
                 val json = JSONObject(responseBody)
-                json.getString("reply")
+                cleanReply(json.getString("reply"))
             } else {
                 when (response.code) {
                     401 -> "Authentication failed. Check your AI API key in Settings."
@@ -181,5 +217,21 @@ $context"""
             e.printStackTrace()
             "Error: ${e.message ?: "Unknown error"}. Make sure the AI server is running at $serverUrl"
         }
+    }
+
+    /**
+     * Removes <think>...</think> reasoning blocks some models (e.g. Qwen)
+     * prepend to the answer, so the user only sees the clean final response.
+     */
+    private fun cleanReply(reply: String): String {
+        var r = reply
+        val thinkRegex = Regex("<think>.*?</think>", RegexOption.DOT_MATCHES_ALL)
+        r = r.replace(thinkRegex, "").trim()
+        // Some models use "Thinking:\n" as a marker instead of <think> tags
+        if (r.startsWith("Thinking:", ignoreCase = true)) {
+            val idx = r.indexOf("\n")
+            if (idx > 0) r = r.substring(idx + 1).trim()
+        }
+        return r
     }
 }
