@@ -215,6 +215,17 @@ def chat_groq(message: str, system_prompt: str, history: List[ChatMessage]) -> s
         messages.append({"role": role, "content": msg.content})
     messages.append({"role": "user", "content": message})
 
+    payload = {
+        "model": MODEL,
+        "messages": messages,
+        "max_tokens": 512,
+        "temperature": 0.7,
+    }
+    # Qwen 3.6 27B has reasoning enabled by default (returns <think> blocks).
+    # Disable it so users only see the clean final answer.
+    if "qwen" in MODEL.lower():
+        payload["reasoning_effort"] = "none"
+
     resp = request_with_retry(
         "POST",
         "https://api.groq.com/openai/v1/chat/completions",
@@ -223,12 +234,7 @@ def chat_groq(message: str, system_prompt: str, history: List[ChatMessage]) -> s
             "Authorization": f"Bearer {GROQ_API_KEY}",
             "Content-Type": "application/json",
         },
-        json={
-            "model": MODEL,
-            "messages": messages,
-            "max_tokens": 512,
-            "temperature": 0.7,
-        },
+        json=payload,
         timeout=GROQ_TIMEOUT,
     )
     resp.raise_for_status()
