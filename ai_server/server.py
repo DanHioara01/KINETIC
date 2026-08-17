@@ -13,7 +13,7 @@ Environment variables:
   GROQ_API_KEY=gsk_...
   MODEL=qwen/qwen3.6-27b
   API_KEY=your-secret-api-key (for client auth)
-  MAX_MESSAGE_LENGTH=4000
+  MAX_MESSAGE_LENGTH=16000
   CACHE_TTL_SECONDS=3600
   CACHE_MAX_SIZE=256
 """
@@ -40,7 +40,7 @@ MODEL = os.getenv("MODEL", "qwen/qwen3.6-27b")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 PROVIDER = os.getenv("PROVIDER", "groq")
 API_KEY = os.getenv("API_KEY", "")
-MAX_MESSAGE_LENGTH = int(os.getenv("MAX_MESSAGE_LENGTH", "4000"))
+MAX_MESSAGE_LENGTH = int(os.getenv("MAX_MESSAGE_LENGTH", "16000"))
 MAX_HISTORY_MESSAGES = 20
 GROQ_TIMEOUT = 15
 OLLAMA_TIMEOUT = 30
