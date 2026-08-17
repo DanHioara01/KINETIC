@@ -17,7 +17,7 @@ services:
       - key: API_KEY
         sync: false
       - key: MODEL
-        value: llama-3.1-8b-instant
+        value: qwen/qwen3.6-27b
       - key: MAX_MESSAGE_LENGTH
         value: "4000"
       - key: CACHE_TTL_SECONDS

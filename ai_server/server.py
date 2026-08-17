@@ -11,7 +11,7 @@ Run:
 Environment variables:
   PROVIDER=groq|ollama
   GROQ_API_KEY=gsk_...
-  MODEL=llama-3.1-8b-instant
+  MODEL=qwen/qwen3.6-27b
   API_KEY=your-secret-api-key (for client auth)
   MAX_MESSAGE_LENGTH=4000
   CACHE_TTL_SECONDS=3600
@@ -36,7 +36,7 @@ from pydantic import BaseModel, Field, field_validator
 # CONFIG
 # =============================================
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-MODEL = os.getenv("MODEL", "llama-3.1-8b-instant")
+MODEL = os.getenv("MODEL", "qwen/qwen3.6-27b")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 PROVIDER = os.getenv("PROVIDER", "groq")
 API_KEY = os.getenv("API_KEY", "")
