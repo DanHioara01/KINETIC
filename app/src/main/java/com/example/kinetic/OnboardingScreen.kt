@@ -353,7 +353,7 @@ private fun GoalStep(
         textAlign = TextAlign.Center
     )
     Spacer(Modifier.height(6.dp))
-    Text(String.format(strings.stepOf, 1), fontSize = 12.sp, color = textSecondary)
+    Text(String.format(strings.stepOf, 1), fontSize = 12.sp, color = textSecondary, fontFamily = JetBrainsMono)
     Spacer(Modifier.height(20.dp))
 
     goals.forEach { goal ->
@@ -416,7 +416,7 @@ private fun BodyStep(
         textAlign = TextAlign.Center
     )
     Spacer(Modifier.height(6.dp))
-    Text(String.format(strings.stepOf, 2), fontSize = 12.sp, color = textSecondary)
+    Text(String.format(strings.stepOf, 2), fontSize = 12.sp, color = textSecondary, fontFamily = JetBrainsMono)
     Spacer(Modifier.height(20.dp))
 
     Row(
@@ -435,7 +435,7 @@ private fun BodyStep(
                 .border(1.dp, border, RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text("$age", fontSize = 28.sp, color = accent, fontWeight = FontWeight.Bold)
+            Text("$age", fontSize = 28.sp, color = accent, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
         }
         IconButton(onClick = { if (age < 70) onAgeChange(age + 1) }) {
             Icon(Icons.Default.Add, contentDescription = strings.increase, tint = textPrimary)
@@ -492,7 +492,7 @@ private fun BodyStep(
                 .border(1.dp, border, RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text(String.format("%.1f kg", weight), fontSize = 24.sp, color = accent, fontWeight = FontWeight.Bold)
+            Text(String.format("%.1f kg", weight), fontSize = 24.sp, color = accent, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
         }
         IconButton(onClick = { if (weight < 200f) onWeightChange(weight + 1f) }) {
             Icon(Icons.Default.Add, contentDescription = strings.increase, tint = textPrimary)
@@ -519,7 +519,7 @@ private fun BodyStep(
                 .border(1.dp, border, RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text(String.format("%.0f cm", height), fontSize = 24.sp, color = accent, fontWeight = FontWeight.Bold)
+            Text(String.format("%.0f cm", height), fontSize = 24.sp, color = accent, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
         }
         IconButton(onClick = { if (height < 230f) onHeightChange(height + 1f) }) {
             Icon(Icons.Default.Add, contentDescription = strings.increase, tint = textPrimary)
@@ -552,7 +552,7 @@ private fun ActivityStep(
         textAlign = TextAlign.Center
     )
     Spacer(Modifier.height(6.dp))
-    Text(String.format(strings.stepOf, 3), fontSize = 12.sp, color = textSecondary)
+    Text(String.format(strings.stepOf, 3), fontSize = 12.sp, color = textSecondary, fontFamily = JetBrainsMono)
     Spacer(Modifier.height(20.dp))
 
     levels.forEach { level ->
@@ -608,7 +608,7 @@ private fun ExperienceStep(
         textAlign = TextAlign.Center
     )
     Spacer(Modifier.height(6.dp))
-    Text(String.format(strings.stepOf, 4), fontSize = 12.sp, color = textSecondary)
+    Text(String.format(strings.stepOf, 4), fontSize = 12.sp, color = textSecondary, fontFamily = JetBrainsMono)
     Spacer(Modifier.height(20.dp))
 
     levels.forEach { level ->
@@ -661,7 +661,7 @@ private fun EquipmentStep(
         textAlign = TextAlign.Center
     )
     Spacer(Modifier.height(6.dp))
-    Text(String.format(strings.stepOf, 5), fontSize = 12.sp, color = textSecondary)
+    Text(String.format(strings.stepOf, 5), fontSize = 12.sp, color = textSecondary, fontFamily = JetBrainsMono)
     Spacer(Modifier.height(20.dp))
 
     options.forEach { equip ->
@@ -716,7 +716,7 @@ private fun FrequencyStep(
         textAlign = TextAlign.Center
     )
     Spacer(Modifier.height(6.dp))
-    Text(String.format(strings.stepOf, 6), fontSize = 12.sp, color = textSecondary)
+    Text(String.format(strings.stepOf, 6), fontSize = 12.sp, color = textSecondary, fontFamily = JetBrainsMono)
     Spacer(Modifier.height(20.dp))
 
     Text(strings.sessionsPerWeek, color = textSecondary, fontSize = 13.sp)

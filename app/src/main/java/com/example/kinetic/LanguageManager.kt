@@ -173,6 +173,37 @@ object LanguageManager {
         val removeFavorite: String = m["removeFavorite"] ?: ""
         val howToGet: String = m["howToGet"] ?: ""
         val addSet: String = m["addSet"] ?: ""
+        val estimatedOneRm: String = m["estimatedOneRm"] ?: ""
+        val nextSetSuggestion: String = m["nextSetSuggestion"] ?: ""
+        val setTypeWarmup: String = m["setTypeWarmup"] ?: ""
+        val setTypeWorking: String = m["setTypeWorking"] ?: ""
+        val setTypeDrop: String = m["setTypeDrop"] ?: ""
+        val setTypeAmrap: String = m["setTypeAmrap"] ?: ""
+        val setTypePaused: String = m["setTypePaused"] ?: ""
+        val setTypeTempo: String = m["setTypeTempo"] ?: ""
+        val rpeLabel: String = m["rpeLabel"] ?: ""
+        val readinessTitle: String = m["readinessTitle"] ?: ""
+        val readinessScore: String = m["readinessScore"] ?: ""
+        val readinessHeavy: String = m["readinessHeavy"] ?: ""
+        val readinessModerate: String = m["readinessModerate"] ?: ""
+        val readinessLight: String = m["readinessLight"] ?: ""
+        val readinessSleep: String = m["readinessSleep"] ?: ""
+        val readinessSleepHours: String = m["readinessSleepHours"] ?: ""
+        val readinessQuality: String = m["readinessQuality"] ?: ""
+        val readinessSteps: String = m["readinessSteps"] ?: ""
+        val readinessRecovery: String = m["readinessRecovery"] ?: ""
+        val readinessVolume: String = m["readinessVolume"] ?: ""
+        val readinessHint: String = m["readinessHint"] ?: ""
+        val readinessHydration: String = m["readinessHydration"] ?: ""
+        val readinessTrend: String = m["readinessTrend"] ?: ""
+        val readinessActionSleep: String = m["readinessActionSleep"] ?: ""
+        val readinessActionSteps: String = m["readinessActionSteps"] ?: ""
+        val readinessActionRecovery: String = m["readinessActionRecovery"] ?: ""
+        val readinessActionVolume: String = m["readinessActionVolume"] ?: ""
+        val readinessActionHydration: String = m["readinessActionHydration"] ?: ""
+        val readinessIntensityHeavy: String = m["readinessIntensityHeavy"] ?: ""
+        val readinessIntensityModerate: String = m["readinessIntensityModerate"] ?: ""
+        val readinessIntensityLight: String = m["readinessIntensityLight"] ?: ""
         val exerciseNotes: String = m["exerciseNotes"] ?: ""
         val saveNotes: String = m["saveNotes"] ?: ""
         val volume: String = m["volume"] ?: ""
@@ -636,6 +667,12 @@ object LanguageManager {
         val tierPro: String = m["tierPro"] ?: ""
         val tierProPlus: String = m["tierProPlus"] ?: ""
         val tierLifetime: String = m["tierLifetime"] ?: ""
+        val goalComplete: String = m["goalComplete"] ?: ""
+        val waterStreak: String = m["waterStreak"] ?: ""
+        val ofGoal: String = m["ofGoal"] ?: ""
+        val editWaterGoal: String = m["editWaterGoal"] ?: ""
+        val newWaterGoal: String = m["newWaterGoal"] ?: ""
+        val undo: String = m["undo"] ?: ""
     }
     private val strings by lazy {
         mapOf(
@@ -837,7 +874,16 @@ object LanguageManager {
         "cycling" to "Ciclism",
         "walking" to "Mers pe jos",
         "routePoints" to "Puncte",
-        "paused" to "Pauză",
+        "paused" to "Pauză", "estimatedOneRm" to "1RM estimat", "nextSetSuggestion" to "Setul următor", "setTypeWarmup" to "Încălzire", "setTypeWorking" to "Lucru", "setTypeDrop" to "Drop", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Pauză", "setTypeTempo" to "Tempo", "rpeLabel" to "RPE", "readinessTitle" to "Pregătire", "readinessScore" to "Pregătirea de azi", "readinessHeavy" to "GREU — dă tot", "readinessModerate" to "MODERAT — antrenează normal", "readinessLight" to "UȘOR — recuperare sau efort redus", "readinessSleep" to "Somn", "readinessSleepHours" to "Ore dormite aseară", "readinessQuality" to "Calitate", "readinessSteps" to "Pași azi", "readinessRecovery" to "Recuperare musculară", "readinessVolume" to "Volum azi", "readinessHint" to "Setează somnul ca să vezi recomandarea zilnică de antrenament.",
+        "readinessHydration" to "Hidratare", "readinessTrend" to "Trend 7 zile",
+        "readinessActionSleep" to "Dormi mai mult tonight pentru o recuperare mai buna",
+        "readinessActionSteps" to "O plimbare de 20 min iti creste pregatirea",
+        "readinessActionRecovery" to "Stretching azi - muschii au nevoie de odihna",
+        "readinessActionVolume" to "Volum ridicat azi - redu intensitatea maine",
+        "readinessActionHydration" to "Bea mai multa apa - deshidratarea scade performanta",
+        "readinessIntensityHeavy" to "Antreneaza tare - intensitate maxima",
+        "readinessIntensityModerate" to "Antreneaza normal - ramane la plan",
+        "readinessIntensityLight" to "Ia-o usor - redu volumul cu 30-40%",
         "steps" to "pași",
         "timerFinished" to "Timpul a expirat!",
         "timeToStartNextSet" to "Gata pentru următoarea serie!",
@@ -879,7 +925,9 @@ object LanguageManager {
         "startingWorkoutLabel" to "Pornim muzica de antrenament...",
         "signUpSuccessMessage" to "Cont creat cu succes! Te rugam sa te loghezi.",
         "trainingSectionLabel" to "Antrenament", "frequencyLabel" to "Frecvență", "xPerWeek" to "x / săpt", "editProfile" to "Editează profilul", "memberSince" to "Membru din", "changePassword" to "Schimbă parola",
-        "updateTitle" to "Versiune nouă disponibilă", "updateMessage" to "Kinetic %s a fost lansată. Ai instalată versiunea v%s.\n\nApasă pentru a descărca noul APK.", "updateDownload" to "Descarcă", "updateLater" to "Mai târziu",
+        "updateTitle" to "Versiune nouă disponibilă", "updateMessage" to "Kinetic %s a fost lansată. Ai instalată versiunea v%s.\n\nApasă pentru a descărca noul APK.",         "updateDownload" to "Descarcă", "updateLater" to "Mai târziu",
+        "goalComplete" to "Obiectiv atins!", "waterStreak" to "Șir de hidratare", "ofGoal" to "din obiectiv", "editWaterGoal" to "Editează obiectivul de apă", "newWaterGoal" to "Nou obiectiv (ml)",
+        "undo" to "Anulează"
     ))
 
     private fun createEn() = Strings(enRaw())
@@ -956,10 +1004,19 @@ object LanguageManager {
         "selectLanguage" to "Select Language",  
         "workoutsLabel" to "Workouts", 
         "currentStreakLabel" to "Current Streak", "bestStreakLabel" to "Best Streak",
-         "days" to "days",  
-          "add" to "Add", "demoExercise" to "DEMO EXERCISE",  "prAndVolume" to "PRs and volume", "start" to "Start",  "noSavedSetsYet" to "No saved sets yet.", "editSet" to "Edit set",  "exercises" to "exercises", "recovered" to "Recovered", "almostRecovered" to "Almost recovered", "moderate" to "Moderate", "tired" to "Tired", "exhausted" to "Exhausted", "fatigue" to "fatigue", "chooseMuscleGroup" to "Choose muscle group",  "noExercisesFound" to "No exercises found", "tryDifferentFilter" to "Try a different filter or search by name", "voiceSearch" to "Voice search",  "voiceSearchError" to "Could not recognize voice",
+         "days" to "days",           "add" to "Add", "demoExercise" to "DEMO EXERCISE",  "prAndVolume" to "PRs and volume", "start" to "Start",  "noSavedSetsYet" to "No saved sets yet.", "editSet" to "Edit set",  "exercises" to "exercises", "recovered" to "Recovered", "almostRecovered" to "Almost recovered", "moderate" to "Moderate", "tired" to "Tired", "exhausted" to "Exhausted", "fatigue" to "fatigue", "chooseMuscleGroup" to "Choose muscle group",  "noExercisesFound" to "No exercises found", "tryDifferentFilter" to "Try a different filter or search by name", "voiceSearch" to "Voice search",  "voiceSearchError" to "Could not recognize voice", "estimatedOneRm" to "Est. 1RM", "nextSetSuggestion" to "Next set", "setTypeWarmup" to "Warm-up", "setTypeWorking" to "Working", "setTypeDrop" to "Drop", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Paused", "setTypeTempo" to "Tempo", "rpeLabel" to "RPE",
+           "readinessTitle" to "Readiness", "readinessScore" to "Today's readiness", "readinessHeavy" to "HEAVY — go hard", "readinessModerate" to "MODERATE — train normal", "readinessLight" to "LIGHT — recover or go easy", "readinessSleep" to "Sleep", "readinessSleepHours" to "Hours last night", "readinessQuality" to "Quality", "readinessSteps" to "Steps today", "readinessRecovery" to "Muscle recovery", "readinessVolume" to "Volume today", "readinessHint" to "Set your sleep to see your daily training recommendation.",
         "monthlyProgress" to "Monthly progress", "completeWorkoutsToSee" to "Complete workouts to see progress", "jan" to "Jan", "feb" to "Feb", "mar" to "Mar", "apr" to "Apr", "may" to "May", "jun" to "Jun", "jul" to "Jul", "aug" to "Aug", "sep" to "Sep", "oct" to "Oct", "nov" to "Nov", "dec" to "Dec", "monthlyDetails" to "Monthly details", "month" to "Month", "mon" to "Mon", "tue" to "Tue", "wed" to "Wed", "thu" to "Thu", "fri" to "Fri", "sat" to "Sat", "sun" to "Sun", "noWorkouts" to "No workouts on this day", 
          "subscribeNow" to "Subscribe Now", "premiumFeature" to "Premium Feature", "subscribersOnly" to "\$feature is available for subscribers only", "choosePlan" to "Choose a plan", "youAreSubscribed" to "You are subscribed!", "muscleRecovery" to "Muscle Recovery",  "waterReminderTitle" to "Time to drink water!", "waterReminderText" to "Stay hydrated! It's time to drink a glass of water.",   "selectTime" to "Select time", "forearms" to "Forearms", "neckAndTraps" to "Neck & Traps", "welcome" to "Welcome", "athlete" to "Athlete",
+        "readinessHydration" to "Hydration", "readinessTrend" to "7-day trend",
+        "readinessActionSleep" to "Sleep more tonight for better recovery",
+        "readinessActionSteps" to "A 20-min walk will boost your readiness",
+        "readinessActionRecovery" to "Stretching today - your muscles need rest",
+        "readinessActionVolume" to "High volume today - consider lighter training tomorrow",
+        "readinessActionHydration" to "Drink more water - dehydration reduces performance",
+        "readinessIntensityHeavy" to "Train hard - full intensity, add volume if you feel good",
+        "readinessIntensityModerate" to "Train normal - stick to the plan",
+        "readinessIntensityLight" to "Go easy - reduce volume by 30-40%, focus on form",
         "unlockPremiumTitle" to "Unlock Kinetic Premium", "unlockPremiumSubtitle" to "Get access to all advanced features", "freePlan" to "Free",   "permanentPlan" to "Lifetime Plan", "lifetimeAccess" to "Lifetime access", "restorePurchase" to "Restore purchase", "watchAdToUnlock" to "Watch an ad (unlock 30 min)", "unlockedForMinutes" to "Unlocked: %s left",  "currentPlan" to "Current plan", "bestValue" to "Best value", "mostPopular" to "Most popular", "perMonth" to "/month", "perYear" to "/year", "oneTimePayment" to "one-time payment", "upgradeToUnlock" to "Upgrade to unlock", "buyNow" to "Buy", "free" to "Free", "purchaseSuccess" to "Purchase successful! Welcome to Premium.", "purchaseFailed" to "Purchase failed", "purchaseCancelled" to "Purchase cancelled", "restoreSuccess" to "Purchases restored", "noPurchasesToRestore" to "No purchases to restore", "adUnlockSuccess" to "Feature unlocked for 30 minutes!", "adNotReady" to "Ad not ready. Please try again.", "dailyAdLimitReached" to "You've reached the daily unlock limit", "cancelAnytime" to "Cancel anytime in Google Play", "workoutAnalytics" to "Workout Analytics",
         "biometricTracking" to "Biometric Tracking",  "addMeasurement" to "Add measurement", "bodyFat" to "Body fat", "waistCirc" to "Waist", "hipsCirc" to "Hips", "thighsCirc" to "Thighs", "chestCirc" to "Chest", "armsCirc" to "Arms",  "noMeasurements" to "No measurements yet",    "weeksAgo" to "weeks ago", "cm" to "cm", "percent" to "%", "deleteMeasurement" to "Delete measurement", "biometricHistory" to "Measurement history", "weightChart" to "Weight chart", "bodyFatChart" to "Body fat chart", "circumferenceChart" to "Circumference chart",   "biometricReminderTitle" to "Time for measurements!", "biometricReminderText" to "Don't forget to log your weekly body measurements.",  
         "foodJournal" to "Food Journal",    "scan" to "Scan", "scanning" to "Scanning...", "scanBarcodeHelp" to "Make sure Google Play Services is installed and updated", "noFoodEntries" to "No food entries yet", "todaysMacros" to "Today's Macros", "stepsLabel" to "Steps", "activeTimeLabel" to "Active time", "caloriesLabel" to "Calories", "proteinLabel" to "Protein", "carbsLabel" to "Carbs", "fatLabel" to "Fat", "breakfast" to "Breakfast", "lunch" to "Lunch", "dinner" to "Dinner", "snack" to "Snack", "drinks" to "Drinks", "selectMealType" to "Select meal type",  "foodName" to "Food name", "brandLabel" to "Brand",     "fiber" to "Fiber", "searchFood" to "Search a food", "foodSearchHint" to "Ex: egg, chicken, rice", "quantity" to "Quantity", "gramsShort" to "g", "piecesShort" to "pcs", "addToJournal" to "Add to journal", "manualEntryMode" to "Manual entry", "noFoodFound" to "Food not found in the list", "enterManually" to "Enter the food manually", "per100g" to "per 100g", "perPiece" to "per piece",
@@ -1063,10 +1120,20 @@ object LanguageManager {
         "cycling" to "Cycling",
         "walking" to "Walking",
         "routePoints" to "Points",
-        "paused" to "Paused",
+        "paused" to "Paused", "estimatedOneRm" to "Est. 1RM", "nextSetSuggestion" to "Next set", "setTypeWarmup" to "Warm-up", "setTypeWorking" to "Working", "setTypeDrop" to "Drop", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Paused", "setTypeTempo" to "Tempo", "rpeLabel" to "RPE",
+           "readinessTitle" to "Readiness", "readinessScore" to "Today's readiness", "readinessHeavy" to "HEAVY — go hard", "readinessModerate" to "MODERATE — train normal", "readinessLight" to "LIGHT — recover or go easy", "readinessSleep" to "Sleep", "readinessSleepHours" to "Hours last night", "readinessQuality" to "Quality", "readinessSteps" to "Steps today", "readinessRecovery" to "Muscle recovery", "readinessVolume" to "Volume today", "readinessHint" to "Set your sleep to see your daily training recommendation.",
         "steps" to "steps",
         "timerFinished" to "Time's up!",
         "timeToStartNextSet" to "Ready for your next set!",
+        "readinessHydration" to "Hydration", "readinessTrend" to "7-day trend",
+        "readinessActionSleep" to "Sleep more tonight for better recovery",
+        "readinessActionSteps" to "A 20-min walk will boost your readiness",
+        "readinessActionRecovery" to "Stretching today - your muscles need rest",
+        "readinessActionVolume" to "High volume today - consider lighter training tomorrow",
+        "readinessActionHydration" to "Drink more water - dehydration reduces performance",
+        "readinessIntensityHeavy" to "Train hard - full intensity, add volume if you feel good",
+        "readinessIntensityModerate" to "Train normal - stick to the plan",
+        "readinessIntensityLight" to "Go easy - reduce volume by 30-40%, focus on form",
         "weeksSinceLastDeload" to "Weeks since last deload", "weightKg" to "Weight (kg)",
         "yogaDescription" to "Relax and improve mobility with light yoga",  
         "mostTrained" to "Most Trained", "allExercises" to "All Exercises",
@@ -1104,7 +1171,9 @@ object LanguageManager {
         "startingWorkoutLabel" to "Starting workout music...",
         "signUpSuccessMessage" to "Account created! Please log in.",
         "trainingSectionLabel" to "Training", "frequencyLabel" to "Frequency", "xPerWeek" to "x / week", "editProfile" to "Edit Profile", "memberSince" to "Member since", "changePassword" to "Change Password",
-        "updateTitle" to "New version available", "updateMessage" to "Kinetic %s has been released. You have v%s installed.\n\nTap to download the new APK.", "updateDownload" to "Download", "updateLater" to "Later",
+        "updateTitle" to "New version available", "updateMessage" to "Kinetic %s has been released. You have v%s installed.\n\nTap to download the new APK.",         "updateDownload" to "Download", "updateLater" to "Later",
+        "goalComplete" to "Goal reached!", "waterStreak" to "Hydration streak", "ofGoal" to "of goal", "editWaterGoal" to "Edit water goal", "newWaterGoal" to "New goal (ml)",
+        "undo" to "Undo"
     )
 
     private fun createRu() = Strings(enRaw() + mapOf(
@@ -1279,7 +1348,7 @@ object LanguageManager {
         "cycling" to "Велосипед",
         "walking" to "Ходьба",
         "routePoints" to "Точки",
-        "paused" to "Пауза",
+        "paused" to "Пауза", "estimatedOneRm" to "Расч. 1ПМ", "nextSetSuggestion" to "Следующий подход", "setTypeWarmup" to "Разминка", "setTypeWorking" to "Рабочий", "setTypeDrop" to "Дроп", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Пауза", "setTypeTempo" to "Темпо", "rpeLabel" to "RPE",
         "steps" to "шагов",
         "timerFinished" to "Время вышло!",
         "timeToStartNextSet" to "Готовы к следующему подходу!",
@@ -1362,6 +1431,8 @@ object LanguageManager {
         "mostTrained" to "Самое тренируемое",
         "unlockPremiumTitle" to "Откройте Kinetic Premium",
         "oneTimePayment" to "разовый платеж",
+        "goalComplete" to "Цель достигнута!", "waterStreak" to "Серия гидратации", "ofGoal" to "от цели", "editWaterGoal" to "Изменить цель воды", "newWaterGoal" to "Новая цель (мл)",
+        "undo" to "Отменить"
     ))
 
     private fun createUk() = Strings(enRaw() + mapOf(
@@ -1536,7 +1607,7 @@ object LanguageManager {
         "cycling" to "Велосипед",
         "walking" to "Ходьба",
         "routePoints" to "Точки",
-        "paused" to "Пауза",
+        "paused" to "Пауза", "estimatedOneRm" to "Розрах. 1ПМ", "nextSetSuggestion" to "Наступний підхід", "setTypeWarmup" to "Розминка", "setTypeWorking" to "Робочий", "setTypeDrop" to "Дроп", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Пауза", "setTypeTempo" to "Темпо", "rpeLabel" to "RPE",
         "steps" to "кроків",
         "timerFinished" to "Час вийшов!",
         "timeToStartNextSet" to "Готові до наступного підходу!",
@@ -1619,6 +1690,8 @@ object LanguageManager {
         "mostTrained" to "Найбільш тренована",
         "unlockPremiumTitle" to "Відкрийте Kinetic Premium",
         "oneTimePayment" to "разовий платіж",
+        "goalComplete" to "Мету досягнуто!", "waterStreak" to "Серія гідратації", "ofGoal" to "від мети", "editWaterGoal" to "Змінити мету води", "newWaterGoal" to "Нова мета (мл)",
+        "undo" to "Скасувати"
     ))
 
     private fun createFr() = Strings(enRaw() + mapOf(
@@ -1795,7 +1868,7 @@ object LanguageManager {
         "cycling" to "Vélo",
         "walking" to "Marche",
         "routePoints" to "Points",
-        "paused" to "En pause",
+        "paused" to "En pause", "estimatedOneRm" to "1RM estimé", "nextSetSuggestion" to "Prochaine série", "setTypeWarmup" to "Échauffement", "setTypeWorking" to "Travail", "setTypeDrop" to "Drop", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Pause", "setTypeTempo" to "Tempo", "rpeLabel" to "RPE",
         "steps" to "pas",
         "timerFinished" to "Le temps est écoulé !",
         "timeToStartNextSet" to "Prêt pour votre prochaine série !",
@@ -1878,6 +1951,8 @@ object LanguageManager {
         "mostTrained" to "Le plus pratiqué",
         "unlockPremiumTitle" to "Débloquez Kinetic Premium",
         "oneTimePayment" to "paiement unique",
+        "goalComplete" to "Objectif atteint!", "waterStreak" to "Série d'hydratation", "ofGoal" to "de l'objectif", "editWaterGoal" to "Modifier l'objectif eau", "newWaterGoal" to "Nouvel objectif (ml)",
+        "undo" to "Annuler"
     ))
 
     private fun createDe() = Strings(enRaw() + mapOf(
@@ -2053,7 +2128,7 @@ object LanguageManager {
         "cycling" to "Radfahren",
         "walking" to "Gehen",
         "routePoints" to "Punkte",
-        "paused" to "Pausiert",
+        "paused" to "Pausiert", "estimatedOneRm" to "Gesch. 1RM", "nextSetSuggestion" to "Nächster Satz", "setTypeWarmup" to "Aufwärmen", "setTypeWorking" to "Arbeit", "setTypeDrop" to "Drop", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Pause", "setTypeTempo" to "Tempo", "rpeLabel" to "RPE",
         "steps" to "Schritte",
         "timerFinished" to "Zeit abgelaufen!",
         "timeToStartNextSet" to "Bereit für den nächsten Satz!",
@@ -2136,6 +2211,8 @@ object LanguageManager {
         "mostTrained" to "Am häufigsten trainiert",
         "unlockPremiumTitle" to "Kinetic Premium freischalten",
         "oneTimePayment" to "einmalige Zahlung",
+        "goalComplete" to "Ziel erreicht!", "waterStreak" to "Hydratationsserie", "ofGoal" to "vom Ziel", "editWaterGoal" to "Wasserziel bearbeiten", "newWaterGoal" to "Neues Ziel (ml)",
+        "undo" to "Rückgängig"
     ))
 
     private fun createEs() = Strings(enRaw() + mapOf(
@@ -2314,7 +2391,7 @@ object LanguageManager {
         "cycling" to "Ciclismo",
         "walking" to "Caminar",
         "routePoints" to "Puntos",
-        "paused" to "En pausa",
+        "paused" to "En pausa", "estimatedOneRm" to "1RM estimado", "nextSetSuggestion" to "Siguiente serie", "setTypeWarmup" to "Calentamiento", "setTypeWorking" to "Trabajo", "setTypeDrop" to "Drop", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Pausa", "setTypeTempo" to "Tempo", "rpeLabel" to "RPE",
         "steps" to "pasos",
         "timerFinished" to "¡Tiempo agotado!",
         "timeToStartNextSet" to "¡Listo para tu siguiente serie!",
@@ -2397,6 +2474,8 @@ object LanguageManager {
         "mostTrained" to "El más entrenado",
         "unlockPremiumTitle" to "Desbloquea Kinetic Premium",
         "oneTimePayment" to "pago único",
+        "goalComplete" to "Meta alcanzada!", "waterStreak" to "Serie de hidratación", "ofGoal" to "de la meta", "editWaterGoal" to "Editar meta de agua", "newWaterGoal" to "Nueva meta (ml)",
+        "undo" to "Deshacer"
     ))
 
     private fun createIt() = Strings(enRaw() + mapOf(
@@ -2573,7 +2652,7 @@ object LanguageManager {
         "cycling" to "Ciclismo",
         "walking" to "Camminata",
         "routePoints" to "Punti",
-        "paused" to "In pausa",
+        "paused" to "In pausa", "estimatedOneRm" to "1RM stimato", "nextSetSuggestion" to "Prossima serie", "setTypeWarmup" to "Riscaldamento", "setTypeWorking" to "Lavoro", "setTypeDrop" to "Drop", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Pausa", "setTypeTempo" to "Tempo", "rpeLabel" to "RPE",
         "steps" to "passi",
         "timerFinished" to "Tempo scaduto!",
         "timeToStartNextSet" to "Pronto per la prossima serie!",
@@ -2656,6 +2735,8 @@ object LanguageManager {
         "mostTrained" to "Il più allenato",
         "unlockPremiumTitle" to "Sblocca Kinetic Premium",
         "oneTimePayment" to "pagamento una tantum",
+        "goalComplete" to "Obiettivo raggiunto!", "waterStreak" to "Serie di idratazione", "ofGoal" to "dell'obiettivo", "editWaterGoal" to "Modifica obiettivo acqua", "newWaterGoal" to "Nuovo obiettivo (ml)",
+        "undo" to "Annulla"
     ))
 
     private fun createTr() = Strings(enRaw() + mapOf(
@@ -2829,7 +2910,7 @@ object LanguageManager {
         "cycling" to "Bisiklet",
         "walking" to "Yürüyüş",
         "routePoints" to "Noktalar",
-        "paused" to "Duraklatıldı",
+        "paused" to "Duraklatıldı", "estimatedOneRm" to "Tahmini 1RM", "nextSetSuggestion" to "Sonraki set", "setTypeWarmup" to "Isınma", "setTypeWorking" to "Çalışma", "setTypeDrop" to "Drop", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Duraklat", "setTypeTempo" to "Tempo", "rpeLabel" to "RPE",
         "steps" to "adım",
         "timerFinished" to "Süre doldu!",
         "timeToStartNextSet" to "Sıradaki set için hazırsınız!",
@@ -2913,6 +2994,8 @@ object LanguageManager {
         "mostTrained" to "En çok çalışılan",
         "unlockPremiumTitle" to "Kinetic Premium'u Aç",
         "oneTimePayment" to "tek seferlik ödeme",
+        "goalComplete" to "Hedefe ulaşıldı!", "waterStreak" to "Hidrasyon serisi", "ofGoal" to "hedefin", "editWaterGoal" to "Su hedefini düzenle", "newWaterGoal" to "Yeni hedef (ml)",
+        "undo" to "Geri Al"
     ))
 
     private fun createPt() = Strings(enRaw() + mapOf(
@@ -3091,7 +3174,7 @@ object LanguageManager {
         "cycling" to "Ciclismo",
         "walking" to "Caminhada",
         "routePoints" to "Pontos",
-        "paused" to "Em pausa",
+        "paused" to "Em pausa", "estimatedOneRm" to "1RM estimado", "nextSetSuggestion" to "Próxima série", "setTypeWarmup" to "Aquecimento", "setTypeWorking" to "Trabalho", "setTypeDrop" to "Drop", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Pausa", "setTypeTempo" to "Tempo", "rpeLabel" to "RPE",
         "steps" to "passos",
         "timerFinished" to "Tempo esgotado!",
         "timeToStartNextSet" to "Pronto para a próxima série!",
@@ -3174,6 +3257,8 @@ object LanguageManager {
         "mostTrained" to "Mais treinado",
         "unlockPremiumTitle" to "Desbloqueie o Kinetic Premium",
         "oneTimePayment" to "pagamento único",
+        "goalComplete" to "Meta atingida!", "waterStreak" to "Série de hidratação", "ofGoal" to "da meta", "editWaterGoal" to "Editar meta de água", "newWaterGoal" to "Nova meta (ml)",
+        "undo" to "Desfazer"
     ))
 
     private fun createPl() = Strings(enRaw() + mapOf(
@@ -3351,7 +3436,7 @@ object LanguageManager {
         "cycling" to "Jazda na rowerze",
         "walking" to "Chodzenie",
         "routePoints" to "Punkty",
-        "paused" to "Wstrzymano",
+        "paused" to "Wstrzymano", "estimatedOneRm" to "Szac. 1RM", "nextSetSuggestion" to "Następna seria", "setTypeWarmup" to "Rozgrzewka", "setTypeWorking" to "Roboczy", "setTypeDrop" to "Drop", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Pauza", "setTypeTempo" to "Tempo", "rpeLabel" to "RPE",
         "steps" to "kroków",
         "timerFinished" to "Czas minął!",
         "timeToStartNextSet" to "Gotowy na następną serię!",
@@ -3434,6 +3519,8 @@ object LanguageManager {
         "mostTrained" to "Najczęściej trenowany",
         "unlockPremiumTitle" to "Odblokuj Kinetic Premium",
         "oneTimePayment" to "płatność jednorazowa",
+        "goalComplete" to "Cel osiągnięty!", "waterStreak" to "Seria nawodnienia", "ofGoal" to "celu", "editWaterGoal" to "Edytuj cel wody", "newWaterGoal" to "Nowy cel (ml)",
+        "undo" to "Cofnij"
     ))
 
     fun getStrings(context: Context): Strings {

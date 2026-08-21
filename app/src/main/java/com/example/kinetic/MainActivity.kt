@@ -118,6 +118,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import com.example.kinetic.ui.theme.JetBrainsMono
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.TextStyle
@@ -579,6 +580,7 @@ fun MuscleGroupList(
     var showSavedExercises by remember { mutableStateOf(false) }
     var showWeightGoal by remember { mutableStateOf(false) }
     var showBodyFatCalculator by remember { mutableStateOf(false) }
+    var showReadiness by remember { mutableStateOf(false) }
 
     // Open GPS Cardio when the tracking notification is tapped (service keeps running in background)
     val mainActivity = context as? MainActivity
@@ -588,7 +590,7 @@ fun MuscleGroupList(
             act.openGpsCardioRequest = false
             act.intent?.removeExtra("open_gps_cardio")
             currentPage = DrawerPage.GPS_CARDIO
-            showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false
+            showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = false
             workoutNavController.popToWorkoutHome()
         }
     }
@@ -600,7 +602,7 @@ fun MuscleGroupList(
             act.openWaterTabRequest = false
             act.intent?.removeExtra("open_water_tab")
             currentPage = null
-            showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false
+            showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = false
             workoutNavController.popToWorkoutHome()
             currentDashboardTab = 3
         }
@@ -798,7 +800,7 @@ fun MuscleGroupList(
             !isWorkoutFlowActive && !showCalendar && !showTemplates && !showBiometricInput &&
                 !showBiometricCharts && !showFoodJournal && !showBarcodeScanner && !showAddFood &&
                 !showAiTrainer && !showPlateCalculator && !showOneRMCalculator && !showWorkoutAnalytics &&
-                !showPricing &&
+                !showReadiness && !showPricing &&
                 currentPage != DrawerPage.GPS_CARDIO && currentPage != DrawerPage.REST_DAYS
         }
     }
@@ -1357,6 +1359,7 @@ fun MuscleGroupList(
             showSavedExercises -> { showSavedExercises = false; currentPage = null }
             showWeightGoal -> { showWeightGoal = false; currentPage = null }
             showBodyFatCalculator -> { showBodyFatCalculator = false; currentPage = null }
+            showReadiness -> { showReadiness = false; currentPage = null }
             currentPage != null -> currentPage = null
             currentDashboardTab != 0 -> currentDashboardTab = 0
             drawerState.isOpen -> { /* let drawer close itself */ }
@@ -1394,7 +1397,8 @@ fun MuscleGroupList(
                             DrawerPage.WORKOUT_ANALYTICS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = true; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
                             DrawerPage.SAVED_EXERCISES -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = true; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
                             DrawerPage.WEIGHT_GOAL -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = true; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.BODY_FAT_CALCULATOR -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = true; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.BODY_FAT_CALCULATOR -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = true; showReadiness = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.READINESS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = true; workoutNavController.popToWorkoutHome() }
                         }
                     },
                     onExportCsv = {
@@ -1757,6 +1761,17 @@ fun MuscleGroupList(
                             onWatchAd = { watchAdToUnlock(PremiumFeature.ONE_RM_CALCULATOR) },
                             onUpgrade = { showOneRMCalculator = false; showPricing = true },
                             onBack = { showOneRMCalculator = false; currentPage = null }
+                        )
+                    }
+                } else if (showReadiness) {
+                    Scaffold(
+                        containerColor = surfaceBg,
+                        topBar = { KineticAppBar(onBack = { showReadiness = false; currentPage = null }) }
+                    ) { pad ->
+                        ReadinessScreen(
+                            isDark = isDark,
+                            strings = strings,
+                            modifier = Modifier.padding(pad)
                         )
                     }
                 } else if (showWorkoutAnalytics) {
@@ -2893,6 +2908,7 @@ fun MuscleGroupList(
                                                 showSavedExercises -> { showSavedExercises = false; currentPage = null }
                                                 showWeightGoal -> { showWeightGoal = false; currentPage = null }
                                                 showBodyFatCalculator -> { showBodyFatCalculator = false; currentPage = null }
+                                                showReadiness -> { showReadiness = false; currentPage = null }
                                                 currentPage != null -> currentPage = null
                                             }
                                         } else {
@@ -2908,6 +2924,7 @@ fun MuscleGroupList(
                                             showPlateCalculator = false; showOneRMCalculator = false
                                             showWorkoutAnalytics = false; showSavedExercises = false
                                             showWeightGoal = false; showBodyFatCalculator = false
+                                            showReadiness = false
                                             currentPage = null
                                         }
                                     },
@@ -2979,6 +2996,7 @@ fun MuscleGroupList(
                                                 showSavedExercises -> { showSavedExercises = false; currentPage = null }
                                                 showWeightGoal -> { showWeightGoal = false; currentPage = null }
                                                 showBodyFatCalculator -> { showBodyFatCalculator = false; currentPage = null }
+                                                showReadiness -> { showReadiness = false; currentPage = null }
                                                 currentPage != null -> currentPage = null
                                             }
                                         } else {
@@ -2994,6 +3012,7 @@ fun MuscleGroupList(
                                             showPlateCalculator = false; showOneRMCalculator = false
                                             showWorkoutAnalytics = false; showSavedExercises = false
                                             showWeightGoal = false; showBodyFatCalculator = false
+                                            showReadiness = false
                                             currentPage = null
                                         }
                                     },
@@ -3028,6 +3047,7 @@ fun MuscleGroupList(
                         showPlateCalculator = false; showOneRMCalculator = false
                         showWorkoutAnalytics = false; showSavedExercises = false
                         showWeightGoal = false; showBodyFatCalculator = false
+                        showReadiness = false
                         currentPage = null; selectedTemplate = null
                         quickExerciseGrupa = null; quickExerciseName = null
                         quickExerciseList = emptyList(); quickExerciseIndex = 0
@@ -3051,7 +3071,7 @@ fun MuscleGroupList(
                     containerColor = if (centerSelected) accent else accent.copy(alpha = 0.85f),
                     contentColor = Color.White,
                     shape = CircleShape,
-                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp)
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = if (isDark) 3.dp else 0.dp)
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.barbell),
@@ -3804,8 +3824,8 @@ fun RecoveryBarCard(grupaMusculara: String, modifier: Modifier = Modifier, isDar
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(22.dp))
-            .background(if (resolvedDark) DarkCardElevated else surfaceColor())
-            .border(1.dp, if (resolvedDark) RedBorderSoft else dividerColor(), RoundedCornerShape(22.dp))
+            .background(if (resolvedDark) Color(0xFF0D0D0D) else surfaceColor())
+            .border(1.dp, if (resolvedDark) Color.White.copy(alpha = 0.10f) else dividerColor(), RoundedCornerShape(22.dp))
             .padding(16.dp, 14.dp, 20.dp, 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -3813,7 +3833,7 @@ fun RecoveryBarCard(grupaMusculara: String, modifier: Modifier = Modifier, isDar
         Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(strings.muscleRecovery, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = secondaryTextColor())
-                Text("$recoveryPct%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = barColor, fontFamily = FontFamily.Monospace)
+                Text("$recoveryPct%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = barColor, fontFamily = JetBrainsMono)
             }
             Spacer(Modifier.height(7.dp))
             Box(Modifier.fillMaxWidth().height(5.dp).clip(RoundedCornerShape(5.dp)).background(Color(0x06FFFFFF))) {
@@ -3960,13 +3980,15 @@ fun MuscleRecoveryScreen(onBackClick: () -> Unit) {
                             animationSpec = tween(durationMillis = 1000)
                         )
 
-                        GlassCard(
+                        Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
-                            isDark = isSystemInDarkTheme(),
-                            contentPadding = PaddingValues(16.dp)
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSystemInDarkTheme()) Color(0xFF0D0D0D) else surfaceColor()
+                            ),
+                            border = if (isSystemInDarkTheme()) BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)) else null
                         ) {
-                            Column {
+                            Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -4461,9 +4483,9 @@ fun CalendarScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StatPill(strings.maxWeight, weightLabel(stats.maxGreutate, isLbs), Modifier.weight(1f))
-                    StatPill(strings.maxReps, "${stats.maxRepetari}", Modifier.weight(1f))
-                    StatPill(strings.maxSet, weightLabel(stats.maxVolumSet, isLbs), Modifier.weight(1f))
+                    StatPill(strings.maxWeight, weightLabel(stats.maxGreutate, isLbs), Modifier.weight(1f), isDark)
+                    StatPill(strings.maxReps, "${stats.maxRepetari}", Modifier.weight(1f), isDark)
+                    StatPill(strings.maxSet, weightLabel(stats.maxVolumSet, isLbs), Modifier.weight(1f), isDark)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -4579,7 +4601,8 @@ fun CalendarScreen(
                                                 "${weightLabel(progres.greutateMaxima, isLbs)}",
                                                  color = accentColor(),
                                                  fontWeight = FontWeight.Bold,
-                                                 fontSize = 13.sp
+                                                 fontSize = 13.sp,
+                                                 fontFamily = JetBrainsMono
                                              )
                 }
             }
@@ -5504,7 +5527,7 @@ private fun ProfileHero(
         Spacer(Modifier.height(18.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("${strings.lv} $level", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = p.ac, letterSpacing = 1.sp)
+            Text("${strings.lv} $level", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = p.ac, letterSpacing = 1.sp, fontFamily = JetBrainsMono)
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -5569,7 +5592,7 @@ private fun StatItem(
             .padding(12.dp, 10.dp, 8.dp, 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(value, fontFamily = FontFamily.SansSerif, fontSize = 20.sp, fontWeight = FontWeight.W800, color = valueColor)
+        Text(value, fontFamily = JetBrainsMono, fontSize = 20.sp, fontWeight = FontWeight.W800, color = valueColor)
         Text(label, fontSize = 8.sp, fontWeight = FontWeight.Normal, color = p.tt, letterSpacing = 0.8.sp, maxLines = 1)
         Row(
             modifier = Modifier
@@ -5693,7 +5716,7 @@ private fun MetricBlock(
     ) {
         Text(label, fontSize = 9.sp, color = p.tt, letterSpacing = 1.sp, fontWeight = FontWeight.Bold, maxLines = 1)
         Spacer(Modifier.height(4.dp))
-        Text(value, fontFamily = FontFamily.SansSerif, fontSize = 22.sp, fontWeight = FontWeight.W800, color = valueColor)
+        Text(value, fontFamily = JetBrainsMono, fontSize = 22.sp, fontWeight = FontWeight.W800, color = valueColor)
         Text(unit, fontSize = 9.sp, color = p.ts, maxLines = 1)
     }
 }
@@ -5767,7 +5790,7 @@ private fun TrainingCard(
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(strings.frequencyLabel.ifBlank { "FREQUENCY" }.uppercase(), fontSize = 9.sp, color = p.tt, letterSpacing = 1.sp, fontWeight = FontWeight.Bold)
-            Text("$sessions ${strings.xPerWeek.ifBlank { "x / week" }}", fontSize = 9.sp, color = p.ts)
+            Text("$sessions ${strings.xPerWeek.ifBlank { "x / week" }}", fontSize = 9.sp, color = p.ts, fontFamily = JetBrainsMono)
         }
         Spacer(Modifier.height(7.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.fillMaxWidth()) {
@@ -5873,7 +5896,7 @@ private fun BiometricCard(
             ) {
                 if (deltaText.isNotBlank()) {
                     Icon(deltaIcon, null, tint = deltaTint, modifier = Modifier.size(7.dp))
-                    Text(deltaText, fontSize = 8.sp, color = p.ts)
+                    Text(deltaText, fontSize = 8.sp, color = p.ts, fontFamily = JetBrainsMono)
                 }
             }
             Text(
@@ -5892,10 +5915,10 @@ private fun BiometricCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (lastWeightText.isNotBlank()) {
-                    Text(lastWeightText, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = p.tp)
+                    Text(lastWeightText, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = p.tp, fontFamily = JetBrainsMono)
                 }
                 if (bodyFatText.isNotBlank()) {
-                    Text(bodyFatText, fontSize = 11.sp, color = p.ts)
+                    Text(bodyFatText, fontSize = 11.sp, color = p.ts, fontFamily = JetBrainsMono)
                 }
             }
         }

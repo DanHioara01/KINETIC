@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontFamily
+import com.example.kinetic.ui.theme.JetBrainsMono
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -531,7 +532,7 @@ private fun GlassWelcomeCard(
             Text(
                 text = "\u201C$quote\u201D",
                 fontSize = 14.sp,
-                fontFamily = FontFamily.Monospace,
+                fontFamily = JetBrainsMono,
                 lineHeight = 20.sp,
                 letterSpacing = 1.sp,
                 color = textColorSecondary,

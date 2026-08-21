@@ -154,7 +154,7 @@ fun LeaderboardScreen(
                                         }
                                         Icon(painterResource(trophyRes), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(34.dp))
                                     } else {
-                                        Text("${index + 1}", color = p.ts, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text("${index + 1}", color = p.ts, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
                                     }
                                 }
                                 Spacer(Modifier.width(12.dp))
@@ -195,7 +195,8 @@ fun LeaderboardScreen(
                                     Text(
                                         "${entry.workoutCount} ${strings.workoutsLabel.lowercase()}",
                                         color = p.ts,
-                                        fontSize = 12.sp
+                                        fontSize = 12.sp,
+                                        fontFamily = JetBrainsMono
                                     )
                                 }
 
@@ -205,7 +206,8 @@ fun LeaderboardScreen(
                                     "${String.format("%.0f", displayVol)} $unit",
                                     color = if (isSelf) p.ac else p.tp,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
+                                    fontSize = 14.sp,
+                                    fontFamily = JetBrainsMono
                                 )
                             }
                         }

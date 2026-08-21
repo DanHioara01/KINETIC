@@ -28,6 +28,7 @@ import com.example.kinetic.ui.components.KineticAppBar
 import com.example.kinetic.ui.theme.*
 import com.example.kinetic.ui.theme.appPalette
 import com.example.kinetic.ui.theme.AppPalette
+import com.example.kinetic.ui.theme.JetBrainsMono
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -458,7 +459,7 @@ private fun SearchResultCard(
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(userName, color = p.tp, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text("#${userProfileManager.getShortId(userId)}", color = p.ts, fontSize = 11.sp)
+                Text("#${userProfileManager.getShortId(userId)}", color = p.ts, fontSize = 11.sp, fontFamily = JetBrainsMono)
             }
             if (!alreadyFriend) {
                 Button(

@@ -40,6 +40,7 @@ import com.example.kinetic.ui.components.KineticAppBar
 import com.example.kinetic.ui.theme.*
 import com.example.kinetic.ui.theme.appPalette
 import com.example.kinetic.ui.theme.AppPalette
+import com.example.kinetic.ui.theme.JetBrainsMono
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -357,7 +358,8 @@ fun CalendarWorkoutScreen(
                                     Text(
                                         text = "${String.format("%.0f", workout.totalWeight)} kg total",
                                         color = p.ts,
-                                        fontSize = 13.sp
+                                        fontSize = 13.sp,
+                                        fontFamily = JetBrainsMono
                                     )
                                     if (workout.durationMs > 0) {
                                         val durationMin = workout.durationMs / 60000
@@ -365,7 +367,8 @@ fun CalendarWorkoutScreen(
                                         Text(
                                             text = "${durationMin}:${String.format("%02d", durationSec)}",
                                             color = p.ts,
-                                            fontSize = 12.sp
+                                            fontSize = 12.sp,
+                                            fontFamily = JetBrainsMono
                                         )
                                     }
                                 }

@@ -24,6 +24,7 @@ import com.example.kinetic.ui.components.KineticAppBar
 import com.example.kinetic.ui.theme.*
 import com.example.kinetic.ui.theme.appPalette
 import com.example.kinetic.ui.theme.AppPalette
+import com.example.kinetic.ui.theme.JetBrainsMono
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -235,7 +236,8 @@ private fun MacrosOverviewCard(
                         String.format("%.0f", macros.calories),
                         color = primaryText,
                         fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = JetBrainsMono
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -251,7 +253,8 @@ private fun MacrosOverviewCard(
                     Text(
                         "${String.format("%.1f", remainingCalories)} ${strings.remaining}",
                         color = p.ts,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        fontFamily = JetBrainsMono
                     )
                 }
 
@@ -356,9 +359,9 @@ private fun MacroRow(
                 modifier = Modifier.weight(1f)
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(value, color = primaryText, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text(value, color = primaryText, fontSize = 15.sp, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
                 if (target.isNotBlank()) {
-                    Text(" / $target", color = secondaryText, fontSize = 14.sp)
+                    Text(" / $target", color = secondaryText, fontSize = 14.sp, fontFamily = JetBrainsMono)
                 }
             }
         }
@@ -431,7 +434,8 @@ private fun MealSection(
                 Text(
                     "${entries.sumOf { it.calories }} kcal",
                     color = p.ac,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = JetBrainsMono
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -453,7 +457,8 @@ private fun MealSection(
                         Text(
                             "${timeFormat.format(Date(entry.timestamp))} · ${String.format("%.0f", entry.calories)} kcal · P:${String.format("%.1f", entry.proteinG)} · C:${String.format("%.1f", entry.carbsG)} · F:${String.format("%.1f", entry.fatG)}",
                             color = p.ts,
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = JetBrainsMono
                         )
                     }
                     IconButton(onClick = { showDeleteDialog = entry }) {

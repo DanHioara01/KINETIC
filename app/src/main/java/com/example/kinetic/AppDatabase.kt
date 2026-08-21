@@ -31,9 +31,12 @@ data class ExercitiuEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val antrenamentId: Long,
     val numeExercitiu: String,
+    val exerciseId: String = "",
     val setIndex: Int = 0,
     val greutateKg: Double = 0.0,
     val repetari: Int = 0,
+    val setType: String = "working",
+    val rpe: Int = 0,
     val notes: String = "",
     val syncUuid: String = "",
     val updatedAt: Long = System.currentTimeMillis()
@@ -50,6 +53,7 @@ data class ExerciseDefinitionEntity(
     val name: String,
     val group: String,
     val equipment: String = "",
+    val exerciseId: String = "",
     val isDefault: Boolean = true,
     val isFavorite: Boolean = false,
     val usageCount: Int = 0,
@@ -76,6 +80,7 @@ data class TemplateExerciseEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val templateId: Long,
     val exerciseName: String,
+    val exerciseId: String = "",
     val group: String,
     val syncUuid: String = "",
     val updatedAt: Long = System.currentTimeMillis()
@@ -86,6 +91,7 @@ data class PersonalRecordEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val userId: String,
     val exerciseName: String,
+    val exerciseId: String = "",
     val weight: Double,
     val reps: Int,
     val volume: Double = 0.0,
@@ -108,6 +114,7 @@ data class MuscleRecoveryEntity(
 data class ExerciseMetadataEntity(
     val exerciseName: String,
     val userId: String,
+    val exerciseId: String = "",
     val grupaMusculara: String,
     val isFavorite: Boolean = false,
     val isCustom: Boolean = false,
@@ -375,6 +382,12 @@ interface ExercitiuDao {
     @Query("SELECT * FROM exercitii WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<ExercitiuEntity>
 
+    @Query("SELECT * FROM exercitii WHERE exerciseId = ''")
+    suspend fun getWithoutExerciseId(): List<ExercitiuEntity>
+
+    @Query("UPDATE exercitii SET exerciseId = :exerciseId WHERE id = :id")
+    suspend fun updateExerciseId(id: Long, exerciseId: String)
+
     @Query("DELETE FROM exercitii WHERE antrenamentId = :antrenamentId")
     suspend fun deleteForAntrenament(antrenamentId: Long)
 
@@ -392,26 +405,26 @@ interface ExercitiuDao {
     @Query("""
         SELECT e.* FROM exercitii e
         INNER JOIN antrenamente a ON e.antrenamentId = a.id
-        WHERE a.userId = :userId AND e.numeExercitiu = :exerciseName
+        WHERE a.userId = :userId AND (e.numeExercitiu = :exerciseName OR e.exerciseId = :exerciseId)
         ORDER BY a.data DESC
     """)
-    suspend fun getHistoryForExercise(userId: String, exerciseName: String): List<ExercitiuEntity>
+    suspend fun getHistoryForExercise(userId: String, exerciseName: String, exerciseId: String): List<ExercitiuEntity>
 
     @Query("""
         SELECT e.* FROM exercitii e
         INNER JOIN antrenamente a ON e.antrenamentId = a.id
-        WHERE a.userId = :userId AND e.numeExercitiu = :exerciseName
+        WHERE a.userId = :userId AND (e.numeExercitiu = :exerciseName OR e.exerciseId = :exerciseId)
         ORDER BY a.data DESC
     """)
-    suspend fun getHistoryForExerciseSimple(userId: String, exerciseName: String): List<ExercitiuEntity>
+    suspend fun getHistoryForExerciseSimple(userId: String, exerciseName: String, exerciseId: String): List<ExercitiuEntity>
 
     @Query("""
         SELECT e.*, a.data as antrenamentData FROM exercitii e
         INNER JOIN antrenamente a ON e.antrenamentId = a.id
-        WHERE a.userId = :userId AND e.numeExercitiu = :exerciseName
+        WHERE a.userId = :userId AND (e.numeExercitiu = :exerciseName OR e.exerciseId = :exerciseId)
         ORDER BY a.data DESC
     """)
-    suspend fun getHistoryWithDates(userId: String, exerciseName: String): List<ExerciseWithDate>
+    suspend fun getHistoryWithDates(userId: String, exerciseName: String, exerciseId: String): List<ExerciseWithDate>
 
     @Query("""
         SELECT e.* FROM exercitii e
@@ -517,6 +530,12 @@ interface ExerciseDefinitionDao {
 
     @Query("SELECT * FROM exercises WHERE name = :name LIMIT 1")
     suspend fun getByName(name: String): ExerciseDefinitionEntity?
+
+    @Query("SELECT * FROM exercises WHERE exerciseId = ''")
+    suspend fun getWithoutExerciseId(): List<ExerciseDefinitionEntity>
+
+    @Query("UPDATE exercises SET exerciseId = :exerciseId WHERE id = :id")
+    suspend fun updateExerciseId(id: Long, exerciseId: String)
 }
 
 @Dao
@@ -556,6 +575,12 @@ interface TemplateExerciseDao {
 
     @Query("SELECT * FROM template_exercises WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<TemplateExerciseEntity>
+
+    @Query("SELECT * FROM template_exercises WHERE exerciseId = ''")
+    suspend fun getWithoutExerciseId(): List<TemplateExerciseEntity>
+
+    @Query("UPDATE template_exercises SET exerciseId = :exerciseId WHERE id = :id")
+    suspend fun updateExerciseId(id: Long, exerciseId: String)
 }
 
 @Dao
@@ -577,6 +602,12 @@ interface PersonalRecordDao {
 
     @Query("SELECT * FROM personal_records WHERE userId = :userId ORDER BY weight DESC")
     suspend fun getAllSortedByWeight(userId: String): List<PersonalRecordEntity>
+
+    @Query("SELECT * FROM personal_records WHERE exerciseId = ''")
+    suspend fun getWithoutExerciseId(): List<PersonalRecordEntity>
+
+    @Query("UPDATE personal_records SET exerciseId = :exerciseId WHERE id = :id")
+    suspend fun updateExerciseId(id: Long, exerciseId: String)
 }
 
 @Dao
@@ -845,6 +876,12 @@ interface ExerciseMetadataDao {
 
     @Query("UPDATE exercise_metadata SET isFavorite = :isFavorite WHERE exerciseName = :name AND userId = :userId")
     suspend fun setFavorite(userId: String, name: String, isFavorite: Boolean)
+
+    @Query("SELECT * FROM exercise_metadata WHERE exerciseId = ''")
+    suspend fun getWithoutExerciseId(): List<ExerciseMetadataEntity>
+
+    @Query("UPDATE exercise_metadata SET exerciseId = :exerciseId WHERE exerciseName = :name AND userId = :userId")
+    suspend fun updateExerciseId(name: String, userId: String, exerciseId: String)
 }
 
 @Dao
@@ -937,7 +974,7 @@ interface InjuryRiskDao {
         WeightGoalEntity::class,
         InjuryRiskEntity::class
     ],
-    version = 26,
+    version = 28,
     exportSchema = false
 )
 @TypeConverters(FoodUnitTypeConverter::class)
@@ -1307,6 +1344,26 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // 26→27: identitate stabilă a exercițiilor (Exercise ID + alias-uri).
+        // Coloane noi adăugate aditiv — datele existente rămân intacte.
+        private val MIGRATION_26_27 = object : Migration(26, 27) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                addColumnIfMissing(db, "exercitii", "exerciseId", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "exercise_metadata", "exerciseId", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "exercises", "exerciseId", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "template_exercises", "exerciseId", "TEXT NOT NULL DEFAULT ''")
+                addColumnIfMissing(db, "personal_records", "exerciseId", "TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        // 27→28: set types (warm-up/working/drop/AMRAP/paused/tempo) + RPE per set.
+        private val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                addColumnIfMissing(db, "exercitii", "setType", "TEXT NOT NULL DEFAULT 'working'")
+                addColumnIfMissing(db, "exercitii", "rpe", "INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         private val MIGRATION_22_23 = object : Migration(22, 23) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
@@ -1337,6 +1394,34 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** One-time backfill: completează exerciseId (canonic, cu alias-uri) pe rândurile existente. */
+        private fun startExerciseIdBackfill(db: AppDatabase) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val exDao = db.exercitiuDao()
+                    for (row in exDao.getWithoutExerciseId()) {
+                        if (row.numeExercitiu.isNotBlank()) exDao.updateExerciseId(row.id, exerciseIdFor(row.numeExercitiu))
+                    }
+                    val metaDao = db.exerciseMetadataDao()
+                    for (row in metaDao.getWithoutExerciseId()) {
+                        if (row.exerciseName.isNotBlank()) metaDao.updateExerciseId(row.exerciseName, row.userId, exerciseIdFor(row.exerciseName))
+                    }
+                    val prDao = db.personalRecordDao()
+                    for (row in prDao.getWithoutExerciseId()) {
+                        if (row.exerciseName.isNotBlank()) prDao.updateExerciseId(row.id, exerciseIdFor(row.exerciseName))
+                    }
+                    val tplDao = db.templateExerciseDao()
+                    for (row in tplDao.getWithoutExerciseId()) {
+                        if (row.exerciseName.isNotBlank()) tplDao.updateExerciseId(row.id, exerciseIdFor(row.exerciseName))
+                    }
+                    val defDao = db.exerciseDefinitionDao()
+                    for (row in defDao.getWithoutExerciseId()) {
+                        if (row.name.isNotBlank()) defDao.updateExerciseId(row.id, exerciseIdFor(row.name))
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -1344,9 +1429,12 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "kinetic.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
-                    .fallbackToDestructiveMigration()
+                    // Migrații sigure: lanțul complet 1→28 e acoperit, deci NU folosim
+                    // fallbackToDestructiveMigration — dacă o migrare lipsește, app-ul
+                    // eșuează controlat în loc să șteargă datele utilizatorilor.
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28)
                     .build()
+                startExerciseIdBackfill(instance)
                 INSTANCE = instance
                 instance
             }

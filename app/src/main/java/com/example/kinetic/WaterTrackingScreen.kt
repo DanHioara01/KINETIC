@@ -20,6 +20,12 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.glance.appwidget.updateAll
@@ -30,8 +36,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.*
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import com.example.kinetic.ui.theme.JetBrainsMono
+import com.example.kinetic.ui.theme.Varien
+import com.example.kinetic.ui.theme.GeneralSans
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -70,6 +80,27 @@ fun WaterTrackingScreen(
 
     val isComplete = todayWaterMl >= waterGoal
 
+    val percentComplete = if (waterGoal > 0) ((todayWaterMl.toFloat() / waterGoal) * 100).toInt().coerceAtMost(100) else 0
+    val waterStreak = preferencesManager.getWaterStreakDays()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val celebrationScale = remember { Animatable(1f) }
+    var showGoalDialog by remember { mutableStateOf(false) }
+    var goalInput by remember { mutableStateOf("") }
+
+    LaunchedEffect(isComplete) {
+        if (isComplete && todayWaterMl == waterGoal) {
+            repeat(3) {
+                celebrationScale.animateTo(1.08f, tween(200))
+                celebrationScale.animateTo(1f, tween(200))
+            }
+            try {
+                val vibrator = context.getSystemService(Vibrator::class.java)
+                vibrator?.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+            } catch (_: Exception) {}
+        }
+    }
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var alarms by remember { mutableStateOf(preferencesManager.getWaterReminders()) }
@@ -80,13 +111,35 @@ fun WaterTrackingScreen(
 
     val onAddWater: (Int) -> Unit = { ml ->
         preferencesManager.addWaterMl(ml)
+        val previousTotal = todayWaterMl
         todayWaterMl = preferencesManager.getTodayWaterMl()
         waterHistory = preferencesManager.getWaterHistory7Days()
-        // Refresh the water widget instantly
+        try {
+            val vibrator = context.getSystemService(Vibrator::class.java)
+            vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+        } catch (_: Exception) {}
         scope.launch {
             try {
                 KineticGlanceWidget().updateAll(context)
             } catch (_: Exception) {}
+        }
+        scope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = "+$ml ${strings.ml}",
+                actionLabel = strings.undo,
+                withDismissAction = true
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                preferencesManager.resetTodayWaterMl()
+                val todayKey = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                val prefs = context.getSharedPreferences("kinetic_prefs_${preferencesManager.getCurrentUserId()}", android.content.Context.MODE_PRIVATE)
+                prefs.edit().putInt("water_$todayKey", previousTotal).apply()
+                todayWaterMl = preferencesManager.getTodayWaterMl()
+                waterHistory = preferencesManager.getWaterHistory7Days()
+                try {
+                    KineticGlanceWidget().updateAll(context)
+                } catch (_: Exception) {}
+            }
         }
     }
 
@@ -126,7 +179,7 @@ fun WaterTrackingScreen(
             ) {
             Text(
                 strings.waterIntake,
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = Varien,
                 fontWeight = FontWeight.W900,
                 fontSize = 30.sp,
                 color = p.tp,
@@ -154,7 +207,7 @@ fun WaterTrackingScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             todayWaterMl.toString(),
-                            fontFamily = FontFamily.SansSerif,
+                            fontFamily = JetBrainsMono,
                             fontWeight = FontWeight.W800,
                             fontSize = 22.sp,
                             color = p.ac
@@ -164,19 +217,21 @@ fun WaterTrackingScreen(
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,
-                            color = p.tt
+                            color = p.tt,
+                            fontFamily = GeneralSans
                         )
                     }
                     Text(
                         "/",
                         fontSize = 20.sp,
                         color = p.tt,
+                        fontFamily = JetBrainsMono,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
                     )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             "$waterGoal",
-                            fontFamily = FontFamily.SansSerif,
+                            fontFamily = JetBrainsMono,
                             fontWeight = FontWeight.W800,
                             fontSize = 22.sp,
                             color = p.ts
@@ -186,7 +241,8 @@ fun WaterTrackingScreen(
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,
-                            color = p.tt
+                            color = p.tt,
+                            fontFamily = GeneralSans
                         )
                     }
                 }
@@ -310,7 +366,7 @@ fun WaterTrackingScreen(
                 ) {
                     Icon(Icons.Default.Notifications, contentDescription = null, tint = p.ac, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(strings.reminder, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = p.ac)
+                    Text(strings.reminder, fontFamily = GeneralSans, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = p.ac)
                 }
             }
             }
@@ -329,7 +385,7 @@ fun WaterTrackingScreen(
             containerColor = p.sf,
             titleContentColor = p.tp,
             textContentColor = p.ts,
-            title = { Text(strings.selectTime, fontWeight = FontWeight.Bold) },
+            title = { Text(strings.selectTime, fontFamily = GeneralSans, fontWeight = FontWeight.Bold) },
             text = {
                 TimePicker(
                     state = timePickerState,
@@ -355,7 +411,7 @@ fun WaterTrackingScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(strings.confirm, color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(strings.confirm, fontFamily = GeneralSans, color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -366,11 +422,11 @@ fun WaterTrackingScreen(
                         WaterReminderReceiver().cancelAlarm(context, editingAlarmId)
                         showTimePicker = false
                     }) {
-                        Text(strings.delete, color = p.rs)
+                        Text(strings.delete, fontFamily = GeneralSans, color = p.rs)
                     }
                 }
                 TextButton(onClick = { showTimePicker = false }) {
-                    Text(strings.cancel, color = p.ts)
+                    Text(strings.cancel, fontFamily = GeneralSans, color = p.ts)
                 }
             }
         )
@@ -396,7 +452,8 @@ private fun QuickAddRow(strings: LanguageManager.Strings, p: AppPalette, onAdd: 
                 ) {
                     Icon(Icons.Default.Add, null, tint = Color.White, modifier = Modifier.size(12.dp))
                     Text(
-                        "$ml ml",
+                        "$ml ${strings.ml}",
+                        fontFamily = JetBrainsMono,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         color = Color.White
@@ -529,6 +586,7 @@ private fun HistoryCard(
 
                         Text(
                             dayName,
+                            fontFamily = GeneralSans,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.SemiBold,
                             letterSpacing = 0.3.sp,
@@ -543,8 +601,8 @@ private fun HistoryCard(
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("${strings.average}: $avg ${strings.ml}", fontSize = 9.sp, color = p.ts)
-                Text("${strings.target}: $waterGoal ${strings.ml}", fontSize = 9.sp, color = p.ts)
+                Text("${strings.average}: $avg ${strings.ml}", fontSize = 9.sp, color = p.ts, fontFamily = JetBrainsMono)
+                Text("${strings.target}: $waterGoal ${strings.ml}", fontSize = 9.sp, color = p.ts, fontFamily = JetBrainsMono)
             }
         }
     }
@@ -566,7 +624,7 @@ private fun TipsRow(p: AppPalette, strings: LanguageManager.Strings) {
                 ) {
                     Icon(Icons.Default.Favorite, null, tint = p.ac, modifier = Modifier.size(12.dp))
                 }
-                Text(tipTexts[0], fontSize = 10.sp, color = p.ts, lineHeight = 15.sp)
+                Text(tipTexts[0], fontFamily = GeneralSans, fontSize = 10.sp, color = p.ts, lineHeight = 15.sp)
             }
         }
 
@@ -581,7 +639,7 @@ private fun TipsRow(p: AppPalette, strings: LanguageManager.Strings) {
                 ) {
                     Icon(Icons.Default.Schedule, null, tint = p.gn, modifier = Modifier.size(12.dp))
                 }
-                Text(tipTexts[1], fontSize = 10.sp, color = p.ts, lineHeight = 15.sp)
+                Text(tipTexts[1], fontFamily = GeneralSans, fontSize = 10.sp, color = p.ts, lineHeight = 15.sp)
             }
         }
     }
@@ -626,6 +684,7 @@ private fun AlarmItem(
             ) {
                 Text(
                     "${alarm.hour.toString().padStart(2, '0')}:${alarm.minute.toString().padStart(2, '0')}",
+                    fontFamily = JetBrainsMono,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (alarm.enabled) p.tp else p.ts.copy(alpha = 0.5f),
@@ -633,6 +692,7 @@ private fun AlarmItem(
                 )
                 Text(
                     strings.everyDay,
+                    fontFamily = GeneralSans,
                     fontSize = 12.sp,
                     color = if (alarm.enabled) p.ac else p.ts.copy(alpha = 0.4f)
                 )

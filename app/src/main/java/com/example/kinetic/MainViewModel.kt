@@ -265,6 +265,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun getOneRmTrend(userId: String, exerciseName: String, callback: (List<Pair<Long, Double>>) -> Unit) {
+        viewModelScope.launch {
+            val result = antrenamentRepo.getOneRmTrend(userId, exerciseName)
+            callback(result)
+        }
+    }
+
     fun getVolumeSummary(userId: String, callback: (VolumeSummary) -> Unit) {
         viewModelScope.launch {
             val result = antrenamentRepo.getVolumeSummary(userId)

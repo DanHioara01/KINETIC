@@ -1597,6 +1597,6 @@ object DataProvider {
     )
 }
 
-data class ExerciseDefinition(val name: String, val group: String, val equipment: String = "") {
+data class ExerciseDefinition(val name: String, val group: String, val equipment: String = "", val exerciseId: String = exerciseIdFor(name)) {
     val nume: String get() = name
 }

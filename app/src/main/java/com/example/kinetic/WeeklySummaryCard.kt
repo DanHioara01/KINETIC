@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.kinetic.ui.theme.JetBrainsMono
 import androidx.compose.ui.unit.sp
 
 @Composable
@@ -107,7 +108,8 @@ fun WeeklySummaryCard(
                             "$currentStreak ${strings.daysConsecutive}",
                             fontSize = 12.sp,
                             color = textSecondary,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = JetBrainsMono
                         )
                     }
                 }
@@ -284,7 +286,8 @@ private fun SummaryProgressCard(
                     fontSize = 24.sp,
                     color = textPrimary,
                     letterSpacing = (-0.5).sp,
-                    maxLines = 1
+                    maxLines = 1,
+                    fontFamily = JetBrainsMono
                 )
                 if (unit.isNotEmpty()) {
                     Text(

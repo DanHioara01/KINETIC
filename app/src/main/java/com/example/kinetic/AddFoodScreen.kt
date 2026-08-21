@@ -377,7 +377,8 @@ fun AddFoodScreen(
                                 Text(
                                     "1 ${strings.piecesShort} ≈ ${selectedFood!!.gramsPerPiece?.toInt()}g",
                                     color = p.ts,
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontFamily = JetBrainsMono
                                 )
                             }
 
@@ -541,7 +542,8 @@ private fun CalculatedMacroRow(
                             value,
                             color = p.ac,
                             fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            fontFamily = JetBrainsMono
                         )
                     }
                     Text("$label ($unit)", color = p.ts, style = MaterialTheme.typography.bodySmall)

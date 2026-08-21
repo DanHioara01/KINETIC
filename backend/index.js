@@ -173,6 +173,8 @@ const CAMEL_MAP = {
   currentstreak: 'currentStreak', beststreak: 'bestStreak', lastdate: 'lastDate',
   grupamusculara: 'grupaMusculara', totalweight: 'totalWeight',
   antrenamentuuid: 'antrenamentUuid', numeexercitiu: 'numeExercitiu',
+  exerciseid: 'exerciseId',
+  settype: 'setType',
   setindex: 'setIndex', greutatekg: 'greutateKg',
   groupname: 'groupName', isdefault: 'isDefault', isfavorite: 'isFavorite',
   usagecount: 'usageCount', updatedat: 'updatedAt',
@@ -364,9 +366,12 @@ const SCHEMA_SQL = `
     uuid TEXT PRIMARY KEY,
     antrenamentUuid TEXT NOT NULL DEFAULT '',
     numeExercitiu TEXT NOT NULL DEFAULT '',
+    exerciseId TEXT NOT NULL DEFAULT '',
     setIndex BIGINT NOT NULL DEFAULT 0,
     greutateKg DOUBLE PRECISION NOT NULL DEFAULT 0,
     repetari BIGINT NOT NULL DEFAULT 0,
+    setType TEXT NOT NULL DEFAULT 'working',
+    rpe BIGINT NOT NULL DEFAULT 0,
     notes TEXT NOT NULL DEFAULT '',
     updatedAt BIGINT NOT NULL DEFAULT 0
   );
@@ -377,6 +382,7 @@ const SCHEMA_SQL = `
     name TEXT NOT NULL DEFAULT '',
     groupName TEXT NOT NULL DEFAULT '',
     equipment TEXT NOT NULL DEFAULT '',
+    exerciseId TEXT NOT NULL DEFAULT '',
     isDefault INTEGER NOT NULL DEFAULT 1,
     isFavorite INTEGER NOT NULL DEFAULT 0,
     usageCount BIGINT NOT NULL DEFAULT 0,
@@ -395,6 +401,7 @@ const SCHEMA_SQL = `
     uuid TEXT PRIMARY KEY,
     templateUuid TEXT NOT NULL DEFAULT '',
     exerciseName TEXT NOT NULL DEFAULT '',
+    exerciseId TEXT NOT NULL DEFAULT '',
     groupName TEXT NOT NULL DEFAULT '',
     updatedAt BIGINT NOT NULL DEFAULT 0
   );
@@ -404,6 +411,7 @@ const SCHEMA_SQL = `
     uuid TEXT PRIMARY KEY,
     userId TEXT NOT NULL,
     exerciseName TEXT NOT NULL DEFAULT '',
+    exerciseId TEXT NOT NULL DEFAULT '',
     weight DOUBLE PRECISION NOT NULL DEFAULT 0,
     reps BIGINT NOT NULL DEFAULT 0,
     volume DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -425,6 +433,7 @@ const SCHEMA_SQL = `
     uuid TEXT PRIMARY KEY,
     userId TEXT NOT NULL DEFAULT '',
     exerciseName TEXT NOT NULL DEFAULT '',
+    exerciseId TEXT NOT NULL DEFAULT '',
     grupaMusculara TEXT NOT NULL DEFAULT '',
     isFavorite INTEGER NOT NULL DEFAULT 0,
     isCustom INTEGER NOT NULL DEFAULT 0,
@@ -541,6 +550,19 @@ async function migrateSchema() {
     ['schema_version', SCHEMA_VERSION]
   );
   console.log(`Kinetic schema migrated to ${SCHEMA_VERSION}`);
+}
+
+// Adaugă coloane noi pe tabele existente, idempotent (fără a goli datele).
+// NU schimbă SCHEMA_VERSION — acea versiune e păstrată pentru a nu declanșa DROP-urile.
+async function ensureColumn(table, column, definition) {
+  const found = await getRow(
+    'SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2',
+    [table, column]
+  );
+  if (!found) {
+    await pool.query(`ALTER TABLE \"${table}\" ADD COLUMN ${column} ${definition}`);
+    console.log(`Added column ${table}.${column}`);
+  }
 }
 
 const SEED_BADGES = [
@@ -1015,14 +1037,14 @@ const SYNC_TABLES = {
     upsertCols: ['uuid', 'userId', 'grupaMusculara', 'data', 'notes', 'totalWeight', 'updatedAt']
   },
   exercitii: {
-    columns: ['uuid', 'antrenamentUuid', 'numeExercitiu', 'setIndex', 'greutateKg', 'repetari', 'notes', 'updatedAt'],
+    columns: ['uuid', 'antrenamentUuid', 'numeExercitiu', 'exerciseId', 'setIndex', 'greutateKg', 'repetari', 'setType', 'rpe', 'notes', 'updatedAt'],
     userCol: null,
-    upsertCols: ['uuid', 'antrenamentUuid', 'numeExercitiu', 'setIndex', 'greutateKg', 'repetari', 'notes', 'updatedAt']
+    upsertCols: ['uuid', 'antrenamentUuid', 'numeExercitiu', 'exerciseId', 'setIndex', 'greutateKg', 'repetari', 'setType', 'rpe', 'notes', 'updatedAt']
   },
   exercises: {
-    columns: ['uuid', 'name', 'groupName', 'equipment', 'isDefault', 'isFavorite', 'usageCount', 'updatedAt'],
+    columns: ['uuid', 'name', 'groupName', 'equipment', 'exerciseId', 'isDefault', 'isFavorite', 'usageCount', 'updatedAt'],
     userCol: null,
-    upsertCols: ['uuid', 'name', 'groupName', 'equipment', 'isDefault', 'isFavorite', 'usageCount', 'updatedAt']
+    upsertCols: ['uuid', 'name', 'groupName', 'equipment', 'exerciseId', 'isDefault', 'isFavorite', 'usageCount', 'updatedAt']
   },
   templates: {
     columns: ['uuid', 'userId', 'name', 'updatedAt'],
@@ -1030,14 +1052,14 @@ const SYNC_TABLES = {
     upsertCols: ['uuid', 'userId', 'name', 'updatedAt']
   },
   template_exercises: {
-    columns: ['uuid', 'templateUuid', 'exerciseName', 'groupName', 'updatedAt'],
+    columns: ['uuid', 'templateUuid', 'exerciseName', 'exerciseId', 'groupName', 'updatedAt'],
     userCol: null,
-    upsertCols: ['uuid', 'templateUuid', 'exerciseName', 'groupName', 'updatedAt']
+    upsertCols: ['uuid', 'templateUuid', 'exerciseName', 'exerciseId', 'groupName', 'updatedAt']
   },
   personal_records: {
-    columns: ['uuid', 'userId', 'exerciseName', 'weight', 'reps', 'volume', 'date', 'updatedAt'],
+    columns: ['uuid', 'userId', 'exerciseName', 'exerciseId', 'weight', 'reps', 'volume', 'date', 'updatedAt'],
     userCol: 'userId',
-    upsertCols: ['uuid', 'userId', 'exerciseName', 'weight', 'reps', 'volume', 'date', 'updatedAt']
+    upsertCols: ['uuid', 'userId', 'exerciseName', 'exerciseId', 'weight', 'reps', 'volume', 'date', 'updatedAt']
   },
   muscle_recovery: {
     columns: ['uuid', 'userId', 'grupaMusculara', 'level', 'lastUpdated', 'updatedAt'],
@@ -1045,9 +1067,9 @@ const SYNC_TABLES = {
     upsertCols: ['uuid', 'userId', 'grupaMusculara', 'level', 'lastUpdated', 'updatedAt']
   },
   exercise_metadata: {
-    columns: ['uuid', 'userId', 'exerciseName', 'grupaMusculara', 'isFavorite', 'isCustom', 'updatedAt'],
+    columns: ['uuid', 'userId', 'exerciseName', 'exerciseId', 'grupaMusculara', 'isFavorite', 'isCustom', 'updatedAt'],
     userCol: 'userId',
-    upsertCols: ['uuid', 'userId', 'exerciseName', 'grupaMusculara', 'isFavorite', 'isCustom', 'updatedAt']
+    upsertCols: ['uuid', 'userId', 'exerciseName', 'exerciseId', 'grupaMusculara', 'isFavorite', 'isCustom', 'updatedAt']
   },
   biometric_entries: {
     columns: ['uuid', 'userId', 'timestamp', 'weightKg', 'bodyFatPercent', 'waistCm', 'hipsCm', 'thighsCm', 'chestCm', 'armsCm', 'notes', 'updatedAt'],
@@ -1268,6 +1290,14 @@ app.get('/', asyncRoute(async (_req, res) => {
 async function init() {
   await waitForDb();
   await migrateSchema();
+  // Exercise ID + alias-uri — coloane noi pe tabele existente (aditiv, fără pierdere de date).
+  await ensureColumn('sync_exercitii', 'exerciseId', 'TEXT NOT NULL DEFAULT \'\'');
+  await ensureColumn('sync_exercitii', 'setType', 'TEXT NOT NULL DEFAULT \'working\'');
+  await ensureColumn('sync_exercitii', 'rpe', 'BIGINT NOT NULL DEFAULT 0');
+  await ensureColumn('sync_exercises', 'exerciseId', 'TEXT NOT NULL DEFAULT \'\'');
+  await ensureColumn('sync_template_exercises', 'exerciseId', 'TEXT NOT NULL DEFAULT \'\'');
+  await ensureColumn('sync_personal_records', 'exerciseId', 'TEXT NOT NULL DEFAULT \'\'');
+  await ensureColumn('sync_exercise_metadata', 'exerciseId', 'TEXT NOT NULL DEFAULT \'\'');
   await loadNumericColumns();
   await seedBadges();
   app.listen(PORT, '0.0.0.0', () => {

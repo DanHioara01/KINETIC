@@ -50,7 +50,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 
-enum class DrawerPage { CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS, GPS_CARDIO, REST_DAYS, PLATE_CALCULATOR, ONE_RM_CALCULATOR, SAVED_EXERCISES, WEIGHT_GOAL, BODY_FAT_CALCULATOR, WORKOUT_ANALYTICS }
+enum class DrawerPage { CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS, GPS_CARDIO, REST_DAYS, PLATE_CALCULATOR, ONE_RM_CALCULATOR, SAVED_EXERCISES, WEIGHT_GOAL, BODY_FAT_CALCULATOR, WORKOUT_ANALYTICS, READINESS }
 
 fun DrawerPage.toDrawerScreen(): DrawerScreen = when (this) {
     DrawerPage.CALENDAR -> DrawerScreen.Calendar
@@ -65,6 +65,7 @@ fun DrawerPage.toDrawerScreen(): DrawerScreen = when (this) {
     DrawerPage.WEIGHT_GOAL -> DrawerScreen.WeightGoal
     DrawerPage.BODY_FAT_CALCULATOR -> DrawerScreen.BodyFatCalculator
     DrawerPage.WORKOUT_ANALYTICS -> DrawerScreen.Calendar
+    DrawerPage.READINESS -> DrawerScreen.Calendar
 }
 
 fun DrawerScreen.toDrawerPage(): DrawerPage = when (this) {
@@ -407,6 +408,17 @@ fun DrawerMenu(
                     textSecondary = textSecondary,
                     iconBg = iconBg,
                     onClick = { onNavigate(DrawerPage.BODY_FAT_CALCULATOR); onClose() }
+                )
+                DrawerNavItem(
+                    icon = Icons.Default.FavoriteBorder,
+                    label = strings.readinessTitle.ifBlank { "Readiness" },
+                    selected = currentPage == DrawerPage.READINESS,
+                    accent = accent,
+                    selectedBg = selectedBg,
+                    textPrimary = textPrimary,
+                    textSecondary = textSecondary,
+                    iconBg = iconBg,
+                    onClick = { onNavigate(DrawerPage.READINESS); onClose() }
                 )
             }
 
@@ -879,24 +891,25 @@ private fun DrawerNavItem(
     // Rulează DOAR pentru item-ul selectat. Înainte fiecare din cele ~20 de rânduri
     // din drawer porneau un infiniteTransition cu 2 animații la 60fps, chiar și
     // neselectate → CPU/GPU încărcate permanent → switch-ul și drawer-ul păreau laggy.
+    // Ritmul e aliniat cu CURRENT STREAK de pe pagina principală (tween 2000ms, scale 1.08).
     val pulseScale: Float
     val pulseAlpha: Float
     if (selected) {
         val infiniteTransition = rememberInfiniteTransition(label = "iconPulse")
         pulseScale = infiniteTransition.animateFloat(
             initialValue = 1f,
-            targetValue = 1.12f,
+            targetValue = 1.08f,
             animationSpec = infiniteRepeatable(
-                animation = tween(600, easing = FastOutSlowInEasing),
+                animation = tween(2000, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
             label = "pulseScale"
         ).value
         pulseAlpha = infiniteTransition.animateFloat(
             initialValue = 0.15f,
-            targetValue = 0.3f,
+            targetValue = 0.25f,
             animationSpec = infiniteRepeatable(
-                animation = tween(600, easing = FastOutSlowInEasing),
+                animation = tween(2000, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
             label = "pulseAlpha"

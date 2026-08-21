@@ -43,6 +43,8 @@ class PreferencesManager(
         return context.getSharedPreferences("user_data_$userId", Context.MODE_PRIVATE)
     }
 
+    fun getCurrentUserId(): String = userProfileManager.getOwnUserId()
+
     // ---------- Session / login state (device-wide, NOT per-account) ----------
 
     fun isLoggedIn(): Boolean = sessionPrefs.getBoolean("logged_in", false)
@@ -132,7 +134,12 @@ class PreferencesManager(
             sessionsPerWeek = getSessionsPerWeek(),
             selectedDays = getSelectedDays(),
             limitations = getPhysicalLimitations(),
-            selectedGroups = groups
+            selectedGroups = groups,
+            age = getUserAge(),
+            gender = getUserGender(),
+            activityLevel = getActivityLevel(),
+            weight = getUserWeight(),
+            height = getUserHeight()
         )
     }
 
@@ -180,6 +187,35 @@ class PreferencesManager(
 
     fun getStepGoal(): Int = userPrefs().getInt("step_goal", 7000)
     fun setStepGoal(goal: Int) { userPrefs().edit().putInt("step_goal", goal).apply() }
+
+    // ---------- Sleep (manual, pentru Readiness) ----------
+
+    fun getSleepHours(): Double = userPrefs().getFloat("sleep_hours_last", 7.5f).toDouble()
+    fun setSleepHours(hours: Double) { userPrefs().edit().putFloat("sleep_hours_last", hours.toFloat().coerceIn(0f, 12f)).apply() }
+    fun getSleepQuality(): Int = userPrefs().getInt("sleep_quality_last", 3)
+    fun setSleepQuality(quality: Int) { userPrefs().edit().putInt("sleep_quality_last", quality.coerceIn(1, 5)).apply() }
+
+    // ---------- Readiness score history (7 days) ----------
+    fun saveReadinessScore(score: Int) {
+        val dayKey = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+        userPrefs().edit().putInt("readiness_$dayKey", score.coerceIn(0, 100)).apply()
+    }
+
+    fun getReadinessHistory7Days(): List<Pair<String, Int>> {
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        val dayFmt = java.text.SimpleDateFormat("EEE", java.util.Locale(java.util.Locale.US.language))
+        val result = mutableListOf<Pair<String, Int>>()
+        val p = userPrefs()
+        for (i in 6 downTo 0) {
+            val c = java.util.Calendar.getInstance()
+            c.add(java.util.Calendar.DAY_OF_YEAR, -i)
+            val key = fmt.format(c.time)
+            val score = p.getInt("readiness_$key", -1)
+            val dayName = dayFmt.format(c.time).take(2)
+            result.add(dayName to score)
+        }
+        return result
+    }
 
     fun getTodaySteps(): Int {
         val dayKey = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
@@ -258,9 +294,33 @@ class PreferencesManager(
     // ---------- Water intake (per-account) ----------
 
     fun getWaterGoalMl(): Int {
+        val custom = userPrefs().getInt("water_goal_custom", 0)
+        if (custom > 0) return custom
         val weight = getUserWeight()
         val raw = (weight * 33).toInt()
         return (raw / 50) * 50
+    }
+
+    fun setWaterGoalMl(goal: Int) {
+        userPrefs().edit().putInt("water_goal_custom", goal).apply()
+    }
+
+    fun getWaterStreakDays(): Int {
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        var streak = 0
+        val cal = java.util.Calendar.getInstance()
+        while (true) {
+            val key = fmt.format(cal.time)
+            val ml = userPrefs().getInt("water_$key", 0)
+            val goal = getWaterGoalMl()
+            if (ml >= goal && goal > 0) {
+                streak++
+                cal.add(java.util.Calendar.DAY_OF_YEAR, -1)
+            } else {
+                break
+            }
+        }
+        return streak
     }
 
     fun getTodayWaterMl(): Int {

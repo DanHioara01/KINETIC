@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.kinetic.ui.components.AppGlassCard
 import com.example.kinetic.ui.theme.*
+import com.example.kinetic.ui.theme.JetBrainsMono
 
 @Composable
 fun WorkoutSummaryScreen(
@@ -172,7 +173,8 @@ fun WorkoutSummaryScreen(
                         "${strings.newPRs ?: "New PRs"}: ${prs.size}",
                         color = p.tp,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        fontFamily = JetBrainsMono
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -188,7 +190,8 @@ fun WorkoutSummaryScreen(
                             "${String.format("%.1f", pr.weight)} kg x ${pr.reps}",
                             color = Color(0xFFFFC107),
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            fontSize = 14.sp,
+                            fontFamily = JetBrainsMono
                         )
                     }
                 }
@@ -217,13 +220,15 @@ fun WorkoutSummaryScreen(
                         Text(
                             "${sets.size} ${strings.sets ?: "sets"} | ${String.format("%.0f", exerciseVolume)} kg vol",
                             color = p.ts,
-                            fontSize = 12.sp
+                            fontSize = 12.sp,
+                            fontFamily = JetBrainsMono
                         )
                     }
                     Text(
                         "${String.format("%.1f", exerciseMax)} kg",
                         color = accent,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = JetBrainsMono
                     )
                 }
             }
@@ -277,7 +282,8 @@ fun SummaryStatCard(
                 value,
                 color = p.tp,
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
+                fontSize = 18.sp,
+                fontFamily = JetBrainsMono
             )
             Text(
                 label,

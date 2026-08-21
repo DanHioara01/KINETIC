@@ -26,6 +26,7 @@ import androidx.annotation.RequiresApi
 import kotlinx.coroutines.tasks.await
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 import androidx.compose.animation.core.animateFloatAsState
@@ -65,6 +66,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -111,6 +113,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import com.example.kinetic.ui.theme.JetBrainsMono
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.TextStyle
@@ -579,6 +582,7 @@ fun ExerciseInputScreen(
     var noteText by remember { mutableStateOf("") }
     var history by remember { mutableStateOf<List<ExercitiuEntity>>(emptyList()) }
     var stats by remember { mutableStateOf(ExerciseStats(0.0, 0, 0.0)) }
+    var oneRmTrend by remember { mutableStateOf<List<Pair<Long, Double>>>(emptyList()) }
     val textSecondary = if (isSystemInDarkTheme()) secondaryTextColor() else LightTextSecondary
     var volumeSummary by remember { mutableStateOf(VolumeSummary(0.0, 0.0, 0.0)) }
     var restSeconds by remember { mutableStateOf(90) }
@@ -609,6 +613,7 @@ fun ExerciseInputScreen(
         viewModel.getIstoricExercitiu(userId, exercise.nume) { history = it }
         viewModel.getStatisticiExercitiu(userId, exercise.nume) { stats = it }
         viewModel.getVolumeSummary(userId) { volumeSummary = it }
+        viewModel.getOneRmTrend(userId, exercise.nume) { oneRmTrend = it }
     }
 
     LaunchedEffect(exercise.nume) {
@@ -726,15 +731,15 @@ fun ExerciseInputScreen(
                     brush = Brush.verticalGradient(
                         colors = if (isDark) {
                             listOf(
-                                Color(0xFF2A2A2A).copy(alpha = 0.95f),
-                                Color(0xFF1E1E1E).copy(alpha = 0.98f),
-                                Color(0xFF151515).copy(alpha = 1.0f)
+                                Color(0xFF0D0D0D).copy(alpha = 0.95f),
+                                Color(0xFF0A0A0A).copy(alpha = 0.98f),
+                                Color(0xFF050505).copy(alpha = 1.0f)
                             )
                         } else {
                             listOf(
-                                Color.White.copy(alpha = 0.95f),
-                                Color(0xFFF8F8F8).copy(alpha = 0.97f),
-                                Color.White.copy(alpha = 0.98f)
+                                Color(0xFFFFFFFF).copy(alpha = 0.95f),
+                                Color(0xFFF8F8F8).copy(alpha = 0.98f),
+                                Color(0xFFF0F0F0).copy(alpha = 1.0f)
                             )
                         }
                     )
@@ -749,8 +754,8 @@ fun ExerciseInputScreen(
 
     val dark = isDark
     val Bg = if (dark) DarkBackground else LightBackground
-    val S1 = if (dark) Color(0xFF2A2A2A) else LightCard
-    val S2 = if (dark) Color(0xFF222222) else LightCardHover
+    val S1 = if (dark) Color(0xFF0D0D0D) else Color(0xFFFFFFFF)
+    val S2 = if (dark) Color(0xFF1A1A1A) else Color(0xFFF5F5F5)
     val RedC = Ember
     val RedL = EmberLight
     val RedD = Ember.copy(alpha = 0.22f)
@@ -758,7 +763,7 @@ fun ExerciseInputScreen(
     val Mut = secondaryTextColor()
     val Dim = if (dark) Color(0x73E8E8EC) else Color(0x2A1A2E32)
     val Txt = if (dark) textColor() else LightTextPrimary
-    val Bdr = if (dark) Color.White.copy(alpha = 0.08f) else LightDividerGray
+    val Bdr = if (dark) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.08f)
     val BdrInput = if (dark) NeutralBorderDark else LightDividerGray
     val Bdr2 = if (dark) DarkDivider else LightDividerGray
 
@@ -879,7 +884,7 @@ fun ExerciseInputScreen(
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = AppConstants.BOTTOM_NAV_PADDING)
+                contentPadding = PaddingValues(start = 16.dp, top = 0.dp, end = 16.dp, bottom = AppConstants.BOTTOM_NAV_PADDING)
             ) {
                 if (showFinishButton) {
                     item {
@@ -940,44 +945,25 @@ fun ExerciseInputScreen(
                             }
                         }
 
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .fillMaxWidth()
-                                .height(40.dp)
-                                .background(
-                                    Brush.verticalGradient(listOf(Color(0xFF0A0A0C).copy(alpha = 0.5f), Color.Transparent))
-                                )
-                        )
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .fillMaxWidth()
-                                .height(40.dp)
-                                .background(
-                                    Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF0A0A0C).copy(alpha = 0.5f)))
-                                )
-                        )
+                    Text(
+                        text = LanguageManager.translateMuscleGroup(grupaMusculara, strings).uppercase(),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        color = RedL.copy(alpha = 0.85f),
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(12.dp)
+                    )
 
-                        Text(
-                            text = LanguageManager.translateMuscleGroup(grupaMusculara, strings).uppercase(),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                            color = RedL.copy(alpha = 0.85f),
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(12.dp)
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(12.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(RedD)
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(RedD)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
                             Text(
                                 text = strings.exercise.uppercase(),
                                 fontSize = 9.sp,
@@ -1006,22 +992,24 @@ fun ExerciseInputScreen(
                         ) {
                             Text(strings.paused, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Dim, letterSpacing = 1.8.sp)
                             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                                listOf(60, 90, 120, 180).forEach { sec ->
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(if (sec == restSeconds) RedD else S2)
-                                            .clickable { restSeconds = sec; remainingSeconds = 0 }
-                                            .padding(6.dp, 5.dp, 13.dp, 5.dp)
-                                    ) {
-                                        Text(
-                                            "${sec}s",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = if (sec == restSeconds) RedL else Dim,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                    }
+                                    listOf(60, 90, 120, 180).forEach { sec ->
+                                        val presetMin = sec / 60
+                                        val presetSec = sec % 60
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(if (sec == restSeconds) RedD else S2)
+                                                .clickable { restSeconds = sec; remainingSeconds = 0 }
+                                                .padding(6.dp, 5.dp, 13.dp, 5.dp)
+                                        ) {
+                                            Text(
+                                                "$presetMin:${presetSec.toString().padStart(2, '0')}",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (sec == restSeconds) RedL else Dim,
+                                                fontFamily = JetBrainsMono
+                                            )
+                                        }
                                 }
                             }
                         }
@@ -1031,15 +1019,15 @@ fun ExerciseInputScreen(
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text(
                                 min.toString(), fontSize = 54.sp, fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace, letterSpacing = (-3).sp,
+                                fontFamily = JetBrainsMono, letterSpacing = (-3).sp,
                                 color = if (remainingSeconds > 0) RedL else Txt
                             )
                             Text(":", fontSize = 54.sp, fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace, letterSpacing = (-3).sp,
+                                fontFamily = JetBrainsMono, letterSpacing = (-3).sp,
                                 color = if (remainingSeconds > 0) RedL else Dim)
                             Text(
                                 sec.toString().padStart(2, '0'), fontSize = 54.sp, fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace, letterSpacing = (-3).sp,
+                                fontFamily = JetBrainsMono, letterSpacing = (-3).sp,
                                 color = if (remainingSeconds > 0) RedL else Txt
                             )
                         }
@@ -1097,12 +1085,44 @@ fun ExerciseInputScreen(
                             fontSize = 11.sp,
                             color = Dim,
                             fontWeight = FontWeight.Medium,
-                            fontFamily = FontFamily.Monospace,
+                            fontFamily = JetBrainsMono,
                             modifier = Modifier.graphicsLayer {
                                 scaleX = counterScale.value
                                 scaleY = counterScale.value
                             }
                         )
+                    }
+                    // Auto-progresie: sugestie pentru setul următor, bazată pe ultimul set salvat
+                    val lastFilledSet = currentSets.lastOrNull { it.greutateKg > 0 || it.repetari > 0 }
+                    if (lastFilledSet != null && lastFilledSet.repetari > 0 && lastFilledSet.greutateKg > 0) {
+                        val step = 2.5
+                        val nextWeight = ((lastFilledSet.greutateKg + step) / step).roundToInt() * step
+                        val increase = nextWeight > lastFilledSet.greutateKg
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(accentColor().copy(alpha = if (isDark) 0.14f else 0.10f))
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.TrendingUp,
+                                    contentDescription = null,
+                                    tint = accentColor(),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "${strings.nextSetSuggestion}: ${weightLabel(nextWeight, isLbs)} × ${lastFilledSet.repetari}" +
+                                        if (increase) "  (+${weightLabel(step, isLbs)})" else "",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = textColor()
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
                     }
                 }
                 itemsIndexed(currentSets) { index, set ->
@@ -1119,7 +1139,7 @@ fun ExerciseInputScreen(
                         }
                     }
                     Box {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .graphicsLayer {
@@ -1130,13 +1150,16 @@ fun ExerciseInputScreen(
                             .clip(RoundedCornerShape(16.dp))
                             .background(S1)
                             .border(1.dp, Bdr, RoundedCornerShape(16.dp))
-                            .padding(start = 14.dp, top = 14.dp, end = 16.dp, bottom = 14.dp),
+                            .padding(start = 14.dp, top = 14.dp, end = 16.dp, bottom = 12.dp)
+                    ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
                             "${index + 1}", fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                            color = Dim, fontFamily = FontFamily.Monospace,
+                            color = Dim, fontFamily = JetBrainsMono,
                             modifier = Modifier.width(24.dp), textAlign = TextAlign.Center
                         )
                         Column(modifier = Modifier.weight(1f)) {
@@ -1151,7 +1174,7 @@ fun ExerciseInputScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 textStyle = LocalTextStyle.current.copy(
                                     fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                                    fontFamily = FontFamily.Monospace, color = Txt, textAlign = TextAlign.Center
+                                    fontFamily = JetBrainsMono, color = Txt, textAlign = TextAlign.Center
                                 ),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
@@ -1175,7 +1198,7 @@ fun ExerciseInputScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 textStyle = LocalTextStyle.current.copy(
                                     fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                                    fontFamily = FontFamily.Monospace, color = Txt, textAlign = TextAlign.Center
+                                    fontFamily = JetBrainsMono, color = Txt, textAlign = TextAlign.Center
                                 ),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 singleLine = true,
@@ -1253,6 +1276,92 @@ fun ExerciseInputScreen(
                             Icon(Icons.Default.Close, null, tint = if (dark) RedL else DarkRed, modifier = Modifier.size(14.dp))
                         }
                     }
+                    // Tipul setului: warm-up / working / drop / AMRAP / paused / tempo
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(top = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        SetTypes.ALL.forEach { type ->
+                            val label = when (type) {
+                                SetTypes.WARMUP -> strings.setTypeWarmup
+                                SetTypes.WORKING -> strings.setTypeWorking
+                                SetTypes.DROP -> strings.setTypeDrop
+                                SetTypes.AMRAP -> strings.setTypeAmrap
+                                SetTypes.PAUSED -> strings.setTypePaused
+                                else -> strings.setTypeTempo
+                            }
+                            val selected = set.setType == type
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (selected) RedD else S2)
+                                    .border(1.dp, if (selected) RedL.copy(alpha = 0.4f) else Bdr, RoundedCornerShape(8.dp))
+                                    .clickable {
+                                        val updated = set.copy(setType = type)
+                                        currentSets = currentSets.toMutableList().also { it[index] = updated }
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    label,
+                                    fontSize = 10.sp,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (selected) RedL else Dim
+                                )
+                            }
+                        }
+                    }
+                    // RPE (efort) per set — slider 6-10, „—" dacă nu e setat
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(strings.rpeLabel, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Dim, letterSpacing = 1.sp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            if (set.rpe > 0) set.rpe.toString() else "—",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (set.rpe > 0) RedL else Dim,
+                            fontFamily = JetBrainsMono,
+                            modifier = Modifier.width(26.dp),
+                            textAlign = TextAlign.Center
+                        )
+                        Slider(
+                            value = if (set.rpe in 6..10) set.rpe.toFloat() else 6f,
+                            onValueChange = { v ->
+                                val updated = set.copy(rpe = v.roundToInt())
+                                currentSets = currentSets.toMutableList().also { it[index] = updated }
+                            },
+                            modifier = Modifier.weight(1f).height(28.dp),
+                            valueRange = 6f..10f,
+                            steps = 3,
+                            colors = SliderDefaults.colors(
+                                thumbColor = RedL,
+                                activeTrackColor = RedC,
+                                inactiveTrackColor = if (dark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.10f)
+                            )
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (set.rpe > 0) RedL.copy(alpha = 0.15f) else S2)
+                                .clickable {
+                                    val updated = set.copy(rpe = 0)
+                                    currentSets = currentSets.toMutableList().also { it[index] = updated }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("✕", fontSize = 10.sp, color = if (set.rpe > 0) RedL else Dim, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Spacer(Modifier.height(2.dp))
+                    }
                     // Confetti/particle burst la fiecare serie salvată (verde normal, auriu PR)
                     if (lastSavedSetIndex == index && savePulseTick > 0) {
                         ConfettiBurst(trigger = savePulseTick, isDark = isDark, isPR = lastPRSetIndex == index)
@@ -1310,14 +1419,14 @@ fun ExerciseInputScreen(
                 }
                 item {
                     ExerciseHistoryCard(
-                        history = history, isLbs = isLbs,
+                        history = history, isLbs = isLbs, isDark = isDark,
                         onEdit = { editingSet = it },
                         onDelete = { set -> viewModel.deleteSet(set) { refreshExerciseData() } }
                     )
                     Spacer(Modifier.height(12.dp))
                 }
                 item {
-                    ExerciseStatsCard(stats = stats, volumeSummary = volumeSummary, isLbs = isLbs)
+                    ExerciseStatsCard(stats = stats, volumeSummary = volumeSummary, isLbs = isLbs, isDark = isDark, oneRmTrend = oneRmTrend)
                 }
             }
         }
@@ -1341,10 +1450,10 @@ private fun vibratePhone(context: android.content.Context) {
 // Componenta: Statistici + PR-uri
 // ============================================
 @Composable
-fun ExerciseStatsCard(stats: ExerciseStats, volumeSummary: VolumeSummary, isLbs: Boolean = false) {
+fun ExerciseStatsCard(stats: ExerciseStats, volumeSummary: VolumeSummary, isLbs: Boolean = false, isDark: Boolean = false, oneRmTrend: List<Pair<Long, Double>> = emptyList()) {
     val strings = LanguageManager.getStrings(LocalContext.current)
-    val cardBg = if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else surfaceColor()
-    val cardBorder = if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.08f) else dividerColor()
+    val cardBg = if (isDark) Color(0xFF0D0D0D) else Color(0xFFFFFFFF)
+    val cardBorder = if (isDark) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.08f)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1356,23 +1465,55 @@ fun ExerciseStatsCard(stats: ExerciseStats, volumeSummary: VolumeSummary, isLbs:
         Text(strings.prAndVolume, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = secondaryTextColor(), letterSpacing = 0.5.sp)
         Spacer(modifier = Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatPill(strings.maxWeight, weightLabel(stats.maxGreutate, isLbs), Modifier.weight(1f))
-            StatPill(strings.maxReps, "${stats.maxRepetari}", Modifier.weight(1f))
-            StatPill(strings.maxSet, weightLabel(stats.maxVolumSet, isLbs), Modifier.weight(1f))
+            StatPill(strings.maxWeight, weightLabel(stats.maxGreutate, isLbs), Modifier.weight(1f), isDark)
+            StatPill(strings.maxReps, "${stats.maxRepetari}", Modifier.weight(1f), isDark)
+            StatPill(strings.maxSet, weightLabel(stats.maxVolumSet, isLbs), Modifier.weight(1f), isDark)
         }
         Spacer(modifier = Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatPill(strings.today, weightLabel(volumeSummary.azi, isLbs), Modifier.weight(1f))
-            StatPill(strings.thisWeek, weightLabel(volumeSummary.saptamana, isLbs), Modifier.weight(1f))
-            StatPill(strings.thisMonth, weightLabel(volumeSummary.luna, isLbs), Modifier.weight(1f))
+            StatPill(strings.today, weightLabel(volumeSummary.azi, isLbs), Modifier.weight(1f), isDark)
+            StatPill(strings.thisWeek, weightLabel(volumeSummary.saptamana, isLbs), Modifier.weight(1f), isDark)
+            StatPill(strings.thisMonth, weightLabel(volumeSummary.luna, isLbs), Modifier.weight(1f), isDark)
+        }
+
+        val trendPoints = oneRmTrend.filter { it.second > 0 }
+        if (trendPoints.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(14.dp))
+            val best1rm = trendPoints.maxOf { it.second }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(strings.estimatedOneRm, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = secondaryTextColor(), letterSpacing = 0.5.sp)
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    weightLabel(best1rm, isLbs),
+                    color = textColor(), fontWeight = FontWeight.Bold, fontSize = 14.sp, fontFamily = JetBrainsMono
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            val max1rm = trendPoints.maxOf { it.second }
+            Row(
+                modifier = Modifier.fillMaxWidth().height(36.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                trendPoints.takeLast(12).forEach { (_, v) ->
+                    val frac = if (max1rm > 0) (v / max1rm).toFloat().coerceIn(0.08f, 1f) else 0.08f
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(frac)
+                            .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                            .background(accentColor().copy(alpha = 0.55f))
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-fun StatPill(label: String, value: String, modifier: Modifier = Modifier) {
-    val pillBg = if (isSystemInDarkTheme()) Color(0xFF222222) else surfaceColor().copy(alpha = 0.5f)
-    val pillBorder = if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.05f) else dividerColor().copy(alpha = 0.5f)
+fun StatPill(label: String, value: String, modifier: Modifier = Modifier, isDark: Boolean = false) {
+    val pillBg = if (isDark) Color(0xFF1A1A1A) else Color(0xFFF5F5F5)
+    val pillBorder = if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
@@ -1382,7 +1523,7 @@ fun StatPill(label: String, value: String, modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(label, color = secondaryTextColor(), fontSize = 11.sp, fontWeight = FontWeight.Medium)
-        Text(value, color = textColor(), fontWeight = FontWeight.Bold, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
+        Text(value, color = textColor(), fontWeight = FontWeight.Bold, fontSize = 13.sp, fontFamily = JetBrainsMono)
     }
 }
 
@@ -1393,14 +1534,15 @@ fun StatPill(label: String, value: String, modifier: Modifier = Modifier) {
 fun ExerciseHistoryCard(
     history: List<ExercitiuEntity>,
     isLbs: Boolean = false,
+    isDark: Boolean = false,
     onEdit: (ExercitiuEntity) -> Unit,
     onDelete: (ExercitiuEntity) -> Unit
 ) {
     val strings = LanguageManager.getStrings(LocalContext.current)
     // Iconițele DarkRed (#6D0122) sunt invizibile pe fundalul închis → roșu deschis în dark mode
-    val cardBg = if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else surfaceColor()
-    val cardBorder = if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.08f) else dividerColor()
-    val deleteTint = if (isSystemInDarkTheme()) EmberLight else DarkRed
+    val cardBg = if (isDark) Color(0xFF0D0D0D) else Color(0xFFFFFFFF)
+    val cardBorder = if (isDark) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.08f)
+    val deleteTint = if (isDark) EmberLight else DarkRed
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1445,7 +1587,7 @@ fun ExerciseHistoryCard(
                         Icon(Icons.Default.Delete, contentDescription = strings.delete, tint = deleteTint)
                     }
                 }
-                HorizontalDivider(color = if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.05f) else dividerColor().copy(alpha = 0.5f))
+                HorizontalDivider(color = if (isDark) Color.White.copy(alpha = 0.05f) else dividerColor().copy(alpha = 0.5f))
             }
         }
     }
@@ -1466,7 +1608,7 @@ fun EditSetDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else surfaceColor(),
+        containerColor = if (isSystemInDarkTheme()) Color(0xFF0D0D0D) else Color(0xFFFFFFFF),
         titleContentColor = textColor(),
         textContentColor = secondaryTextColor(),
         title = { Text(strings.editSet) },
@@ -1565,7 +1707,7 @@ fun DailyActivityCard(
                     OutlinedTextField(
                         value = goalInput,
                         onValueChange = { goalInput = it.filter { c -> c.isDigit() } },
-                        placeholder = { Text("e.g. 7000", color = textSecondary.copy(alpha = 0.5f)) },
+                        placeholder = { Text("e.g. 7000", color = textSecondary.copy(alpha = 0.5f), fontFamily = JetBrainsMono) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -1757,6 +1899,7 @@ private fun DailyMetricRow(
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Black,
                     color = textPrimary,
+                    fontFamily = JetBrainsMono,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
@@ -1774,6 +1917,7 @@ private fun DailyMetricRow(
                     text = goalText,
                     fontSize = 12.sp,
                     color = textSecondary,
+                    fontFamily = JetBrainsMono,
                     modifier = Modifier.padding(start = 3.dp, bottom = 1.dp)
                 )
                 if (onSetGoal != null) {

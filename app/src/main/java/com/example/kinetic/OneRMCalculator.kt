@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kinetic.ui.components.AppGlassCard
 import com.example.kinetic.ui.components.KineticAppBar
 import com.example.kinetic.ui.theme.*
+import com.example.kinetic.ui.theme.JetBrainsMono
 import java.util.Locale
 
 data class OneRMResult(
@@ -169,7 +170,8 @@ fun OneRMCalculatorScreen(
                             "${String.format(Locale.US, "%.1f", best1RM)} kg",
                             color = p.ac,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp
+                            fontSize = 32.sp,
+                            fontFamily = JetBrainsMono
                         )
                     }
                 }
@@ -197,13 +199,14 @@ fun OneRMCalculatorScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("${(pct * 100).toInt()}%", color = p.ac, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("${(pct * 100).toInt()}%", color = p.ac, fontWeight = FontWeight.Bold, fontSize = 14.sp, fontFamily = JetBrainsMono)
                                 Text(label, color = p.ts, fontSize = 12.sp)
                             }
                             Text(
                                 "${String.format(Locale.US, "%.1f", best1RM * pct)} kg",
                                 color = p.tp,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = JetBrainsMono
                             )
                         }
                     }

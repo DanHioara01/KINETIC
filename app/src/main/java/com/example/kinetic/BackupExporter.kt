@@ -181,6 +181,7 @@ object BackupExporter {
                                 ExercitiuEntity(
                                     antrenamentId = antrenamentId,
                                     numeExercitiu = exObj.getString("numeExercitiu"),
+                                    exerciseId = exObj.optString("exerciseId", "").ifEmpty { exerciseIdFor(exObj.optString("numeExercitiu")) },
                                     setIndex = exObj.optInt("setIndex", 0),
                                     greutateKg = exObj.optDouble("greutateKg", 0.0),
                                     repetari = exObj.optInt("repetari", 0),

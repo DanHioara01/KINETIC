@@ -6,8 +6,21 @@ import java.util.Date
 
 data class SetEntry(
     val greutateKg: Double,
-    val repetari: Int
+    val repetari: Int,
+    val setType: String = SetTypes.WORKING,
+    val rpe: Int = 0
 )
+
+/** Tipuri de seturi suportate în înregistrarea antrenamentului. */
+object SetTypes {
+    const val WARMUP = "warmup"
+    const val WORKING = "working"
+    const val DROP = "drop"
+    const val AMRAP = "amrap"
+    const val PAUSED = "paused"
+    const val TEMPO = "tempo"
+    val ALL = listOf(WARMUP, WORKING, DROP, AMRAP, PAUSED, TEMPO)
+}
 
 data class ExerciseListItem(
     val exercise: ExerciseDefinition,
@@ -43,6 +56,14 @@ data class ExerciseStats(
     val maxRepetari: Int,
     val maxVolumSet: Double
 )
+
+/** 1RM estimat (Epley): weight * (1 + reps/30). Ignoră seturi invalide (>20 reps). */
+fun epleyOneRm(weight: Double, reps: Int): Double {
+    if (weight <= 0 || reps < 1) return 0.0
+    if (reps == 1) return weight
+    if (reps > 20) return 0.0
+    return weight * (1 + reps / 30.0)
+}
 
 data class VolumeSummary(
     val azi: Double,

@@ -22,7 +22,7 @@ class CsvImporter(private val context: Context) {
                     val reps = parts[5].trim().toIntOrNull() ?: 0
                     val key = exerciseName
                     exercisesByName.getOrPut(key) { mutableListOf() }
-                        .add(ExercitiuEntity(antrenamentId = 0, numeExercitiu = exerciseName, setIndex = exercisesByName[key]!!.size, greutateKg = weight, repetari = reps))
+                        .add(ExercitiuEntity(antrenamentId = 0, numeExercitiu = exerciseName, exerciseId = exerciseIdFor(exerciseName), setIndex = exercisesByName[key]!!.size, greutateKg = weight, repetari = reps))
                 }
             }
         }

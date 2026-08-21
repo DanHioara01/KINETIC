@@ -110,6 +110,7 @@ import com.example.kinetic.ui.theme.RecoveryRed
 import com.example.kinetic.ui.theme.RedButtonGradient
 import com.example.kinetic.ui.theme.Varien
 import com.example.kinetic.ui.theme.appPalette
+import com.example.kinetic.ui.theme.JetBrainsMono
 import com.example.kinetic.ui.theme.LightTextPrimary
 import com.example.kinetic.ui.theme.LightTextSecondary
 import com.google.android.gms.location.LocationServices
@@ -424,7 +425,8 @@ fun GpsCardioScreen(
                         String.format(Locale.US, "%.1f", gpsState.currentSpeed),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        fontFamily = JetBrainsMono
                     )
                     Text("km/h", color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
                 }
@@ -433,7 +435,8 @@ fun GpsCardioScreen(
                         String.format(Locale.US, "%.2f", gpsState.totalDistance),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        fontFamily = JetBrainsMono
                     )
                     Text(strings.distance, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
                 }
@@ -442,7 +445,8 @@ fun GpsCardioScreen(
                         formatDuration(gpsState.elapsedTime),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = 16.sp,
+                        fontFamily = JetBrainsMono
                     )
                     Text(strings.duration, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
                 }
@@ -1303,7 +1307,8 @@ private fun StatCard(
                         value,
                         fontSize = if (isPrimary) 30.sp else 16.sp,
                         fontWeight = FontWeight.Black,
-                        color = if (isPrimary) Color.White else valueColor
+                        color = if (isPrimary) Color.White else valueColor,
+                        fontFamily = JetBrainsMono
                     )
                     if (unit.isNotEmpty()) {
                         Spacer(Modifier.width(3.dp))
@@ -1595,9 +1600,9 @@ private fun SavedRoutesSection(
                             Text(route.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = textPrimary)
                             Spacer(Modifier.height(2.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text("${String.format(Locale.US, "%.2f", route.distanceKm)} km", fontSize = 11.sp, color = textSecondary)
-                                Text(formatDurationShort(route.durationMs), fontSize = 11.sp, color = textSecondary)
-                                Text("${String.format(Locale.US, "%.0f", route.caloriesBurned)} kcal", fontSize = 11.sp, color = textSecondary)
+                                Text("${String.format(Locale.US, "%.2f", route.distanceKm)} km", fontSize = 11.sp, color = textSecondary, fontFamily = JetBrainsMono)
+                                Text(formatDurationShort(route.durationMs), fontSize = 11.sp, color = textSecondary, fontFamily = JetBrainsMono)
+                                Text("${String.format(Locale.US, "%.0f", route.caloriesBurned)} kcal", fontSize = 11.sp, color = textSecondary, fontFamily = JetBrainsMono)
                             }
                             Spacer(Modifier.height(2.dp))
                             Text(

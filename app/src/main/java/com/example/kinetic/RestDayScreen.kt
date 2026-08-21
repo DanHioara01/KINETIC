@@ -31,6 +31,7 @@ import com.example.kinetic.ui.components.KineticAppBar
 import com.example.kinetic.ui.theme.AppPalette
 import com.example.kinetic.ui.theme.appPalette
 import com.example.kinetic.ui.theme.*
+import com.example.kinetic.ui.theme.JetBrainsMono
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -195,7 +196,7 @@ fun RestDayScreen(
                                 Text(LanguageManager.translateMuscleGroup(group, strings), fontSize = 12.sp, color = p.tp)
                                 Spacer(Modifier.width(4.dp))
                                 val pct = ((1.0 - level) * 100).toInt().coerceIn(0, 100)
-                                Text("($pct%)", fontSize = 10.sp, color = p.ts)
+                                Text("($pct%)", fontSize = 10.sp, color = p.ts, fontFamily = JetBrainsMono)
                             }
                         }
                     }
@@ -347,12 +348,12 @@ fun RestDayScreen(
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                             Column {
                                                 Text(strings.deloadNormalValue, fontSize = 10.sp, color = p.ts)
-                                                Text("${String.format(Locale.getDefault(), "%.1f", reduction.originalWeight)} kg x ${reduction.originalSets}", fontSize = 12.sp, color = p.ts)
+                                                Text("${String.format(Locale.getDefault(), "%.1f", reduction.originalWeight)} kg x ${reduction.originalSets}", fontSize = 12.sp, color = p.ts, fontFamily = JetBrainsMono)
                                             }
                                             Icon(Icons.Default.ArrowForward, contentDescription = null, tint = p.ac, modifier = Modifier.size(16.dp).align(Alignment.CenterVertically))
                                             Column(horizontalAlignment = Alignment.End) {
                                                 Text(strings.deloadNewValue, fontSize = 10.sp, color = RecoveryGreen)
-                                                Text("${String.format(Locale.getDefault(), "%.1f", reduction.newWeight)} kg x ${reduction.newSets}", fontSize = 12.sp, color = RecoveryGreen, fontWeight = FontWeight.Bold)
+                                                Text("${String.format(Locale.getDefault(), "%.1f", reduction.newWeight)} kg x ${reduction.newSets}", fontSize = 12.sp, color = RecoveryGreen, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
                                             }
                                         }
                                     }
@@ -757,7 +758,7 @@ fun RestDayScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(strings.autoDeloadEnabled, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = p.tp)
-                                Text("${strings.deloadInterval}: $deloadIntervalWeeks ${strings.weeks}", fontSize = 11.sp, color = p.ts)
+                                Text("${strings.deloadInterval}: $deloadIntervalWeeks ${strings.weeks}", fontSize = 11.sp, color = p.ts, fontFamily = JetBrainsMono)
                             }
                             Switch(
                                 checked = autoDeloadEnabled,
@@ -792,7 +793,7 @@ fun RestDayScreen(
                                                 }
                                             }
                                         },
-                                        label = { Text("${weeks}w", fontSize = 11.sp) },
+                                        label = { Text("${weeks}w", fontSize = 11.sp, fontFamily = JetBrainsMono) },
                                         colors = FilterChipDefaults.filterChipColors(
                                             selectedContainerColor = p.ac.copy(alpha = 0.15f),
                                             selectedLabelColor = p.ac
@@ -815,13 +816,15 @@ fun RestDayScreen(
                                         "$weeksSinceDeload / $deloadIntervalWeeks ${strings.weeks}",
                                         fontSize = 11.sp,
                                         color = p.ts,
-                                        fontWeight = FontWeight.Medium
+                                        fontWeight = FontWeight.Medium,
+                                        fontFamily = JetBrainsMono
                                     )
                                     Text(
                                         "${(progress * 100).toInt()}%",
                                         fontSize = 11.sp,
                                         color = if (progress >= 1f) RecoveryRed else p.ac,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = JetBrainsMono
                                     )
                                 }
                                 Spacer(Modifier.height(6.dp))

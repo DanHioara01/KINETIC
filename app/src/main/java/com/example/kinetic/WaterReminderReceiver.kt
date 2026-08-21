@@ -44,6 +44,7 @@ class WaterReminderReceiver : BroadcastReceiver() {
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("open_water_tab", true)
         }
         val pendingIntent = PendingIntent.getActivity(
             context,

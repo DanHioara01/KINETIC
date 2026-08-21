@@ -20,6 +20,7 @@ import com.example.kinetic.ui.components.KineticAppBar
 import com.example.kinetic.ui.theme.AppPalette
 import com.example.kinetic.ui.theme.appPalette
 import com.example.kinetic.ui.theme.*
+import com.example.kinetic.ui.theme.JetBrainsMono
 
 data class BodyFatResult(
     val method: String,
@@ -254,6 +255,7 @@ fun BodyFatCalculatorScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 suffix = { Text("kg", color = p.ts) },
+                                textStyle = LocalTextStyle.current.copy(fontFamily = JetBrainsMono),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = p.ac,
                                     unfocusedBorderColor = p.ts.copy(alpha = 0.3f),
@@ -273,6 +275,7 @@ fun BodyFatCalculatorScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 suffix = { Text("cm", color = p.ts) },
+                                textStyle = LocalTextStyle.current.copy(fontFamily = JetBrainsMono),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = p.ac,
                                     unfocusedBorderColor = p.ts.copy(alpha = 0.3f),
@@ -291,12 +294,13 @@ fun BodyFatCalculatorScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(strings.neckCm ?: "Neck (cm)", color = p.ts, fontSize = 13.sp)
                                 Spacer(modifier = Modifier.height(4.dp))
-                                OutlinedTextField(
-                                    value = neck,
-                                    onValueChange = { neck = it.filter { c -> c.isDigit() || c == '.' }; showResult = false },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true,
-                                    suffix = { Text("cm", color = p.ts) },
+                            OutlinedTextField(
+                                value = neck,
+                                onValueChange = { neck = it.filter { c -> c.isDigit() || c == '.' }; showResult = false },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                suffix = { Text("cm", color = p.ts) },
+                                textStyle = LocalTextStyle.current.copy(fontFamily = JetBrainsMono),
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = p.ac,
                                         unfocusedBorderColor = p.ts.copy(alpha = 0.3f),

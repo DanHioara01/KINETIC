@@ -56,6 +56,7 @@ import com.example.kinetic.ui.theme.AppPalette
 import com.example.kinetic.ui.theme.appPalette
 import com.example.kinetic.ui.theme.DarkBackground
 import com.example.kinetic.ui.theme.LightBackground
+import com.example.kinetic.ui.theme.JetBrainsMono
 import kotlinx.coroutines.delay
 import kotlin.math.sin
 import java.util.Random
@@ -739,6 +740,7 @@ private fun WeekStrip(
                         text = nums[index].toString(),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
+                        fontFamily = JetBrainsMono,
                         color = if (isToday) accent else textPrimary.copy(alpha = 0.8f)
                     )
                     if (index in completedIndices) {
@@ -812,6 +814,7 @@ private fun StreakCard(
                 Text(
                     text = "${strings.bestStreak}: $bestStreak ${strings.days}",
                     fontSize = 12.sp,
+                    fontFamily = JetBrainsMono,
                     color = textSecondary
                 )
             }
@@ -819,6 +822,7 @@ private fun StreakCard(
                 text = "$streak",
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 30.sp,
+                fontFamily = JetBrainsMono,
                 color = accent
             )
         }
@@ -1046,6 +1050,7 @@ private fun WorkoutHeroCard(
                                 text = "$rowIndex",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold,
+                                fontFamily = JetBrainsMono,
                                 color = textSecondary
                             )
                         }
@@ -1061,6 +1066,7 @@ private fun WorkoutHeroCard(
                         Text(
                             text = if (ex.sets == 1 && ex.reps.endsWith("s")) ex.reps else "${ex.sets}x${ex.reps}",
                             fontSize = 12.sp,
+                            fontFamily = JetBrainsMono,
                             color = accent,
                             fontWeight = FontWeight.Bold
                         )
@@ -1089,7 +1095,7 @@ private fun WorkoutMeta(icon: ImageVector, value: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(12.dp), tint = Color(0xFF8E8E93))
         Spacer(Modifier.width(6.dp))
-        Text(value, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        Text(value, fontSize = 12.sp, fontWeight = FontWeight.Medium, fontFamily = JetBrainsMono)
     }
 }
 
@@ -1172,6 +1178,7 @@ private fun RestDayCard(
             Text(
                 "${strings.dayLabel} ${todayWorkout.dayInCycle} ${strings.ofCycle} · $restDayName",
                 fontSize = 13.sp,
+                fontFamily = JetBrainsMono,
                 color = p.ts,
                 fontWeight = FontWeight.Medium
             )

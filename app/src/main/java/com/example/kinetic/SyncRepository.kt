@@ -46,9 +46,12 @@ class SyncRepository(
                         "uuid" to exUuid,
                         "antrenamentUuid" to uuid,
                         "numeExercitiu" to ex.numeExercitiu,
+                        "exerciseId" to (ex.exerciseId.ifEmpty { exerciseIdFor(ex.numeExercitiu) }),
                         "setIndex" to ex.setIndex,
                         "greutateKg" to ex.greutateKg,
                         "repetari" to ex.repetari,
+                        "setType" to ex.setType,
+                        "rpe" to ex.rpe,
                         "notes" to ex.notes,
                         "updatedAt" to now
                     ))
@@ -93,13 +96,17 @@ class SyncRepository(
                 for (item in serverData) {
                     val antrenamentUuid = item["antrenamentUuid"] as? String ?: continue
                     val antrenament = db.antrenamentDao().getByUuid(antrenamentUuid) ?: continue
+                    val pulledName = item["numeExercitiu"] as? String ?: ""
                     db.exercitiuDao().upsertByUuid(ExercitiuEntity(
                         syncUuid = item["uuid"] as? String ?: continue,
                         antrenamentId = antrenament.id,
-                        numeExercitiu = item["numeExercitiu"] as? String ?: "",
+                        numeExercitiu = pulledName,
+                        exerciseId = (item["exerciseId"] as? String)?.takeIf { it.isNotBlank() } ?: exerciseIdFor(pulledName),
                         setIndex = (item["setIndex"] as? Number)?.toInt() ?: 0,
                         greutateKg = (item["greutateKg"] as? Number)?.toDouble() ?: 0.0,
                         repetari = (item["repetari"] as? Number)?.toInt() ?: 0,
+                        setType = (item["setType"] as? String)?.takeIf { it.isNotBlank() } ?: "working",
+                        rpe = (item["rpe"] as? Number)?.toInt() ?: 0,
                         notes = item["notes"] as? String ?: "",
                         updatedAt = (item["updatedAt"] as? Number)?.toLong() ?: System.currentTimeMillis()
                     ))
@@ -121,11 +128,13 @@ class SyncRepository(
                 val since = preferencesManager.getLastSyncTimestamp("exercises")
                 val serverData = api.syncExercises(userId, since)
                 for (item in serverData) {
+                    val pulledDefName = item["name"] as? String ?: ""
                     db.exerciseDefinitionDao().upsert(ExerciseDefinitionEntity(
                         syncUuid = item["uuid"] as? String ?: continue,
-                        name = item["name"] as? String ?: "",
+                        name = pulledDefName,
                         group = item["groupName"] as? String ?: "",
                         equipment = item["equipment"] as? String ?: "",
+                        exerciseId = (item["exerciseId"] as? String)?.takeIf { it.isNotBlank() } ?: exerciseIdFor(pulledDefName),
                         isDefault = (item["isDefault"] as? Number)?.toInt() == 1,
                         isFavorite = (item["isFavorite"] as? Number)?.toInt() == 1,
                         usageCount = (item["usageCount"] as? Number)?.toInt() ?: 0,
@@ -173,6 +182,7 @@ class SyncRepository(
                         "uuid" to exUuid,
                         "templateUuid" to uuid,
                         "exerciseName" to ex.exerciseName,
+                        "exerciseId" to (ex.exerciseId.ifEmpty { exerciseIdFor(ex.exerciseName) }),
                         "groupName" to ex.group,
                         "updatedAt" to now
                     ))
@@ -213,10 +223,12 @@ class SyncRepository(
                 for (item in serverData) {
                     val templateUuid = item["templateUuid"] as? String ?: continue
                     val template = db.templateDao().getByUuid(templateUuid) ?: continue
+                    val pulledTplName = item["exerciseName"] as? String ?: ""
                     db.templateExerciseDao().upsertByUuid(TemplateExerciseEntity(
                         syncUuid = item["uuid"] as? String ?: continue,
                         templateId = template.id,
-                        exerciseName = item["exerciseName"] as? String ?: "",
+                        exerciseName = pulledTplName,
+                        exerciseId = (item["exerciseId"] as? String)?.takeIf { it.isNotBlank() } ?: exerciseIdFor(pulledTplName),
                         group = item["groupName"] as? String ?: "",
                         updatedAt = (item["updatedAt"] as? Number)?.toLong() ?: System.currentTimeMillis()
                     ))
@@ -244,6 +256,7 @@ class SyncRepository(
                     "uuid" to uuid,
                     "userId" to withUuid.userId,
                     "exerciseName" to withUuid.exerciseName,
+                    "exerciseId" to (withUuid.exerciseId.ifEmpty { exerciseIdFor(withUuid.exerciseName) }),
                     "weight" to withUuid.weight,
                     "reps" to withUuid.reps,
                     "volume" to withUuid.volume,
@@ -262,10 +275,12 @@ class SyncRepository(
                 val since = preferencesManager.getLastSyncTimestamp("personal_records")
                 val serverData = api.syncPersonalRecords(userId, since)
                 for (item in serverData) {
+                    val pulledPrName = item["exerciseName"] as? String ?: ""
                     db.personalRecordDao().upsert(PersonalRecordEntity(
                         syncUuid = item["uuid"] as? String ?: continue,
                         userId = item["userId"] as? String ?: userId,
-                        exerciseName = item["exerciseName"] as? String ?: "",
+                        exerciseName = pulledPrName,
+                        exerciseId = (item["exerciseId"] as? String)?.takeIf { it.isNotBlank() } ?: exerciseIdFor(pulledPrName),
                         weight = (item["weight"] as? Number)?.toDouble() ?: 0.0,
                         reps = (item["reps"] as? Number)?.toInt() ?: 0,
                         volume = (item["volume"] as? Number)?.toDouble() ?: 0.0,
@@ -346,6 +361,7 @@ class SyncRepository(
                     "uuid" to uuid,
                     "userId" to withUuid.userId,
                     "exerciseName" to withUuid.exerciseName,
+                    "exerciseId" to (withUuid.exerciseId.ifEmpty { exerciseIdFor(withUuid.exerciseName) }),
                     "grupaMusculara" to withUuid.grupaMusculara,
                     "isFavorite" to withUuid.isFavorite,
                     "isCustom" to withUuid.isCustom,
@@ -363,9 +379,11 @@ class SyncRepository(
                 val since = preferencesManager.getLastSyncTimestamp("exercise_metadata")
                 val serverData = api.syncExerciseMetadata(userId, since)
                 for (item in serverData) {
+                    val pulledMetaName = item["exerciseName"] as? String ?: continue
                     db.exerciseMetadataDao().upsert(ExerciseMetadataEntity(
-                        exerciseName = item["exerciseName"] as? String ?: continue,
+                        exerciseName = pulledMetaName,
                         userId = item["userId"] as? String ?: userId,
+                        exerciseId = (item["exerciseId"] as? String)?.takeIf { it.isNotBlank() } ?: exerciseIdFor(pulledMetaName),
                         grupaMusculara = item["grupaMusculara"] as? String ?: "",
                         isFavorite = item["isFavorite"] as? Boolean ?: (item["isFavorite"] as? Number)?.toInt() == 1,
                         isCustom = item["isCustom"] as? Boolean ?: (item["isCustom"] as? Number)?.toInt() == 1,

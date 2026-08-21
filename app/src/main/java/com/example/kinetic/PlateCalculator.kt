@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kinetic.ui.components.AppGlassCard
 import com.example.kinetic.ui.components.KineticAppBar
 import com.example.kinetic.ui.theme.*
+import com.example.kinetic.ui.theme.JetBrainsMono
 import java.util.Locale
 
 data class PlateWeight(
@@ -129,7 +130,7 @@ fun PlateCalculatorScreen(
                         OutlinedTextField(
                             value = inputWeight,
                             onValueChange = { inputWeight = it.filter { c -> c.isDigit() || c == '.' } },
-                            placeholder = { Text("e.g. ${String.format(Locale.US, "%.0f", 100.0 * conversionFactor)}", color = p.ts.copy(alpha = 0.5f)) },
+                            placeholder = { Text("e.g. ${String.format(Locale.US, "%.0f", 100.0 * conversionFactor)}", color = p.ts.copy(alpha = 0.5f), fontFamily = JetBrainsMono) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             suffix = { Text(unit, color = p.ts) },
@@ -216,7 +217,8 @@ fun PlateCalculatorScreen(
                                     "${plate.weightKg}",
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp
+                                    fontSize = 13.sp,
+                                    fontFamily = JetBrainsMono
                                 )
                             }
                             Spacer(Modifier.width(16.dp))
@@ -224,12 +226,14 @@ fun PlateCalculatorScreen(
                                 Text(
                                     "${plate.weightKg} $unit ${strings.plateUnit}",
                                     color = p.tp,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    fontFamily = JetBrainsMono
                                 )
                                 Text(
                                     "${plate.count}x ${strings.eachSide} (${plate.count * 2} total)",
                                     color = p.ts,
-                                    fontSize = 13.sp
+                                    fontSize = 13.sp,
+                                    fontFamily = JetBrainsMono
                                 )
                             }
                         }
@@ -252,7 +256,8 @@ fun PlateCalculatorScreen(
                                 "${String.format(Locale.US, "%.1f", targetWeight)} $unit",
                                 color = p.ac,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
+                                fontSize = 18.sp,
+                                fontFamily = JetBrainsMono
                             )
                         }
                     }

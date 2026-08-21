@@ -17,9 +17,12 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
                 ExercitiuEntity(
                     antrenamentId = 0,
                     numeExercitiu = ex.numeExercitiu,
+                    exerciseId = exerciseIdFor(ex.numeExercitiu),
                     setIndex = idx,
                     greutateKg = set.greutateKg,
                     repetari = set.repetari,
+                    setType = set.setType,
+                    rpe = set.rpe,
                     notes = ex.notes
                 )
             }
@@ -47,6 +50,7 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
                     val pr = PersonalRecordEntity(
                         userId = userId,
                         exerciseName = ex.numeExercitiu,
+                        exerciseId = exerciseIdFor(ex.numeExercitiu),
                         weight = bestSet.greutateKg,
                         reps = bestSet.repetari,
                         volume = volume,
@@ -98,7 +102,7 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
     }
 
     suspend fun getExerciseHistory(userId: String, exerciseName: String): List<ExercitiuEntity> {
-        return db.exercitiuDao().getHistoryForExercise(userId, exerciseName)
+        return db.exercitiuDao().getHistoryForExercise(userId, exerciseName, exerciseIdFor(exerciseName))
     }
 
     suspend fun getBestSet(userId: String, exerciseName: String): ExercitiuEntity? {
@@ -138,7 +142,7 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
             val metadata = if (existing != null) {
                 existing.copy(isFavorite = isFav)
             } else {
-                ExerciseMetadataEntity(exerciseName = name, userId = userId, grupaMusculara = group, isFavorite = isFav)
+                ExerciseMetadataEntity(exerciseName = name, userId = userId, exerciseId = exerciseIdFor(name), grupaMusculara = group, isFavorite = isFav)
             }
             db.exerciseMetadataDao().upsert(metadata)
         } else {
@@ -207,7 +211,7 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
     suspend fun adaugaExercitiuCustom(userId: String, grupa: String, nume: String) {
         val existing = db.exerciseMetadataDao().getByName(userId, nume)
         val metadata = if (existing == null) {
-            ExerciseMetadataEntity(exerciseName = nume, userId = userId, grupaMusculara = grupa, isFavorite = false, isCustom = true)
+            ExerciseMetadataEntity(exerciseName = nume, userId = userId, exerciseId = exerciseIdFor(nume), grupaMusculara = grupa, isFavorite = false, isCustom = true)
         } else {
             existing
         }
@@ -223,7 +227,7 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
         val metadata = if (existing != null) {
             existing.copy(isFavorite = isFavorite)
         } else {
-            ExerciseMetadataEntity(exerciseName = numeExercitiu, userId = userId, grupaMusculara = grupa, isFavorite = isFavorite)
+            ExerciseMetadataEntity(exerciseName = numeExercitiu, userId = userId, exerciseId = exerciseIdFor(numeExercitiu), grupaMusculara = grupa, isFavorite = isFavorite)
         }
         if (syncRepo != null) {
             syncRepo.saveExerciseMetadata(metadata)
@@ -252,7 +256,7 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
     suspend fun salveazaAntrenamentSimple(userId: String, grupaMusculara: String, numeExercitiu: String, seturi: List<SetEntry>, note: String, durationMs: Long = 0L): Boolean {
         val totalWeight = seturi.sumOf { it.greutateKg * it.repetari }
         val entries = seturi.mapIndexed { idx, set ->
-            ExercitiuEntity(antrenamentId = 0, numeExercitiu = numeExercitiu, setIndex = idx, greutateKg = set.greutateKg, repetari = set.repetari, notes = note)
+            ExercitiuEntity(antrenamentId = 0, numeExercitiu = numeExercitiu, exerciseId = exerciseIdFor(numeExercitiu), setIndex = idx, greutateKg = set.greutateKg, repetari = set.repetari, setType = set.setType, rpe = set.rpe, notes = note)
         }
         val antrenamentId: Long
         if (syncRepo != null) {
@@ -293,11 +297,24 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
     }
 
     suspend fun getIstoricExercitiu(userId: String, exerciseName: String): List<ExercitiuEntity> {
-        return db.exercitiuDao().getHistoryForExercise(userId, exerciseName)
+        return db.exercitiuDao().getHistoryForExercise(userId, exerciseName, exerciseIdFor(exerciseName))
+    }
+
+    /** Trend 1RM estimat (Epley) — câte un punct pe antrenament, sortat cronologic. */
+    suspend fun getOneRmTrend(userId: String, exerciseName: String): List<Pair<Long, Double>> {
+        val historyWithDates = db.exercitiuDao().getHistoryWithDates(userId, exerciseName, exerciseIdFor(exerciseName))
+        val byWorkout = historyWithDates.groupBy { it.exercise.antrenamentId }
+        return byWorkout.map { (_, sets) ->
+            val date = sets.firstOrNull()?.antrenamentData ?: 0L
+            val best = sets
+                .filter { it.exercise.greutateKg > 0 && it.exercise.repetari in 1..20 }
+                .maxByOrNull { epleyOneRm(it.exercise.greutateKg, it.exercise.repetari) }
+            date to (best?.let { epleyOneRm(it.exercise.greutateKg, it.exercise.repetari) } ?: 0.0)
+        }.sortedBy { it.first }
     }
 
     suspend fun getStatisticiExercitiu(userId: String, exerciseName: String): ExerciseStats {
-        val history = db.exercitiuDao().getHistoryForExercise(userId, exerciseName)
+        val history = db.exercitiuDao().getHistoryForExercise(userId, exerciseName, exerciseIdFor(exerciseName))
         val maxGreutate = history.maxOfOrNull { it.greutateKg } ?: 0.0
         val maxRepetari = history.maxOfOrNull { it.repetari } ?: 0
         val maxVolumSet = history.maxOfOrNull { it.greutateKg * it.repetari } ?: 0.0
@@ -369,12 +386,12 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
     }
 
     suspend fun incarcaUltimulAntrenament(userId: String, exerciseName: String): List<SetEntry> {
-        val history = db.exercitiuDao().getHistoryForExerciseSimple(userId, exerciseName)
+        val history = db.exercitiuDao().getHistoryForExerciseSimple(userId, exerciseName, exerciseIdFor(exerciseName))
         if (history.isEmpty()) return listOf(SetEntry(0.0, 0))
 
         val latestAntrenamentId = history.firstOrNull()?.antrenamentId ?: return listOf(SetEntry(0.0, 0))
         val latestSets = db.exercitiuDao().getForAntrenament(latestAntrenamentId)
-        return latestSets.map { SetEntry(it.greutateKg, it.repetari) }
+        return latestSets.map { SetEntry(it.greutateKg, it.repetari, it.setType, it.rpe) }
     }
 
     suspend fun updateSetSimple(updated: ExercitiuEntity) {
@@ -386,7 +403,7 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
     }
 
     suspend fun getProgresLunar(userId: String, exerciseName: String): List<ProgresLunar> {
-        val historyWithDates = db.exercitiuDao().getHistoryWithDates(userId, exerciseName)
+        val historyWithDates = db.exercitiuDao().getHistoryWithDates(userId, exerciseName, exerciseIdFor(exerciseName))
         val grouped = mutableMapOf<String, Double>()
         for (item in historyWithDates) {
             val cal = Calendar.getInstance().apply { timeInMillis = item.antrenamentData }
@@ -485,7 +502,7 @@ class AntrenamentRepository(private val db: AppDatabase, private val syncRepo: S
         if (topExercises.isEmpty()) return emptyList()
         val reductions = mutableListOf<DeloadExerciseReduction>()
         for (ex in topExercises) {
-            val history = db.exercitiuDao().getHistoryForExerciseSimple(userId, ex)
+            val history = db.exercitiuDao().getHistoryForExerciseSimple(userId, ex, exerciseIdFor(ex))
             val lastSets = history.take(5)
             if (lastSets.isEmpty()) continue
             val maxWeight = lastSets.maxOfOrNull { it.greutateKg } ?: continue

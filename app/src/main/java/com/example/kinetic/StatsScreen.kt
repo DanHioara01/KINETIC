@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.example.kinetic.ui.theme.*
 import com.example.kinetic.ui.theme.AppPalette
 import com.example.kinetic.ui.theme.appPalette
+import com.example.kinetic.ui.theme.JetBrainsMono
 import com.example.kinetic.ui.components.AppGlassCard
 import com.example.kinetic.ui.components.AppSectionLabel
 import kotlinx.coroutines.Dispatchers
@@ -967,7 +968,7 @@ private fun HeatmapCard(
             }
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("${data.count { it > 0 }} ${strings.workoutsLabel}", fontSize = 9.sp, color = textTertiary)
+                Text("${data.count { it > 0 }} ${strings.workoutsLabel}", fontSize = 9.sp, color = textTertiary, fontFamily = JetBrainsMono)
                 Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(strings.lowLabel, fontSize = 7.sp, color = textTertiary)
                     Box(Modifier.size(8.dp).clip(RoundedCornerShape(2.dp)).background(accent.copy(alpha = 0.06f)))
@@ -1078,7 +1079,8 @@ private fun RadarCard(
                                 "${formatKg(g.volume)} kg · ${g.percentage.toInt()}%",
                                 fontSize = 8.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = colors[i % colors.size]
+                                color = colors[i % colors.size],
+                                fontFamily = JetBrainsMono
                             )
                         }
                     }
@@ -1118,7 +1120,7 @@ private fun VolumeByMuscleCard(
                     Column(modifier = Modifier.weight(1f)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(m.name, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = textPrimary)
-                            Text("${m.kg} kg", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = m.color)
+                            Text("${m.kg} kg", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = m.color, fontFamily = JetBrainsMono)
                         }
                         Spacer(Modifier.height(5.dp))
                         Box(
@@ -1135,7 +1137,8 @@ private fun VolumeByMuscleCard(
                             "${(m.pct * 100).toInt()}%",
                             fontSize = 8.sp,
                             letterSpacing = 0.5.sp,
-                            color = m.color.copy(alpha = 0.6f)
+                            color = m.color.copy(alpha = 0.6f),
+                            fontFamily = JetBrainsMono
                         )
                     }
                 }
@@ -1219,8 +1222,8 @@ private fun PersonalBestsCard(
                         Text(pb.name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Spacer(Modifier.height(1.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(pb.weight, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = pb.color)
-                            Text("× ${pb.reps}", fontSize = 11.sp, color = textSecondary)
+                            Text(pb.weight, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = pb.color, fontFamily = JetBrainsMono)
+                            Text("× ${pb.reps}", fontSize = 11.sp, color = textSecondary, fontFamily = JetBrainsMono)
                         }
                         Spacer(Modifier.height(2.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1254,7 +1257,7 @@ private fun WeeklyGoalsCard(
                 val animatedPct by animateFloatAsState((g.pct / 100f).coerceIn(0f, 1f), tween(1400, easing = EaseOutCubic), label = g.name)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(g.name, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = textPrimary)
-                    Text("${g.pct}%", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = g.color)
+                    Text("${g.pct}%", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp, color = g.color, fontFamily = JetBrainsMono)
                 }
                 Spacer(Modifier.height(7.dp))
                 Box(Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(p.overlay(0.04f))) {
