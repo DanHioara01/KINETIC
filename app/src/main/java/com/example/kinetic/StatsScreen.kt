@@ -392,7 +392,7 @@ private fun StatsScreenContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(strings.stats, fontWeight = FontWeight.ExtraBold, fontSize = 30.sp, letterSpacing = (-1).sp)
+                    Text(strings.stats, fontFamily = Varien, fontWeight = FontWeight.ExtraBold, fontSize = 30.sp, letterSpacing = (-1).sp, color = textPrimary)
                     Text(periodSubtitle(selectedPeriod, strings), fontSize = 11.sp, color = textSecondary)
                 }
                 PeriodTabs(periods, selectedPeriod, onPeriodSelect, accent, cardBg, cardBorder, textSecondary, textTertiary)
@@ -701,6 +701,7 @@ private fun HeroVolumeCard(
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     formatChartValue(totalVolume),
+                    fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 56.sp,
                     letterSpacing = (-3).sp,
@@ -726,7 +727,7 @@ private fun HeroVolumeCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Icon(Icons.Filled.TrendingUp, null, tint = p.gn, modifier = Modifier.size(10.dp))
-                    Text(delta, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = p.gn)
+                    Text(delta, fontFamily = JetBrainsMono, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = p.gn)
                 }
             }
 
@@ -786,7 +787,7 @@ private fun MiniStat(color: Color, label: String, value: String, textPrimary: Co
         Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(color))
         Column {
             Text(label, fontSize = 9.sp, letterSpacing = 0.5.sp, color = textTertiary)
-            Text(value, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
+            Text(value, fontFamily = JetBrainsMono, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
         }
     }
 }
@@ -889,6 +890,7 @@ private fun RingItem(
                 // Cifra din mijlocul inelului (era transmisă dar nu desenată → invizibilă)
                 Text(
                     value,
+                    fontFamily = JetBrainsMono,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = textPrimary
@@ -1264,8 +1266,8 @@ private fun WeeklyGoalsCard(
                     Box(Modifier.fillMaxHeight().fillMaxWidth(animatedPct).clip(RoundedCornerShape(5.dp)).background(g.color))
                 }
                 Row(Modifier.fillMaxWidth().padding(top = 5.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(g.current, fontSize = 9.sp, color = textSecondary)
-                    Text(g.target, fontSize = 9.sp, color = textSecondary)
+                    Text(g.current, fontFamily = JetBrainsMono, fontSize = 9.sp, color = textSecondary)
+                    Text(g.target, fontFamily = JetBrainsMono, fontSize = 9.sp, color = textSecondary)
                 }
                 if (g != goals.last()) Spacer(Modifier.height(16.dp))
             }

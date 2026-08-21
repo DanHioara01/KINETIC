@@ -1305,7 +1305,7 @@ private fun StatCard(
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         value,
-                        fontSize = if (isPrimary) 30.sp else 16.sp,
+                        fontSize = if (isPrimary) 22.sp else 16.sp,
                         fontWeight = FontWeight.Black,
                         color = if (isPrimary) Color.White else valueColor,
                         fontFamily = JetBrainsMono
@@ -1314,9 +1314,9 @@ private fun StatCard(
                         Spacer(Modifier.width(3.dp))
                         Text(
                             unit,
-                            fontSize = if (isPrimary) 13.sp else 11.sp,
+                            fontSize = if (isPrimary) 11.sp else 11.sp,
                             color = if (isPrimary) Color.White.copy(alpha = 0.6f) else textSecondary,
-                            modifier = Modifier.padding(bottom = if (isPrimary) 4.dp else 2.dp)
+                            modifier = Modifier.padding(bottom = if (isPrimary) 2.dp else 2.dp)
                         )
                     }
                 }

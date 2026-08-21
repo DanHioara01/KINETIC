@@ -2866,7 +2866,7 @@ fun MuscleGroupList(
                         )
 
                         navItems.forEach { (icon, label, tabIndex) ->
-                            val selected = currentDashboardTab == tabIndex
+                            val selected = currentPage == null && currentDashboardTab == tabIndex
                             
                             // ── Icon bounce animation ──
                             val bounceScale by animateFloatAsState(
@@ -2954,7 +2954,7 @@ fun MuscleGroupList(
                         )
 
                         rightItems.forEach { (icon, label, tabIndex) ->
-                            val selected = currentDashboardTab == tabIndex
+                            val selected = currentPage == null && currentDashboardTab == tabIndex
                             
                             // ── Icon bounce animation ──
                             val rightBounceScale by animateFloatAsState(
@@ -5365,7 +5365,7 @@ private fun ProfileHeader(p: ProfilePalette, title: String, onNotification: () -
     ) {
         Text(
             title,
-            fontFamily = FontFamily.SansSerif,
+            fontFamily = Varien,
             fontSize = 30.sp,
             fontWeight = FontWeight.W900,
             letterSpacing = (-1.5).sp,

@@ -21,9 +21,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
+
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.runtime.*
@@ -83,10 +81,18 @@ fun WaterTrackingScreen(
     val percentComplete = if (waterGoal > 0) ((todayWaterMl.toFloat() / waterGoal) * 100).toInt().coerceAtMost(100) else 0
     val waterStreak = preferencesManager.getWaterStreakDays()
 
-    val snackbarHostState = remember { SnackbarHostState() }
     val celebrationScale = remember { Animatable(1f) }
     var showGoalDialog by remember { mutableStateOf(false) }
     var goalInput by remember { mutableStateOf("") }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var alarms by remember { mutableStateOf(preferencesManager.getWaterReminders()) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var editingAlarmId by remember { mutableIntStateOf(-1) }
+    var pickerHour by remember { mutableIntStateOf(9) }
+    var pickerMinute by remember { mutableIntStateOf(0) }
+    var lastAddedMl by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(isComplete) {
         if (isComplete && todayWaterMl == waterGoal) {
@@ -101,17 +107,9 @@ fun WaterTrackingScreen(
         }
     }
 
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var alarms by remember { mutableStateOf(preferencesManager.getWaterReminders()) }
-    var showTimePicker by remember { mutableStateOf(false) }
-    var editingAlarmId by remember { mutableIntStateOf(-1) }
-    var pickerHour by remember { mutableIntStateOf(9) }
-    var pickerMinute by remember { mutableIntStateOf(0) }
-
     val onAddWater: (Int) -> Unit = { ml ->
         preferencesManager.addWaterMl(ml)
-        val previousTotal = todayWaterMl
+        lastAddedMl = ml
         todayWaterMl = preferencesManager.getTodayWaterMl()
         waterHistory = preferencesManager.getWaterHistory7Days()
         try {
@@ -123,34 +121,24 @@ fun WaterTrackingScreen(
                 KineticGlanceWidget().updateAll(context)
             } catch (_: Exception) {}
         }
-        scope.launch {
-            val result = snackbarHostState.showSnackbar(
-                message = "+$ml ${strings.ml}",
-                actionLabel = strings.undo,
-                withDismissAction = true
-            )
-            if (result == SnackbarResult.ActionPerformed) {
-                preferencesManager.resetTodayWaterMl()
-                val todayKey = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
-                val prefs = context.getSharedPreferences("kinetic_prefs_${preferencesManager.getCurrentUserId()}", android.content.Context.MODE_PRIVATE)
-                prefs.edit().putInt("water_$todayKey", previousTotal).apply()
-                todayWaterMl = preferencesManager.getTodayWaterMl()
-                waterHistory = preferencesManager.getWaterHistory7Days()
+
+    }
+
+    val onUndoWater: () -> Unit = {
+        if (lastAddedMl > 0) {
+            val toRemove = lastAddedMl.coerceAtMost(todayWaterMl)
+            val newTotal = (todayWaterMl - toRemove).coerceAtLeast(0)
+            val todayKey = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+            val prefs = context.getSharedPreferences("kinetic_prefs_${preferencesManager.getCurrentUserId()}", android.content.Context.MODE_PRIVATE)
+            prefs.edit().putInt("water_$todayKey", newTotal).apply()
+            todayWaterMl = preferencesManager.getTodayWaterMl()
+            waterHistory = preferencesManager.getWaterHistory7Days()
+            lastAddedMl = 0
+            scope.launch {
                 try {
                     KineticGlanceWidget().updateAll(context)
                 } catch (_: Exception) {}
             }
-        }
-    }
-
-    val onResetWater: () -> Unit = {
-        preferencesManager.resetTodayWaterMl()
-        todayWaterMl = preferencesManager.getTodayWaterMl()
-        waterHistory = preferencesManager.getWaterHistory7Days()
-        scope.launch {
-            try {
-                KineticGlanceWidget().updateAll(context)
-            } catch (_: Exception) {}
         }
     }
 
@@ -160,6 +148,7 @@ fun WaterTrackingScreen(
         visibleItems = 7
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -228,7 +217,13 @@ fun WaterTrackingScreen(
                         fontFamily = JetBrainsMono,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
                     )
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable {
+                            goalInput = waterGoal.toString()
+                            showGoalDialog = true
+                        }
+                    ) {
                         Text(
                             "$waterGoal",
                             fontFamily = JetBrainsMono,
@@ -244,11 +239,50 @@ fun WaterTrackingScreen(
                             color = p.tt,
                             fontFamily = GeneralSans
                         )
+                }
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "$percentComplete% ${strings.ofGoal}",
+                    fontFamily = GeneralSans,
+                    fontSize = 11.sp,
+                    color = if (isComplete) p.gn else p.tt
+                )
+                if (isComplete) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        strings.goalComplete,
+                        fontFamily = GeneralSans,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = p.gn,
+                        modifier = Modifier.graphicsLayer { scaleX = celebrationScale.value; scaleY = celebrationScale.value }
+                    )
+                }
+                if (waterStreak > 0) {
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.LocalFireDepartment,
+                            contentDescription = null,
+                            tint = Color(0xFFF5A623),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            "$waterStreak ${strings.waterStreak}",
+                            fontFamily = JetBrainsMono,
+                            fontSize = 11.sp,
+                            color = Color(0xFFF5A623)
+                        )
                     }
                 }
             }
             }
-        }
+    }
 
         item {
             AnimatedVisibility(
@@ -257,7 +291,7 @@ fun WaterTrackingScreen(
             ) {
             Column {
                 AppSectionLabel(strings.addWater, p)
-                QuickAddRow(strings, p, onAddWater, onResetWater)
+                QuickAddRow(strings, p, onAddWater, onUndoWater)
                 Spacer(Modifier.height(8.dp))
                 CustomAddRow(
                     text = customMl,
@@ -373,6 +407,9 @@ fun WaterTrackingScreen(
         }
     }
 
+
+    }
+
     if (showTimePicker) {
         val timePickerState = rememberTimePickerState(
             initialHour = pickerHour,
@@ -426,6 +463,64 @@ fun WaterTrackingScreen(
                     }
                 }
                 TextButton(onClick = { showTimePicker = false }) {
+                    Text(strings.cancel, fontFamily = GeneralSans, color = p.ts)
+                }
+            }
+        )
+    }
+
+    if (showGoalDialog) {
+        AlertDialog(
+            onDismissRequest = { showGoalDialog = false },
+            containerColor = p.sf,
+            titleContentColor = p.tp,
+            textContentColor = p.ts,
+            title = { Text(strings.editWaterGoal, fontFamily = GeneralSans, fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = goalInput,
+                    onValueChange = { input ->
+                        val filtered = input.filter { it.isDigit() }
+                        if (filtered.length <= 4) goalInput = filtered
+                    },
+                    placeholder = { Text(strings.newWaterGoal, color = p.ts, fontSize = 14.sp) },
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        color = p.tp,
+                        fontFamily = JetBrainsMono,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 16.sp
+                    ),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = p.cr,
+                        focusedContainerColor = p.acs,
+                        unfocusedBorderColor = p.bd,
+                        focusedBorderColor = p.ac.copy(alpha = 0.3f),
+                        cursorColor = p.ac
+                    ),
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val v = goalInput.toIntOrNull()
+                        if (v != null && v in 100..10000) {
+                            preferencesManager.setWaterGoalMl(v)
+                            todayWaterMl = preferencesManager.getTodayWaterMl()
+                            showGoalDialog = false
+                        }
+                    },
+                    modifier = Modifier.background(RedButtonGradient, RoundedCornerShape(12.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(strings.confirm, fontFamily = GeneralSans, color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showGoalDialog = false }) {
                     Text(strings.cancel, fontFamily = GeneralSans, color = p.ts)
                 }
             }
