@@ -555,13 +555,16 @@ async function migrateSchema() {
 // Adaugă coloane noi pe tabele existente, idempotent (fără a goli datele).
 // NU schimbă SCHEMA_VERSION — acea versiune e păstrată pentru a nu declanșa DROP-urile.
 async function ensureColumn(table, column, definition) {
-  const found = await getRow(
-    'SELECT 1 FROM information_schema.columns WHERE table_name = $1 AND column_name = $2',
-    [table, column]
-  );
-  if (!found) {
-    await pool.query(`ALTER TABLE \"${table}\" ADD COLUMN ${column} ${definition}`);
-    console.log(`Added column ${table}.${column}`);
+  try {
+    await pool.query(`ALTER TABLE \"${table}\" ADD COLUMN IF NOT EXISTS ${column} ${definition}`);
+  } catch (e) {
+    // Column already exists or other non-fatal error — skip silently
+    const msg = e.message || '';
+    if (msg.includes('already exists') || msg.includes('duplicate column')) {
+      // fine, skip
+    } else {
+      console.error(`ensureColumn ${table}.${column}:`, msg);
+    }
   }
 }
 
