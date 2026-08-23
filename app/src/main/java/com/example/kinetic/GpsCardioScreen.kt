@@ -880,7 +880,7 @@ fun GpsCardioScreen(
                             )
                             StatCard(
                                 modifier = Modifier.weight(1f),
-                                icon = Icons.Default.DirectionsWalk,
+                                iconPainter = painterResource(R.drawable.ic_footstep),
                                 value = gpsState.estimatedSteps.toString(),
                                 unit = "",
                                 label = strings.steps,
@@ -1469,7 +1469,7 @@ private fun RouteDetailContent(
         ) {
             StatCard(
                 modifier = Modifier.weight(1f),
-                icon = Icons.Default.DirectionsRun,
+                iconPainter = painterResource(R.drawable.ic_footstep),
                 value = "$stepsEstimate",
                 unit = "",
                 label = strings.steps,

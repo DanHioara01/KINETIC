@@ -1160,71 +1160,80 @@ private fun RestDayCard(
         DateTimeFormatter.ofPattern("EEEE", Locale(appLang))
     ).replaceFirstChar { it.uppercase() }
 
-    AppGlassCard(
+    val borderColor = if (isDark) Color(0x0FFFFFFF) else Color(0x14000000)
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        p = p,
-        cornerRadius = 18.dp,
-        contentPadding = PaddingValues(20.dp)
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = p.sf),
+        border = BorderStroke(1.dp, borderColor)
     ) {
-        Column {
-            Text(
-                strings.todaysWorkout.uppercase(),
-                fontSize = 11.sp,
-                letterSpacing = 2.sp,
-                color = p.ac,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "${strings.dayLabel} ${todayWorkout.dayInCycle} ${strings.ofCycle} · $restDayName",
-                fontSize = 13.sp,
-                fontFamily = JetBrainsMono,
-                color = p.ts,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                "🌙",
-                fontSize = 36.sp
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                strings.todayYouRest,
-                fontSize = 20.sp,
-                color = p.tp,
-                fontWeight = FontWeight.Black
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                strings.restDayMessage,
-                fontSize = 13.sp,
-                color = p.ts,
-                lineHeight = 18.sp
-            )
-            Spacer(Modifier.height(10.dp))
-            Row(
+        Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(p.acs, RoundedCornerShape(12.dp))
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    .padding(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    Icons.Default.Lightbulb,
+                Image(
+                    painter = painterResource(id = R.drawable.ic_rest),
                     contentDescription = null,
-                    tint = p.ac,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(130.dp),
+                    contentScale = ContentScale.Fit
                 )
+                Spacer(Modifier.height(4.dp))
                 Text(
-                    strings.restDayTip,
-                    fontSize = 12.sp,
-                    color = p.ts
+                    strings.todaysWorkout.uppercase(),
+                    fontSize = 11.sp,
+                    letterSpacing = 2.sp,
+                    color = p.ac,
+                    fontWeight = FontWeight.Bold
                 )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "${strings.dayLabel} ${todayWorkout.dayInCycle} ${strings.ofCycle} · $restDayName",
+                    fontSize = 13.sp,
+                    fontFamily = JetBrainsMono,
+                    color = p.ts,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    strings.todayYouRest,
+                    fontSize = 20.sp,
+                    color = p.tp,
+                    fontWeight = FontWeight.Black
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    strings.restDayMessage,
+                    fontSize = 13.sp,
+                    color = p.ts,
+                    lineHeight = 18.sp,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(p.acs, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Lightbulb,
+                        contentDescription = null,
+                        tint = p.ac,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        strings.restDayTip,
+                        fontSize = 12.sp,
+                        color = p.ts
+                    )
+                }
             }
         }
     }
-}
 
 // ── DELOAD DUE BANNER ──────────────────────────────────────────────
 

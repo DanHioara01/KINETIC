@@ -240,6 +240,18 @@ class FirestoreHelper {
         } catch (_: Exception) { null }
     }
 
+    suspend fun getOnboarding(userId: String): Map<String, Any>? {
+        return try {
+            db.collection("users").document(userId).collection("onboarding").document("onboarding").get().await().data
+        } catch (_: Exception) { null }
+    }
+
+    suspend fun getBodyMetrics(userId: String): Map<String, Any>? {
+        return try {
+            db.collection("users").document(userId).collection("bodyMetrics").document("current").get().await().data
+        } catch (_: Exception) { null }
+    }
+
     suspend fun syncUserStats(userId: String, totalVolume: Double, workoutCount: Int) {
         try {
             db.collection("users").document(userId)

@@ -1122,7 +1122,7 @@ object LanguageManager {
         "routePoints" to "Points",
         "paused" to "Paused", "estimatedOneRm" to "Est. 1RM", "nextSetSuggestion" to "Next set", "setTypeWarmup" to "Warm-up", "setTypeWorking" to "Working", "setTypeDrop" to "Drop", "setTypeAmrap" to "AMRAP", "setTypePaused" to "Paused", "setTypeTempo" to "Tempo", "rpeLabel" to "RPE",
            "readinessTitle" to "Readiness", "readinessScore" to "Today's readiness", "readinessHeavy" to "HEAVY — go hard", "readinessModerate" to "MODERATE — train normal", "readinessLight" to "LIGHT — recover or go easy", "readinessSleep" to "Sleep", "readinessSleepHours" to "Hours last night", "readinessQuality" to "Quality", "readinessSteps" to "Steps today", "readinessRecovery" to "Muscle recovery", "readinessVolume" to "Volume today", "readinessHint" to "Set your sleep to see your daily training recommendation.",
-        "steps" to "steps",
+        "steps" to "Steps",
         "timerFinished" to "Time's up!",
         "timeToStartNextSet" to "Ready for your next set!",
         "readinessHydration" to "Hydration", "readinessTrend" to "7-day trend",

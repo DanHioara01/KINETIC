@@ -469,7 +469,39 @@ fun MuscleGroupList(
                 profileName = latestProfile.name
             }
             if (!preferencesManager.isOnboardingComplete()) {
-                showOnboarding = true
+                // Try to restore onboarding from Firestore (cross-device / reinstall)
+                val uid = userProfileManager.getOwnUserId()
+                val restored = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        val onboarding = FirestoreHelper().getOnboarding(uid)
+                        if (onboarding != null && onboarding["isComplete"] == true) {
+                            preferencesManager.setFitnessGoal(onboarding["goal"] as? String ?: "")
+                            preferencesManager.setExperienceLevel(onboarding["experienceLevel"] as? String ?: "")
+                            preferencesManager.setEquipmentAvailable(onboarding["equipment"] as? String ?: "")
+                            preferencesManager.setSessionsPerWeek((onboarding["sessionsPerWeek"] as? Number)?.toInt() ?: 3)
+                            preferencesManager.setPhysicalLimitations(onboarding["limitations"] as? String ?: "")
+                            @Suppress("UNCHECKED_CAST")
+                            preferencesManager.setSelectedMuscleGroups(onboarding["selectedMuscleGroups"] as? List<String> ?: emptyList())
+                            preferencesManager.setOnboardingComplete(true)
+                            true
+                        } else false
+                    } catch (_: Exception) { false }
+                }
+                // Also restore body metrics
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        val metrics = FirestoreHelper().getBodyMetrics(uid)
+                        if (metrics != null) {
+                            val weight = (metrics["weightKg"] as? Number)?.toFloat()
+                            val height = (metrics["heightCm"] as? Number)?.toFloat()
+                            if (weight != null && weight > 0f) preferencesManager.setUserWeight(weight)
+                            if (height != null && height > 0f) preferencesManager.setUserHeight(height)
+                        }
+                    } catch (_: Exception) {}
+                }
+                if (!restored) {
+                    showOnboarding = true
+                }
             }
             // Verifică o singură dată pe pornire dacă există o versiune nouă pe GitHub
             if (!updateChecked) {
@@ -1218,6 +1250,38 @@ fun MuscleGroupList(
                 preferencesManager.setAutoDeloadEnabled(false)
                 showOnboarding = false
                 isLoggedIn = true
+                // Save to Firestore for cross-device restoration
+                val uid = userProfileManager.getOwnUserId()
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                    try {
+                        FirestoreHelper().saveOnboarding(
+                            userId = uid,
+                            goal = profile.goal,
+                            experience = profile.experience,
+                            equipment = profile.equipment,
+                            sessionsPerWeek = profile.sessionsPerWeek,
+                            limitations = profile.limitations,
+                            muscleGroups = profile.selectedGroups
+                        )
+                    } catch (_: Exception) {}
+                    try {
+                        FirestoreHelper().saveBodyMetrics(
+                            userId = uid,
+                            weightKg = profile.weight.toDouble(),
+                            heightCm = profile.height.toDouble()
+                        )
+                    } catch (_: Exception) {}
+                    try {
+                        val age = profile.age
+                        val gender = profile.gender
+                        val activityLevel = profile.activityLevel
+                        FirestoreHelper().saveSettings(uid, mapOf(
+                            "userAge" to age,
+                            "userGender" to gender,
+                            "activityLevel" to activityLevel
+                        ))
+                    } catch (_: Exception) {}
+                }
             }
         )
         return
