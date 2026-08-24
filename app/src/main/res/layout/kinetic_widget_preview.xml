@@ -27,7 +27,7 @@
                 android:layout_gravity="center"
                 android:indeterminate="false"
                 android:max="100"
-                android:progress="48"
+                android:progress="75"
                 android:progressDrawable="@drawable/widget_ring_progress" />
             <LinearLayout
                 android:layout_width="wrap_content"

@@ -30,6 +30,15 @@ data class PersonalBest(
     val isNew: Boolean
 )
 
+data class ExerciseDetail(
+    val name: String,
+    val totalReps: Int,
+    val totalVolume: Double,
+    val maxWeight: Double,
+    val setsCount: Int,
+    val weightProgression: String  // e.g. "20 → 25 kg"
+)
+
 fun computeMuscleGroupAnalytics(
     workouts: List<AntrenamentEntity>,
     exercises: List<ExercitiuEntity>
@@ -151,4 +160,28 @@ fun computePersonalBests(
             isNew = isNew
         )
     }.sortedByDescending { it.maxWeight }
+}
+
+fun computeExerciseDetails(
+    exercises: List<ExercitiuEntity>
+): List<ExerciseDetail> {
+    return exercises.groupBy { it.numeExercitiu }.map { (name, sets) ->
+        val totalReps = sets.sumOf { it.repetari }
+        val totalVolume = sets.sumOf { it.greutateKg * it.repetari }
+        val maxWeight = sets.maxOfOrNull { it.greutateKg } ?: 0.0
+        val uniqueWeights = sets.map { it.greutateKg }.distinct().sorted()
+        val weightProgression = if (uniqueWeights.size >= 2) {
+            "${uniqueWeights.first().toInt()} → ${uniqueWeights.last().toInt()} kg"
+        } else if (uniqueWeights.size == 1) {
+            "${uniqueWeights.first().toInt()} kg"
+        } else "0 kg"
+        ExerciseDetail(
+            name = name,
+            totalReps = totalReps,
+            totalVolume = totalVolume,
+            maxWeight = maxWeight,
+            setsCount = sets.size,
+            weightProgression = weightProgression
+        )
+    }.sortedByDescending { it.totalVolume }
 }

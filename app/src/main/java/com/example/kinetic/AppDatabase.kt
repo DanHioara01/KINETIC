@@ -334,6 +334,9 @@ interface AntrenamentDao {
     @Query("SELECT * FROM antrenamente WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<AntrenamentEntity>
 
+    @Query("UPDATE antrenamente SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
+
     @Query("DELETE FROM antrenamente WHERE id = :id")
     suspend fun deleteById(id: Long)
 
@@ -381,6 +384,9 @@ interface ExercitiuDao {
 
     @Query("SELECT * FROM exercitii WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<ExercitiuEntity>
+
+    @Query("UPDATE exercitii SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
 
     @Query("SELECT * FROM exercitii WHERE exerciseId = ''")
     suspend fun getWithoutExerciseId(): List<ExercitiuEntity>
@@ -513,6 +519,9 @@ interface ExerciseDefinitionDao {
     @Query("SELECT * FROM exercises WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<ExerciseDefinitionEntity>
 
+    @Query("UPDATE exercises SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
+
     @Query("SELECT * FROM exercises ORDER BY isFavorite DESC, usageCount DESC, `group`, name")
     suspend fun getAll(): List<ExerciseDefinitionEntity>
 
@@ -555,6 +564,9 @@ interface TemplateDao {
     @Query("SELECT * FROM templates WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<TemplateEntity>
 
+    @Query("UPDATE templates SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
+
     @Delete
     suspend fun delete(template: TemplateEntity)
 }
@@ -576,6 +588,9 @@ interface TemplateExerciseDao {
     @Query("SELECT * FROM template_exercises WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<TemplateExerciseEntity>
 
+    @Query("UPDATE template_exercises SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
+
     @Query("SELECT * FROM template_exercises WHERE exerciseId = ''")
     suspend fun getWithoutExerciseId(): List<TemplateExerciseEntity>
 
@@ -593,6 +608,9 @@ interface PersonalRecordDao {
 
     @Query("SELECT * FROM personal_records WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<PersonalRecordEntity>
+
+    @Query("UPDATE personal_records SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
 
     @Query("SELECT * FROM personal_records WHERE userId = :userId AND exerciseName = :exerciseName ORDER BY weight DESC LIMIT 1")
     suspend fun getBest(userId: String, exerciseName: String): PersonalRecordEntity?
@@ -620,6 +638,9 @@ interface MuscleRecoveryDao {
 
     @Query("SELECT * FROM muscle_recovery WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<MuscleRecoveryEntity>
+
+    @Query("UPDATE muscle_recovery SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
 
     @Query("SELECT * FROM muscle_recovery WHERE grupaMusculara = :grupa AND userId = :userId")
     suspend fun getByGroup(userId: String, grupa: String): MuscleRecoveryEntity?
@@ -650,6 +671,9 @@ interface BiometricDao {
 
     @Query("SELECT * FROM biometric_entries WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<BiometricEntity>
+
+    @Query("UPDATE biometric_entries SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
 
     @Query("SELECT * FROM biometric_entries WHERE userId = :userId ORDER BY timestamp DESC")
     suspend fun getAllForUser(userId: String): List<BiometricEntity>
@@ -683,6 +707,9 @@ interface FoodDao {
 
     @Query("SELECT * FROM food_entries WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<FoodEntity>
+
+    @Query("UPDATE food_entries SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
 
     @Query("SELECT * FROM food_entries WHERE userId = :userId AND timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
     suspend fun getForDay(userId: String, start: Long, end: Long): List<FoodEntity>
@@ -748,6 +775,9 @@ interface CardioRouteDao {
     @Query("SELECT * FROM cardio_routes WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<CardioRouteEntity>
 
+    @Query("UPDATE cardio_routes SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
+
     @Query("SELECT * FROM cardio_routes WHERE userId = :userId ORDER BY startTime DESC")
     suspend fun getAllForUser(userId: String): List<CardioRouteEntity>
 
@@ -802,6 +832,9 @@ interface RestDayDao {
     @Query("SELECT * FROM rest_days WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<RestDayEntity>
 
+    @Query("UPDATE rest_days SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
+
     @Query("SELECT * FROM rest_days WHERE userId = :userId ORDER BY date DESC")
     suspend fun getAllForUser(userId: String): List<RestDayEntity>
 
@@ -832,6 +865,9 @@ interface AiChatHistoryDao {
     @Query("SELECT * FROM ai_chat_history WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<AiChatHistoryEntity>
 
+    @Query("UPDATE ai_chat_history SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
+
     @Query("SELECT * FROM ai_chat_history WHERE userId = :userId ORDER BY timestamp ASC")
     suspend fun getAllForUser(userId: String): List<AiChatHistoryEntity>
 
@@ -861,6 +897,9 @@ interface ExerciseMetadataDao {
 
     @Query("SELECT * FROM exercise_metadata WHERE syncUuid = ''")
     suspend fun getUnsynced(): List<ExerciseMetadataEntity>
+
+    @Query("UPDATE exercise_metadata SET syncUuid = ''")
+    suspend fun clearAllSyncUuids()
 
     @Query("SELECT * FROM exercise_metadata WHERE exerciseName = :name AND userId = :userId LIMIT 1")
     suspend fun getByName(userId: String, name: String): ExerciseMetadataEntity?

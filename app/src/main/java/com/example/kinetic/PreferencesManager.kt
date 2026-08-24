@@ -477,6 +477,10 @@ class PreferencesManager(
     fun getGoogleOAuthClientId(): String = sessionPrefs.getString("google_oauth_client_id", "") ?: ""
     fun setGoogleOAuthClientId(id: String) { sessionPrefs.edit().putString("google_oauth_client_id", id).apply() }
 
+    // ---------- Welcome sound (device-wide) ----------
+    fun isWelcomeSoundEnabled(): Boolean = sessionPrefs.getBoolean("welcome_sound_enabled", true)
+    fun setWelcomeSoundEnabled(enabled: Boolean) { sessionPrefs.edit().putBoolean("welcome_sound_enabled", enabled).apply() }
+
     // ---------- Migration ----------
 
     /**

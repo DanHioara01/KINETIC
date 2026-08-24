@@ -50,9 +50,10 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 
-enum class DrawerPage { CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS, GPS_CARDIO, REST_DAYS, PLATE_CALCULATOR, ONE_RM_CALCULATOR, SAVED_EXERCISES, WEIGHT_GOAL, BODY_FAT_CALCULATOR, WORKOUT_ANALYTICS, READINESS }
+enum class DrawerPage { STATS, CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS, GPS_CARDIO, REST_DAYS, PLATE_CALCULATOR, ONE_RM_CALCULATOR, SAVED_EXERCISES, WEIGHT_GOAL, BODY_FAT_CALCULATOR, WORKOUT_ANALYTICS, READINESS }
 
 fun DrawerPage.toDrawerScreen(): DrawerScreen = when (this) {
+    DrawerPage.STATS -> DrawerScreen.Calendar
     DrawerPage.CALENDAR -> DrawerScreen.Calendar
     DrawerPage.FOOD_JOURNAL -> DrawerScreen.FoodJournal
     DrawerPage.AI_TRAINER -> DrawerScreen.AiTrainer

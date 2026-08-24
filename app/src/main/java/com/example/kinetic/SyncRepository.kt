@@ -1,5 +1,6 @@
 package com.example.kinetic
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -67,7 +68,9 @@ class SyncRepository(
         return withContext(Dispatchers.IO) {
             try {
                 val since = preferencesManager.getLastSyncTimestamp("antrenamente")
+                Log.d("SyncRepository", "syncAntrenamente: userId=$userId, since=$since")
                 val serverData = api.syncAntrenamente(userId, since)
+                Log.d("SyncRepository", "syncAntrenamente: got ${serverData.size} items from server")
                 for (item in serverData) {
                     db.antrenamentDao().upsertByUuid(AntrenamentEntity(
                         syncUuid = item["uuid"] as? String ?: continue,
@@ -732,14 +735,19 @@ class SyncRepository(
     suspend fun pushAllToServer(userId: String) {
         withContext(Dispatchers.IO) {
             try {
-                for (recovery in db.muscleRecoveryDao().getUnsynced().filter { it.userId == userId }) {
+                val unsyncedRecoveries = db.muscleRecoveryDao().getUnsynced().filter { it.userId == userId }
+                Log.d("SyncRepository", "pushAllToServer: unsynced recoveries=${unsyncedRecoveries.size}")
+                for (recovery in unsyncedRecoveries) {
                     saveMuscleRecovery(recovery)
                 }
-                for (metadata in db.exerciseMetadataDao().getUnsynced().filter { it.userId == userId }) {
+                val unsyncedMetadata = db.exerciseMetadataDao().getUnsynced().filter { it.userId == userId }
+                Log.d("SyncRepository", "pushAllToServer: unsynced metadata=${unsyncedMetadata.size}")
+                for (metadata in unsyncedMetadata) {
                     saveExerciseMetadata(metadata)
                 }
 
                 val workouts = db.antrenamentDao().getUnsynced().filter { it.userId == userId }
+                Log.d("SyncRepository", "pushAllToServer: unsynced workouts=${workouts.size}")
                 for (w in workouts) {
                     val exercises = db.exercitiuDao().getForAntrenament(w.id)
                     val uuid = w.syncUuid.ifEmpty { AppConstants.generateUuid() }
@@ -765,9 +773,63 @@ class SyncRepository(
         }
     }
 
+    /**
+     * When the user upgrades from a guest/anonymous account to a real account
+     * (Google, email, Facebook), the Firebase UID changes. All local data was
+     * stored under the old UID. This method reassigns every row to the new
+     * userId so that [initialSync] can push & pull correctly.
+     */
+    suspend fun migrateLocalDataToNewUser(oldUserId: String, newUserId: String) {
+        Log.d("SyncRepository", "migrateLocalDataToNewUser: $oldUserId -> $newUserId")
+        if (oldUserId == newUserId || oldUserId.isBlank() || oldUserId == "local_user") {
+            Log.d("SyncRepository", "migrateLocalDataToNewUser: skipped (same or invalid)")
+            return
+        }
+        withContext(Dispatchers.IO) {
+            try {
+                val sql = db.openHelper.writableDatabase
+                val tables = listOf(
+                    "antrenamente", "templates", "personal_records",
+                    "muscle_recovery", "exercise_metadata",
+                    "biometric_entries", "food_entries",
+                    "cardio_routes", "rest_days",
+                    "ai_chat_history", "subscriptions",
+                    "weight_goals", "injury_risks",
+                    "friendships", "streaks", "user_badges",
+                    "leaderboard_entries", "likes", "comments"
+                )
+                for (table in tables) {
+                    try {
+                        sql.execSQL("UPDATE $table SET userId = '$newUserId' WHERE userId = '$oldUserId'")
+                    } catch (_: Exception) {
+                        // Table may not have a userId column — skip silently
+                    }
+                }
+                // Reset sync timestamps so initialSync re-fetches everything fresh
+                preferencesManager.setLastSyncTimestamp("antrenamente", 0L)
+                preferencesManager.setLastSyncTimestamp("exercitii", 0L)
+                preferencesManager.setLastSyncTimestamp("exercises", 0L)
+                preferencesManager.setLastSyncTimestamp("templates", 0L)
+                preferencesManager.setLastSyncTimestamp("template_exercises", 0L)
+                preferencesManager.setLastSyncTimestamp("personal_records", 0L)
+                preferencesManager.setLastSyncTimestamp("muscle_recovery", 0L)
+                preferencesManager.setLastSyncTimestamp("exercise_metadata", 0L)
+                preferencesManager.setLastSyncTimestamp("biometric_entries", 0L)
+                preferencesManager.setLastSyncTimestamp("food_entries", 0L)
+                preferencesManager.setLastSyncTimestamp("cardio_routes", 0L)
+                preferencesManager.setLastSyncTimestamp("rest_days", 0L)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     suspend fun initialSync(userId: String) {
+        Log.d("SyncRepository", "initialSync: starting for userId=$userId")
         pushAllToServer(userId)
+        Log.d("SyncRepository", "initialSync: pushAllToServer done, starting syncAllFromServer")
         syncAllFromServer(userId)
+        Log.d("SyncRepository", "initialSync: syncAllFromServer done")
         // Sincronizează statisticile agregate (volum + nr. antrenamente) în tabela
         // users — altfel prietenii și leaderboard-ul arată mereu 0, pentru că acest
         // calcul se făcea doar la salvarea unui antrenament nou / login.
@@ -782,5 +844,35 @@ class SyncRepository(
                 ))
             }
         } catch (_: Exception) {}
+    }
+
+    /**
+     * Clears syncUuid on all local tables so pushAllToServer re-pushes
+     * everything. Safe because backend uses ON CONFLICT DO UPDATE (upsert).
+     * Call this on login to handle server data loss (e.g. Render redeploy).
+     */
+    suspend fun forceResetSyncState(userId: String) {
+        Log.d("SyncRepository", "forceResetSyncState: clearing syncUuids for userId=$userId")
+        withContext(Dispatchers.IO) {
+            try {
+                // Use DAO methods (not raw SQL) so Room's in-memory cache is invalidated
+                db.antrenamentDao().clearAllSyncUuids()
+                db.exercitiuDao().clearAllSyncUuids()
+                db.exerciseDefinitionDao().clearAllSyncUuids()
+                db.templateDao().clearAllSyncUuids()
+                db.templateExerciseDao().clearAllSyncUuids()
+                db.personalRecordDao().clearAllSyncUuids()
+                db.muscleRecoveryDao().clearAllSyncUuids()
+                db.biometricDao().clearAllSyncUuids()
+                db.foodDao().clearAllSyncUuids()
+                db.cardioRouteDao().clearAllSyncUuids()
+                db.restDayDao().clearAllSyncUuids()
+                db.aiChatHistoryDao().clearAllSyncUuids()
+                db.exerciseMetadataDao().clearAllSyncUuids()
+                Log.d("SyncRepository", "forceResetSyncState: done")
+            } catch (e: Exception) {
+                Log.e("SyncRepository", "forceResetSyncState failed", e)
+            }
+        }
     }
 }

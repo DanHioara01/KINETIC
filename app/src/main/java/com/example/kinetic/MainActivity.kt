@@ -165,10 +165,17 @@ class MainActivity : ComponentActivity() {
     var openGpsCardioRequest by mutableStateOf(false)
     // Set when the water widget is tapped so the app reopens on the Water tab.
     var openWaterTabRequest by mutableStateOf(false)
+    // Set when notification deep links are tapped.
+    var openTodayWorkoutRequest by mutableStateOf(false)
+    var openStatsRequest by mutableStateOf(false)
+    var openDashboardRequest by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         openGpsCardioRequest = intent.getBooleanExtra("open_gps_cardio", false)
         openWaterTabRequest = intent.getBooleanExtra("open_water_tab", false)
+        openTodayWorkoutRequest = intent.getBooleanExtra("open_today_workout", false)
+        openStatsRequest = intent.getBooleanExtra("open_stats", false)
+        openDashboardRequest = intent.getBooleanExtra("open_dashboard", false)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.auto(
                 android.graphics.Color.TRANSPARENT,
@@ -184,6 +191,12 @@ class MainActivity : ComponentActivity() {
         val preferencesManager = PreferencesManager(this, userProfileManager)
         preferencesManager.migrateLegacyDataIfNeeded()
         LanguageManager.loadSavedLanguage(this)
+
+        // Schedule notification receivers
+        WorkoutReminderReceiver().scheduleIfEnabled(this)
+        WeeklySummaryReceiver().scheduleIfEnabled(this)
+        StreakReminderReceiver().scheduleIfEnabled(this)
+        GoalProgressReceiver().scheduleIfEnabled(this)
 
         setContent {
             val themeMode = remember { mutableStateOf(preferencesManager.getThemeMode()) }
@@ -205,7 +218,6 @@ class MainActivity : ComponentActivity() {
                 // Un singur overlay solid acoperă scurt conținutul, DUPĂ care culorile
                 // comută (ascunse sub scrim), apoi scrim-ul se dezvăluie → crossfade lin,
                 // vizibil pe orice ecran, fără flash de fundal. Un singur nod animat → zero lag.
-                val scrimAlpha = remember { Animatable(0f) }
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -230,14 +242,12 @@ class MainActivity : ComponentActivity() {
                         ) {
                             MuscleGroupList(
                                 onThemeChanged = { themeMode.value = it },
-                                themeScrim = scrimAlpha
                             )
                         }
                     }
                     // Scrim peste tot (acoperă și drawer-ul): crossfade spre tema țintă.
                     // Composable separat → doar el recompune în timpul animației (290ms),
                     // întregul arbore nu. La repaus e absent complet (alpha = 0).
-                    ThemeScrimOverlay(scrimAlpha = scrimAlpha)
                 }
             }
         }
@@ -251,6 +261,15 @@ class MainActivity : ComponentActivity() {
         }
         if (intent.getBooleanExtra("open_water_tab", false)) {
             openWaterTabRequest = true
+        }
+        if (intent.getBooleanExtra("open_today_workout", false)) {
+            openTodayWorkoutRequest = true
+        }
+        if (intent.getBooleanExtra("open_stats", false)) {
+            openStatsRequest = true
+        }
+        if (intent.getBooleanExtra("open_dashboard", false)) {
+            openDashboardRequest = true
         }
     }
 
@@ -375,21 +394,7 @@ private fun WorkoutSubTabs(
     }
 }
 
-@Composable
-private fun ThemeScrimOverlay(scrimAlpha: Animatable<Float, *>) {
-    val a = scrimAlpha.value
-    if (a > 0f) {
-        // Scrim cu culoare CONSTANTĂ (întunecată), nu legată de temă: la schimbarea
-        // culorilor sub el, scrim-ul NU se recolorează → fără flash alb la dark→light.
-        // Tranziția trece prin întuneric și dezvăluie tema nouă lin.
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(com.example.kinetic.ui.theme.DarkBackground)
-                .alpha(a)
-        )
-    }
-}
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -397,7 +402,7 @@ fun MuscleGroupList(
     onThemeChanged: (ThemeMode) -> Unit = {},
     // Scrim-ul de crossfade al temei (din MainActivity). Dacă e furnizat, comutarea
     // temei e secvențiată: acoperire solidă → schimbare culori → dezvăluire lină.
-    themeScrim: Animatable<Float, *>? = null
+
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val userProfileManager = remember { UserProfileManager(context) }
@@ -469,23 +474,30 @@ fun MuscleGroupList(
                 profileName = latestProfile.name
             }
             if (!preferencesManager.isOnboardingComplete()) {
-                // Try to restore onboarding from Firestore (cross-device / reinstall)
                 val uid = userProfileManager.getOwnUserId()
-                val restored = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    try {
-                        val onboarding = FirestoreHelper().getOnboarding(uid)
-                        if (onboarding != null && onboarding["isComplete"] == true) {
-                            preferencesManager.setFitnessGoal(onboarding["goal"] as? String ?: "")
-                            preferencesManager.setExperienceLevel(onboarding["experienceLevel"] as? String ?: "")
-                            preferencesManager.setEquipmentAvailable(onboarding["equipment"] as? String ?: "")
-                            preferencesManager.setSessionsPerWeek((onboarding["sessionsPerWeek"] as? Number)?.toInt() ?: 3)
-                            preferencesManager.setPhysicalLimitations(onboarding["limitations"] as? String ?: "")
-                            @Suppress("UNCHECKED_CAST")
-                            preferencesManager.setSelectedMuscleGroups(onboarding["selectedMuscleGroups"] as? List<String> ?: emptyList())
-                            preferencesManager.setOnboardingComplete(true)
-                            true
-                        } else false
-                    } catch (_: Exception) { false }
+                var restored = false
+                // Try to restore onboarding from Firestore with retry
+                for (attempt in 1..3) {
+                    if (restored) break
+                    restored = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        try {
+                            val onboarding = FirestoreHelper().getOnboarding(uid)
+                            if (onboarding != null && onboarding["isComplete"] == true) {
+                                preferencesManager.setFitnessGoal(onboarding["goal"] as? String ?: "")
+                                preferencesManager.setExperienceLevel(onboarding["experienceLevel"] as? String ?: "")
+                                preferencesManager.setEquipmentAvailable(onboarding["equipment"] as? String ?: "")
+                                preferencesManager.setSessionsPerWeek((onboarding["sessionsPerWeek"] as? Number)?.toInt() ?: 3)
+                                preferencesManager.setPhysicalLimitations(onboarding["limitations"] as? String ?: "")
+                                @Suppress("UNCHECKED_CAST")
+                                preferencesManager.setSelectedMuscleGroups(onboarding["selectedMuscleGroups"] as? List<String> ?: emptyList())
+                                preferencesManager.setOnboardingComplete(true)
+                                true
+                            } else false
+                        } catch (_: Exception) {
+                            if (attempt < 3) kotlinx.coroutines.delay(1000L * attempt)
+                            false
+                        }
+                    }
                 }
                 // Also restore body metrics
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -496,6 +508,51 @@ fun MuscleGroupList(
                             val height = (metrics["heightCm"] as? Number)?.toFloat()
                             if (weight != null && weight > 0f) preferencesManager.setUserWeight(weight)
                             if (height != null && height > 0f) preferencesManager.setUserHeight(height)
+                        }
+                    } catch (_: Exception) {}
+                }
+                // Also restore settings (age, gender, activity level)
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        val settings = FirestoreHelper().getSettings(uid)
+                        if (settings != null) {
+                            val age = (settings["userAge"] as? Number)?.toInt()
+                            val gender = settings["userGender"] as? String
+                            val activity = settings["activityLevel"] as? String
+                            if (age != null && age > 0) preferencesManager.setUserAge(age)
+                            if (gender != null) preferencesManager.setUserGender(gender)
+                            if (activity != null) preferencesManager.setActivityLevel(activity)
+                        }
+                    } catch (_: Exception) {}
+                }
+                // Restore profile (name, photo) from Firestore if local profile is empty
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        val localProfile = userProfileManager.getOwnProfile()
+                        val localPhoto = localProfile?.photoUri ?: ""
+                        val localName = localProfile?.name ?: ""
+                        if (localPhoto.isBlank() || localName.isBlank()) {
+                            val profile = FirestoreHelper().getUserProfile(uid)
+                            if (profile != null) {
+                                val firestoreName = profile["name"] as? String ?: ""
+                                val firestorePhoto = profile["photoUri"] as? String ?: ""
+                                val firestoreBio = profile["bio"] as? String ?: ""
+                                if (firestoreName.isNotBlank() || firestorePhoto.isNotBlank()) {
+                                    userProfileManager.createOrUpdateProfile(
+                                        name = firestoreName.ifBlank { localName },
+                                        photoUri = firestorePhoto.ifBlank { localPhoto },
+                                        userId = uid,
+                                        bio = firestoreBio.ifBlank { localProfile?.bio ?: "" }
+                                    )
+                                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                        if (firestoreName.isNotBlank()) profileName = firestoreName
+                                        if (firestorePhoto.isNotBlank()) {
+                                            profilePhoto = firestorePhoto
+                                            profilePhotoVersion++
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } catch (_: Exception) {}
                 }
@@ -637,6 +694,44 @@ fun MuscleGroupList(
             showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = false
             workoutNavController.popToWorkoutHome()
             currentDashboardTab = 3
+        }
+    }
+
+    // Open Today's Workout when workout reminder notification is tapped.
+    LaunchedEffect(mainActivity?.openTodayWorkoutRequest) {
+        val act = mainActivity ?: return@LaunchedEffect
+        if (act.openTodayWorkoutRequest) {
+            act.openTodayWorkoutRequest = false
+            act.intent?.removeExtra("open_today_workout")
+            currentPage = null
+            showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = false
+            workoutNavController.popToWorkoutHome()
+            currentDashboardTab = 0
+        }
+    }
+
+    // Open Stats when weekly summary or achievement notification is tapped.
+    LaunchedEffect(mainActivity?.openStatsRequest) {
+        val act = mainActivity ?: return@LaunchedEffect
+        if (act.openStatsRequest) {
+            act.openStatsRequest = false
+            act.intent?.removeExtra("open_stats")
+            currentPage = DrawerPage.STATS
+            showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = false
+            workoutNavController.popToWorkoutHome()
+        }
+    }
+
+    // Open Dashboard when streak or goal notification is tapped.
+    LaunchedEffect(mainActivity?.openDashboardRequest) {
+        val act = mainActivity ?: return@LaunchedEffect
+        if (act.openDashboardRequest) {
+            act.openDashboardRequest = false
+            act.intent?.removeExtra("open_dashboard")
+            currentPage = null
+            showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = false
+            workoutNavController.popToWorkoutHome()
+            currentDashboardTab = 0
         }
     }
 
@@ -823,6 +918,7 @@ fun MuscleGroupList(
         try {
             kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
                 KineticStepsGlanceWidget().updateAll(context)
+                KineticGlanceWidget().updateAll(context)
             }
         } catch (_: Exception) {}
     }
@@ -1010,6 +1106,10 @@ fun MuscleGroupList(
                 LanguageManager.getTranslatedBadge(key).title.ifEmpty { key }
             }
             snackbarHostState.showSnackbar("\uD83C\uDFC6 $badgeNames")
+            for (badgeKey in newBadgeNotifications) {
+                val badge = LanguageManager.getTranslatedBadge(badgeKey)
+                AchievementReceiver.showAchievement(context, badge.title, badge.description)
+            }
             newBadgeNotifications = emptyList()
         }
     }
@@ -1198,6 +1298,15 @@ fun MuscleGroupList(
                 .build()
             com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso)
         } else null
+    }
+
+    val performLogout: () -> Unit = {
+        preferencesManager.setLoggedIn(false)
+        preferencesManager.setLoginMethod("")
+        try { authManager.signOut() } catch (_: Exception) {}
+        try { googleSignInClient?.signOut() } catch (_: Exception) {}
+        isLoggedIn = false
+        reloadToken++
     }
 
     val googleSignInLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -1450,6 +1559,7 @@ fun MuscleGroupList(
                         currentPage = page
                         when (page) {
                             null -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.STATS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
                             DrawerPage.CALENDAR -> { showCalendar = true; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
                             DrawerPage.FOOD_JOURNAL -> { showCalendar = false; showTemplates = false; showFoodJournal = true; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
                             DrawerPage.AI_TRAINER -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = true; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
@@ -1472,10 +1582,7 @@ fun MuscleGroupList(
                         importCsvLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "text/*"))
                     },
                     onLogout = {
-                        preferencesManager.setLoggedIn(false)
-                        preferencesManager.setLoginMethod("")
-                        authManager.signOut()
-                        isLoggedIn = false
+                        performLogout()
                     },
                     onLanguageSelected = { code ->
                         LanguageManager.saveLanguage(context, code)
@@ -1487,27 +1594,10 @@ fun MuscleGroupList(
                     strings = strings,
                     onClose = { scope.launch { drawerState.close() } },
                     onToggleTheme = {
-                        val performToggle = {
-                            val newMode = if (isDark) ThemeMode.LIGHT else ThemeMode.DARK
-                            preferencesManager.setThemeMode(newMode)
-                            currentThemeMode = newMode
-                            onThemeChanged(newMode)
-                        }
-                        val scrim = themeScrim
-                        if (scrim != null) {
-                            // Crossfade SEMI-TRANSPARENT: scrim-ul atinge doar ~65% opacitate,
-                            // deci ecranul NU devine solid — conținutul rămâne vizibil prin el
-                            // pe tot parcursul tranziției. Culorile se schimbă sub scrim,
-                            // apoi acesta se estompează. Un singur nod animat, zero lag.
-                            scope.launch {
-                                scrim.snapTo(0f)
-                                scrim.animateTo(0.65f, tween(110, easing = FastOutSlowInEasing))
-                                performToggle()
-                                scrim.animateTo(0f, tween(220, easing = FastOutSlowInEasing))
-                            }
-                        } else {
-                            performToggle()
-                        }
+                        val newMode = if (isDark) ThemeMode.LIGHT else ThemeMode.DARK
+                        preferencesManager.setThemeMode(newMode)
+                        currentThemeMode = newMode
+                        onThemeChanged(newMode)
                     },
                     onOpenServerSettings = { showServerDialog = true },
                     onOpenPricing = { showPricing = true },
@@ -2737,6 +2827,8 @@ fun MuscleGroupList(
                                 strings = strings,
                                 weeklyTopExercise = weeklyTopExercise,
                                 weeklyTotalKg = weeklyTotalKg,
+                                weekVolume = weekVolume,
+                                weekWorkoutCount = weekWorkoutCount,
                                 paddingValues = innerPadding,
                                 userId = userId,
                                 onExerciseHistoryClick = { exerciseName ->
@@ -2765,10 +2857,7 @@ fun MuscleGroupList(
                                 onUnitsClick = { showUnitsDialog = true },
                                 onProfileChanged = { profileChangedTrigger++ },
                                 onLogout = {
-                                    preferencesManager.setLoggedIn(false)
-                                    preferencesManager.setOnboardingComplete(false)
-                                    isLoggedIn = false
-                                    reloadToken++
+                                    performLogout()
                                 },
                                 onBiometricClick = {
                                     showBiometricInput = true
@@ -4923,7 +5012,7 @@ fun ProfileScreen(
                 .padding(horizontal = 18.dp)
                 .padding(
                     top = paddingValues.calculateTopPadding(),
-                    bottom = AppConstants.BOTTOM_NAV_PADDING + 28.dp
+                    bottom = AppConstants.BOTTOM_NAV_PADDING
                 )
         ) {
             AnimatedVisibility(
@@ -5087,6 +5176,7 @@ fun ProfileScreen(
             Column {
             SectionLabel(p, strings.settingsAndMore.ifBlank { "SETTINGS" }.uppercase())
             var notifOn by remember { mutableStateOf(preferencesManager.isBiometricReminderEnabled()) }
+            var welcomeSoundOn by remember { mutableStateOf(preferencesManager.isWelcomeSoundEnabled()) }
             SettingsCard(
                 p = p,
                 strings = strings,
@@ -5101,7 +5191,12 @@ fun ProfileScreen(
                 },
                 onLanguageClick = onLanguageClick,
                 onUnitsClick = onUnitsClick,
-                onPasswordClick = { showPasswordChangeDialog = true }
+                onPasswordClick = { showPasswordChangeDialog = true },
+                welcomeSoundOn = welcomeSoundOn,
+                onWelcomeSoundToggle = { enabled ->
+                    welcomeSoundOn = enabled
+                    preferencesManager.setWelcomeSoundEnabled(enabled)
+                }
             )
             }
             }
@@ -6043,12 +6138,15 @@ private fun SettingsCard(
     onNotifToggle: (Boolean) -> Unit,
     onLanguageClick: () -> Unit,
     onUnitsClick: () -> Unit,
-    onPasswordClick: () -> Unit
+    onPasswordClick: () -> Unit,
+    welcomeSoundOn: Boolean = false,
+    onWelcomeSoundToggle: (Boolean) -> Unit = {}
 ) {
     ProfileGlassCard(p, modifier = Modifier.padding(vertical = 2.dp)) {
         SettingRow(p, Icons.Default.Language, p.pu, p.pus, strings.language.ifBlank { "Language" }, languageValue, onClick = onLanguageClick)
         SettingRow(p, Icons.Default.SquareFoot, p.am, p.ams, strings.units.ifBlank { "Units" }, unitsValue, onClick = onUnitsClick)
         SettingRowToggle(p, Icons.Default.Notifications, p.gn, p.gns, strings.biometricReminderTitle.ifBlank { "Notifications" }, notifOn, onNotifToggle)
+        SettingRowToggle(p, Icons.Default.VolumeUp, p.ac, p.acs, strings.welcomeSoundLabel.ifBlank { "Welcome Sound" }, welcomeSoundOn, onWelcomeSoundToggle)
         SettingRow(p, Icons.Default.Lock, p.rs, p.rss, strings.changePassword.ifBlank { "Change Password" }, null, onClick = onPasswordClick)
     }
 }

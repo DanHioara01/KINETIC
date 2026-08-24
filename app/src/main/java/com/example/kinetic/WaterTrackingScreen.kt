@@ -10,6 +10,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -411,11 +419,8 @@ fun WaterTrackingScreen(
     }
 
     if (showTimePicker) {
-        val timePickerState = rememberTimePickerState(
-            initialHour = pickerHour,
-            initialMinute = pickerMinute,
-            is24Hour = true
-        )
+        var wheelHour by remember { mutableIntStateOf(pickerHour) }
+        var wheelMinute by remember { mutableIntStateOf(pickerMinute) }
 
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
@@ -424,21 +429,24 @@ fun WaterTrackingScreen(
             textContentColor = p.ts,
             title = { Text(strings.selectTime, fontFamily = GeneralSans, fontWeight = FontWeight.Bold) },
             text = {
-                TimePicker(
-                    state = timePickerState,
-                    colors = TimePickerDefaults.colors(
-                        selectorColor = p.ac,
-                        containerColor = p.sf
-                    )
+                WheelTimePicker(
+                    selectedHour = wheelHour,
+                    selectedMinute = wheelMinute,
+                    onHourChange = { wheelHour = it },
+                    onMinuteChange = { wheelMinute = it },
+                    accentColor = p.ac,
+                    textPrimary = p.tp,
+                    textSecondary = p.ts,
+                    cardBg = p.sf
                 )
             },
             confirmButton = {
                 Button(
                     onClick = {
                         if (editingAlarmId >= 0) {
-                            preferencesManager.updateWaterReminder(editingAlarmId, timePickerState.hour, timePickerState.minute)
+                            preferencesManager.updateWaterReminder(editingAlarmId, wheelHour, wheelMinute)
                         } else {
-                            preferencesManager.addWaterReminder(timePickerState.hour, timePickerState.minute)
+                            preferencesManager.addWaterReminder(wheelHour, wheelMinute)
                         }
                         alarms = preferencesManager.getWaterReminders()
                         WaterReminderReceiver().scheduleAllEnabledAlarms(context)
@@ -1455,5 +1463,163 @@ private class BubbleState {
         y = 1f
         x = Random.nextFloat() * 0.6f + 0.2f
         active = true
+    }
+}
+// Wheel Time Picker
+@Composable
+private fun WheelTimePicker(
+    selectedHour: Int,
+    selectedMinute: Int,
+    onHourChange: (Int) -> Unit,
+    onMinuteChange: (Int) -> Unit,
+    accentColor: Color,
+    textPrimary: Color,
+    textSecondary: Color,
+    cardBg: Color
+) {
+    val context = LocalContext.current
+    val vibrator = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+    val coroutineScope = rememberCoroutineScope()
+
+    var editingField by remember { mutableStateOf<String?>(null) }
+    var inputText by remember { mutableStateOf("") }
+
+    val hours = (0..23).toList()
+    val minutes = (0..59).toList()
+
+    val hourListState = rememberLazyListState(initialFirstVisibleItemIndex = selectedHour)
+    val minuteListState = rememberLazyListState(initialFirstVisibleItemIndex = selectedMinute)
+
+    var prevHour by remember { mutableIntStateOf(selectedHour) }
+    var prevMinute by remember { mutableIntStateOf(selectedMinute) }
+
+    fun vibrate() {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                vibrator?.vibrate(android.os.VibrationEffect.createOneShot(15, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator?.vibrate(15)
+            }
+        } catch (_: Exception) {}
+    }
+
+    LaunchedEffect(hourListState) {
+        snapshotFlow { hourListState.firstVisibleItemIndex }.collect { index ->
+            val clamped = index.coerceIn(0, 23)
+            if (clamped != prevHour) {
+                prevHour = clamped
+                onHourChange(clamped)
+                vibrate()
+            }
+        }
+    }
+    LaunchedEffect(minuteListState) {
+        snapshotFlow { minuteListState.firstVisibleItemIndex }.collect { index ->
+            val clamped = index.coerceIn(0, 59)
+            if (clamped != prevMinute) {
+                prevMinute = clamped
+                onMinuteChange(clamped)
+                vibrate()
+            }
+        }
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth().height(280.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (editingField == "hour") {
+                BasicTextField(
+                    value = inputText,
+                    onValueChange = { text ->
+                        if (text.length <= 2 && text.all { it.isDigit() }) {
+                            inputText = text
+                            val v = text.toIntOrNull()
+                            if (v != null && v in 0..23) {
+                                onHourChange(v)
+                                coroutineScope.launch { hourListState.animateScrollToItem(v) }
+                            }
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                    singleLine = true,
+                    textStyle = TextStyle(fontSize = 48.sp, fontFamily = JetBrainsMono, fontWeight = FontWeight.Black, color = textPrimary),
+                    cursorBrush = SolidColor(accentColor),
+                    modifier = Modifier.width(80.dp),
+                    decorationBox = { inner -> inner() }
+                )
+            } else {
+                Text(
+                    text = "%02d".format(selectedHour),
+                    fontFamily = JetBrainsMono, fontSize = 48.sp, fontWeight = FontWeight.Black,
+                    color = textPrimary,
+                    modifier = Modifier.clickable { editingField = "hour"; inputText = "%02d".format(selectedHour) }
+                )
+            }
+            Text(text = " : ", fontFamily = JetBrainsMono, fontSize = 48.sp, fontWeight = FontWeight.Black, color = accentColor)
+            if (editingField == "minute") {
+                BasicTextField(
+                    value = inputText,
+                    onValueChange = { text ->
+                        if (text.length <= 2 && text.all { it.isDigit() }) {
+                            inputText = text
+                            val v = text.toIntOrNull()
+                            if (v != null && v in 0..59) {
+                                onMinuteChange(v)
+                                coroutineScope.launch { minuteListState.animateScrollToItem(v) }
+                            }
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                    singleLine = true,
+                    textStyle = TextStyle(fontSize = 48.sp, fontFamily = JetBrainsMono, fontWeight = FontWeight.Black, color = textPrimary),
+                    cursorBrush = SolidColor(accentColor),
+                    modifier = Modifier.width(80.dp),
+                    decorationBox = { inner -> inner() }
+                )
+            } else {
+                Text(
+                    text = "%02d".format(selectedMinute),
+                    fontFamily = JetBrainsMono, fontSize = 48.sp, fontWeight = FontWeight.Black,
+                    color = textPrimary,
+                    modifier = Modifier.clickable { editingField = "minute"; inputText = "%02d".format(selectedMinute) }
+                )
+            }
+        }
+
+        if (editingField != null) {
+            Text("Tap number or type", fontSize = 10.sp, color = textSecondary.copy(alpha = 0.6f), modifier = Modifier.padding(top = 4.dp))
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        Row(modifier = Modifier.fillMaxWidth().height(180.dp), horizontalArrangement = Arrangement.Center) {
+            WheelColumn(items = hours, selected = selectedHour, listState = hourListState, accentColor = accentColor, textPrimary = textPrimary, textSecondary = textSecondary, cardBg = cardBg, modifier = Modifier.weight(1f))
+            Text(":", fontFamily = JetBrainsMono, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = textSecondary, modifier = Modifier.align(Alignment.CenterVertically))
+            WheelColumn(items = minutes, selected = selectedMinute, listState = minuteListState, accentColor = accentColor, textPrimary = textPrimary, textSecondary = textSecondary, cardBg = cardBg, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun WheelColumn(items: List<Int>, selected: Int, listState: LazyListState, accentColor: Color, textPrimary: Color, textSecondary: Color, cardBg: Color, modifier: Modifier = Modifier) {
+    Box(modifier = modifier) {
+        Box(modifier = Modifier.fillMaxWidth().height(44.dp).align(Alignment.Center).clip(RoundedCornerShape(10.dp)).background(accentColor.copy(alpha = 0.12f)))
+        Box(modifier = Modifier.fillMaxWidth().height(44.dp).align(Alignment.TopCenter).background(Brush.verticalGradient(listOf(cardBg, Color.Transparent))))
+        Box(modifier = Modifier.fillMaxWidth().height(44.dp).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, cardBg))))
+        LazyColumn(state = listState, contentPadding = PaddingValues(vertical = 68.dp), modifier = Modifier.fillMaxSize()) {
+            items(items.size) { index ->
+                val isSelected = index == selected
+                Box(modifier = Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.Center) {
+                    Text(text = "%02d".format(index), fontFamily = JetBrainsMono, fontSize = if (isSelected) 24.sp else 18.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, color = if (isSelected) accentColor else textSecondary.copy(alpha = 0.5f))
+                }
+            }
+        }
     }
 }

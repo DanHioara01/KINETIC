@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -44,6 +45,9 @@ fun WelcomeScreen(
     onFinished: () -> Unit
 ) {
     var phase by remember { mutableIntStateOf(0) }
+    val context = LocalContext.current
+    val soundPrefs = remember { context.getSharedPreferences("session_prefs", android.content.Context.MODE_PRIVATE) }
+    val soundPlayer = remember { WelcomeSoundPlayer(context, soundPrefs.getBoolean("welcome_sound_enabled", true)) }
 
     // Theme-aware colors
     val bgColor = if (isDark) Color(0xFF121212) else LightBackground
@@ -95,17 +99,40 @@ fun WelcomeScreen(
     var dnaVisible by remember { mutableStateOf(false) }
     var cardVisible by remember { mutableStateOf(false) }
 
+    val soundEnabled = remember { context.getSharedPreferences("session_prefs", android.content.Context.MODE_PRIVATE).getBoolean("welcome_sound_enabled", true) }
+
     LaunchedEffect(Unit) {
-        phase = 1
-        dnaVisible = true
-        cardVisible = true
-        for (i in 1..kineticText.length) {
-            visibleChars = i
-            delay(260)
+        if (soundEnabled) {
+            // Sound on: full cinematic timeline
+            soundPlayer.startBackground()
+            phase = 1
+            dnaVisible = true
+            cardVisible = true
+            for (i in 1..kineticText.length) {
+                visibleChars = i
+                soundPlayer.playWhoosh()
+                delay(260)
+            }
+            soundPlayer.playBassDrop()
+            delay(800)
+            soundPlayer.playCardReveal()
+            delay(1800)
+            phase = 2
+            soundPlayer.fadeOut(2000)
+            delay(600)
+            soundPlayer.release()
+            onFinished()
+        } else {
+            // Sound off: fast path with loading
+            phase = 1
+            dnaVisible = true
+            cardVisible = true
+            for (i in 1..kineticText.length) {
+                visibleChars = i
+                delay(150) // faster
+            }
+            onFinished()
         }
-        delay(2600)
-        phase = 2
-        onFinished()
     }
 
     // DNA fade + slide
@@ -230,6 +257,7 @@ fun WelcomeScreen(
                 textColorPrimary = textColorPrimary,
                 textColorSecondary = textColorSecondary
             )
+
         }
     }
 }

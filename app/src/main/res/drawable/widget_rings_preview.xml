@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Outer ring: red (steps) -->
+    <item>
+        <shape android:shape="oval">
+            <stroke android:width="5dp" android:color="#FFFF3B30" />
+            <size android:width="76dp" android:height="76dp" />
+        </shape>
+    </item>
+    <!-- Middle ring: green (active time) — smaller via inset -->
+    <item android:left="12dp" android:top="12dp" android:right="12dp" android:bottom="12dp">
+        <shape android:shape="oval">
+            <stroke android:width="5dp" android:color="#FF34C759" />
+            <size android:width="52dp" android:height="52dp" />
+        </shape>
+    </item>
+    <!-- Inner ring: blue (calories) — smallest via inset -->
+    <item android:left="24dp" android:top="24dp" android:right="24dp" android:bottom="24dp">
+        <shape android:shape="oval">
+            <stroke android:width="5dp" android:color="#FF0A84FF" />
+            <size android:width="28dp" android:height="28dp" />
+        </shape>
+    </item>
+</layer-list>

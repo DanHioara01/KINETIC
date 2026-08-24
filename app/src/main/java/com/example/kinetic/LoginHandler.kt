@@ -26,14 +26,49 @@ class LoginHandler(
     private fun LoginResult.completeLogin(method: String) {
         preferencesManager.setLoggedIn(true)
         preferencesManager.setLoginMethod(method)
-        userProfileManager.createOrUpdateProfile(
-            name = this.name,
-            photoUri = this.photoUri,
-            userId = this.userId
-        )
-        // Notify the reactive userId provider so all collectors re-query
+        // Reset sync timestamps so initialSync does a full pull from server.
+        // Without this, a re-login with the same account would skip data
+        // because the "since" timestamp from the previous session persists.
+        resetSyncTimestamps()
+        // Also clear syncUuid flags so pushAllToServer re-pushes all local data.
+        // This handles server data loss (e.g. Render redeployment wiping SQLite).
+        try {
+            val db = AppDatabase.getDatabase(context)
+            val prefs = PreferencesManager(context, userProfileManager)
+            val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+            kotlinx.coroutines.runBlocking { syncRepo.forceResetSyncState(this@completeLogin.userId) }
+        } catch (e: Exception) {
+            Log.e(TAG, "completeLogin: forceResetSyncState failed", e)
+        }
+        val existingProfile = userProfileManager.getProfile(this.userId)
+        if (existingProfile != null) {
+            userProfileManager.createOrUpdateProfile(
+                name = existingProfile.name.ifBlank { this.name },
+                photoUri = existingProfile.photoUri.ifBlank { this.photoUri },
+                userId = this.userId,
+                bio = existingProfile.bio
+            )
+        } else {
+            userProfileManager.createOrUpdateProfile(
+                name = this.name,
+                photoUri = this.photoUri,
+                userId = this.userId
+            )
+        }
         CurrentUserProvider.getInstance().refresh()
         syncToFirestoreAndBackend(this.userId, this.name, this.photoUri, method)
+    }
+
+    private fun resetSyncTimestamps() {
+        val tables = listOf(
+            "antrenamente", "exercitii", "exercises", "templates",
+            "template_exercises", "personal_records", "muscle_recovery",
+            "exercise_metadata", "biometric_entries", "food_entries",
+            "cardio_routes", "rest_days"
+        )
+        for (table in tables) {
+            preferencesManager.setLastSyncTimestamp(table, 0L)
+        }
     }
 
     private fun syncToFirestoreAndBackend(userId: String, name: String, photoUri: String, method: String) {
@@ -66,12 +101,24 @@ class LoginHandler(
         val passErr = authManager.validatePassword(password)
         if (passErr != null) return Result.failure(AuthManager.AuthException(passErr, passErr))
 
+        val oldUserId = userProfileManager.getOwnUserId()
         val authResult = authManager.signInWithEmail(email, password)
         return authResult.map { firebaseUser ->
+            val newUserId = firebaseUser.uid
+            if (oldUserId != newUserId && oldUserId != "local_user" && oldUserId.isNotBlank()) {
+                try {
+                    val db = AppDatabase.getDatabase(context)
+                    val prefs = PreferencesManager(context, userProfileManager)
+                    val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                    syncRepo.migrateLocalDataToNewUser(oldUserId, newUserId)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
             val name = firebaseUser.displayName ?: email.substringBefore("@")
             val photo = firebaseUser.photoUrl?.toString() ?: ""
             val result = LoginResult(
-                userId = firebaseUser.uid,
+                userId = newUserId,
                 name = name,
                 photoUri = photo
             )
@@ -83,12 +130,31 @@ class LoginHandler(
     // ── Google ────────────────────────────────────────────────────────
 
     suspend fun loginWithGoogle(idToken: String): Result<LoginResult> {
+        val oldUserId = userProfileManager.getOwnUserId()
+        Log.d(TAG, "loginWithGoogle: oldUserId=$oldUserId")
         val authResult = authManager.signInWithGoogle(idToken)
         return authResult.map { firebaseUser ->
+            val newUserId = firebaseUser.uid
+            Log.d(TAG, "loginWithGoogle: newUserId=$newUserId")
+            // Migrate local data if the UID changed (guest → Google upgrade)
+            if (oldUserId != newUserId && oldUserId != "local_user" && oldUserId.isNotBlank()) {
+                Log.d(TAG, "loginWithGoogle: migrating data from $oldUserId to $newUserId")
+                try {
+                    val db = AppDatabase.getDatabase(context)
+                    val prefs = PreferencesManager(context, userProfileManager)
+                    val syncRepo = SyncRepository(db, NetworkClient.api, prefs)
+                    syncRepo.migrateLocalDataToNewUser(oldUserId, newUserId)
+                    Log.d(TAG, "loginWithGoogle: migration complete")
+                } catch (e: Exception) {
+                    Log.e(TAG, "loginWithGoogle: migration failed", e)
+                }
+            } else {
+                Log.d(TAG, "loginWithGoogle: no migration needed (same UID or fresh install)")
+            }
             val name = firebaseUser.displayName ?: "Google User"
             val photo = firebaseUser.photoUrl?.toString() ?: ""
             val result = LoginResult(
-                userId = firebaseUser.uid,
+                userId = newUserId,
                 name = name,
                 photoUri = photo
             )

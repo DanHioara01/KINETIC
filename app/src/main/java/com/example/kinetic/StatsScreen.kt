@@ -7,6 +7,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -83,6 +84,8 @@ fun StatsScreen(
     isLbs: Boolean,
     strings: LanguageManager.Strings,
     weeklyTopExercise: String?,
+    weekVolume: Double = 0.0,
+    weekWorkoutCount: Int = 0,
     weeklyTotalKg: Double,
     paddingValues: PaddingValues = PaddingValues(0.dp),
     onExerciseHistoryClick: (String) -> Unit = {},
@@ -131,12 +134,12 @@ fun StatsScreen(
 
     val muscleData = remember(allWorkouts, allExercisesList) { computeMuscleGroupAnalytics(allWorkouts, allExercisesList) }
     val weeklyData = remember(allWorkouts, allExercisesList) { computeWeeklyProgress(allWorkouts, allExercisesList) }
-    val exerciseData = remember(allExercisesList, allWorkouts) { computeExerciseProgress(allExercisesList, allWorkouts) }
+    val exerciseDetails = remember(allExercisesList) { computeExerciseDetails(allExercisesList) }
     val personalBests = remember(allExercisesList, allWorkouts) { computePersonalBests(allExercisesList, allWorkouts) }
     val totalVolume = muscleData.sumOf { it.volume }
     val totalSessions = allWorkouts.size
     val newPBs = personalBests.count { it.isNew }
-    val totalSets = allExercisesList.size
+    val totalExercises = allExercisesList.groupBy { it.numeExercitiu }.size
     val totalMinutes = allWorkouts.sumOf { it.durationMs } / 60000.0
 
     LaunchedEffect(selectedExercise) {
@@ -254,11 +257,9 @@ fun StatsScreen(
         accent, palette.bl, palette.pu, palette.am, palette.rs, Color(0xFF22D3EE), Color(0xFFF97316), Color(0xFF34D399), Color(0xFFE879F9)
     )
 
-    // Weekly goals from real data
-    val weekVolume = weeklyData.lastOrNull()?.volume ?: 0.0
-    val weekSessions = weeklyData.lastOrNull()?.sessions ?: 0
+    // Weekly goals — unified with dashboard data
     val goals = listOf(
-        WeeklyGoalUi(strings.workoutsLabel, ((weekSessions.toFloat() / 5f) * 100).toInt().coerceIn(0, 100), "$weekSessions ${strings.sessions}", "5", accent),
+        WeeklyGoalUi(strings.workoutsLabel, ((weekWorkoutCount.toFloat() / 5f) * 100).toInt().coerceIn(0, 100), "$weekWorkoutCount ${strings.sessions}", "5", accent),
         WeeklyGoalUi(strings.volumeLabel, ((weekVolume / 5000.0) * 100).toInt().coerceIn(0, 100), "${formatKg(weekVolume)} kg", "5,000 kg", palette.gn),
         WeeklyGoalUi(strings.currentStreakLabel, ((currentStreak.toFloat() / maxOf(bestStreak, 7)) * 100).toInt().coerceIn(0, 100), "$currentStreak ${strings.days}", "${maxOf(bestStreak, 7)} ${strings.days}", palette.am)
     )
@@ -312,7 +313,7 @@ fun StatsScreen(
         currentChart = currentData,
         totalSessions = totalSessions,
         totalMinutes = totalMinutes,
-        totalSets = totalSets,
+        totalExercises = totalExercises,
         currentStreak = currentStreak,
         bestStreak = bestStreak,
         badgeCount = badgeCount,
@@ -323,7 +324,8 @@ fun StatsScreen(
         weeklyTopExercise = weeklyTopExercise,
         onExerciseHistoryClick = onExerciseHistoryClick,
         pbUi = pbUi,
-        goals = goals
+        goals = goals,
+        exerciseDetails = exerciseDetails
     )
 }
 
@@ -354,7 +356,7 @@ private fun StatsScreenContent(
     currentChart: ChartData?,
     totalSessions: Int,
     totalMinutes: Double,
-    totalSets: Int,
+    totalExercises: Int,
     currentStreak: Int,
     bestStreak: Int,
     badgeCount: Int,
@@ -363,14 +365,17 @@ private fun StatsScreenContent(
     radarColors: List<Color>,
     muscleUi: List<MuscleVolumeUi>,
     weeklyTopExercise: String?,
+    weekVolume: Double = 0.0,
+    weekWorkoutCount: Int = 0,
     onExerciseHistoryClick: (String) -> Unit,
     pbUi: List<PersonalBestUi>,
-    goals: List<WeeklyGoalUi>
+    goals: List<WeeklyGoalUi>,
+    exerciseDetails: List<ExerciseDetail>
 ) {
     var visibleItems by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
         // Fade-in rapid: toate secțiunile apar simultan (300ms), fără stagger
-        visibleItems = 16
+        visibleItems = 19
     }
 
     LazyColumn(
@@ -427,11 +432,19 @@ private fun StatsScreenContent(
                         )
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = textSecondary, modifier = Modifier.size(18.dp))
                     }
-                    DropdownMenu(expanded = showExerciseDropdown, onDismissRequest = { onToggleDropdown() }) {
-                        DropdownMenuItem(text = { Text(strings.allExercises) }, onClick = { onSelectExercise(null) })
+                    DropdownMenu(
+                        expanded = showExerciseDropdown,
+                        onDismissRequest = { onToggleDropdown() },
+                        containerColor = Color(0xFF2A2A30),
+                        tonalElevation = 4.dp
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(strings.allExercises, color = Color.White, fontSize = 13.sp) },
+                            onClick = { onSelectExercise(null) }
+                        )
                         allExerciseNames.forEach { name ->
                             DropdownMenuItem(
-                                text = { Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                text = { Text(name, color = Color.White, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                 onClick = { onSelectExercise(name) }
                             )
                         }
@@ -454,7 +467,7 @@ private fun StatsScreenContent(
                     currentChart = currentChart,
                     totalSessions = totalSessions,
                     totalMinutes = totalMinutes,
-                    totalSets = totalSets,
+                    totalExercises = totalExercises,
                     textPrimary = textPrimary,
                     textSecondary = textSecondary,
                     textTertiary = textTertiary,
@@ -465,14 +478,24 @@ private fun StatsScreenContent(
                     p = palette
                 )
             }
-            Spacer(Modifier.height(36.dp))
+            Spacer(Modifier.height(32.dp))
+            }
+        }
+
+        // Activity section title
+        item {
+            AnimatedVisibility(
+                visible = visibleItems > 3,
+                enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
+            ) {
+            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) { SectionTitle(strings.activity, textSecondary) }
             }
         }
 
         // Ring trio
         item {
             AnimatedVisibility(
-                visible = visibleItems > 3,
+                visible = visibleItems > 4,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
@@ -489,14 +512,14 @@ private fun StatsScreenContent(
                     p = palette
                 )
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(24.dp))
             }
         }
 
         // Heatmap
         item {
             AnimatedVisibility(
-                visible = visibleItems > 4,
+                visible = visibleItems > 5,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) { SectionTitle(strings.thisMonth, textSecondary) }
@@ -504,20 +527,20 @@ private fun StatsScreenContent(
         }
         item {
             AnimatedVisibility(
-                visible = visibleItems > 5,
+                visible = visibleItems > 6,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
                 HeatmapCard(heatmapData, strings, cardBg, cardBorder, accent, textTertiary, textSecondary, palette)
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(24.dp))
             }
         }
 
         // Radar
         item {
             AnimatedVisibility(
-                visible = visibleItems > 6,
+                visible = visibleItems > 7,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) { SectionTitle(strings.muscleGroups, textSecondary) }
@@ -525,18 +548,20 @@ private fun StatsScreenContent(
         }
         item {
             AnimatedVisibility(
-                visible = visibleItems > 7,
+                visible = visibleItems > 8,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
-            RadarCard(radarGroups, radarColors, cardBg, cardBorder, textSecondary, strings, palette)
-            Spacer(Modifier.height(14.dp))
+            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+                RadarCard(radarGroups, radarColors, cardBg, cardBorder, textSecondary, strings, palette)
+            }
+            Spacer(Modifier.height(24.dp))
             }
         }
 
         // Volume bars
         item {
             AnimatedVisibility(
-                visible = visibleItems > 8,
+                visible = visibleItems > 9,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) { SectionTitle(strings.volumeLabel, textSecondary) }
@@ -544,20 +569,20 @@ private fun StatsScreenContent(
         }
         item {
             AnimatedVisibility(
-                visible = visibleItems > 9,
+                visible = visibleItems > 10,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
                 VolumeByMuscleCard(muscleUi, cardBg, cardBorder, textPrimary, textSecondary, palette)
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(24.dp))
             }
         }
 
         // Top exercise
         item {
             AnimatedVisibility(
-                visible = visibleItems > 10,
+                visible = visibleItems > 11,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) { SectionTitle(strings.mostTrained, textSecondary) }
@@ -565,20 +590,33 @@ private fun StatsScreenContent(
         }
         item {
             AnimatedVisibility(
-                visible = visibleItems > 11,
+                visible = visibleItems > 12,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
                 TopExerciseCard(weeklyTopExercise, onExerciseHistoryClick, strings, cardBg, cardBorder, textPrimary, textSecondary, textTertiary, accent, palette)
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(24.dp))
             }
+        }
+
+        // Exercise Details
+        item {
+            AnimatedVisibility(
+                visible = visibleItems > 13,
+                enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
+            ) {
+            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) { SectionTitle(strings.exercises, textSecondary) }
+            }
+        }
+        items(exerciseDetails.take(15)) { detail ->
+            ExerciseDetailRow(detail, cardBg, cardBorder, textPrimary, textSecondary, textTertiary, accent, palette, isLbs)
         }
 
         // PBs
         item {
             AnimatedVisibility(
-                visible = visibleItems > 12,
+                visible = visibleItems > 15,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) { SectionTitle(strings.pbsTab, textSecondary) }
@@ -586,20 +624,20 @@ private fun StatsScreenContent(
         }
         item {
             AnimatedVisibility(
-                visible = visibleItems > 13,
+                visible = visibleItems > 16,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
                 PersonalBestsCard(pbUi, cardBg, cardBorder, textPrimary, textSecondary, textTertiary, palette)
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(24.dp))
             }
         }
 
         // Goals
         item {
             AnimatedVisibility(
-                visible = visibleItems > 14,
+                visible = visibleItems > 17,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) { SectionTitle(strings.weeklyTab, textSecondary) }
@@ -607,13 +645,13 @@ private fun StatsScreenContent(
         }
         item {
             AnimatedVisibility(
-                visible = visibleItems > 15,
+                visible = visibleItems > 18,
                 enter = slideInVertically(initialOffsetY = { it / 4 }) + fadeIn(tween(300))
             ) {
             Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
                 WeeklyGoalsCard(goals, cardBg, cardBorder, textPrimary, textSecondary, palette)
             }
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(24.dp))
             }
         }
     }
@@ -684,7 +722,7 @@ private fun HeroVolumeCard(
     currentChart: ChartData?,
     totalSessions: Int,
     totalMinutes: Double,
-    totalSets: Int,
+    totalExercises: Int,
     textPrimary: Color,
     textSecondary: Color,
     textTertiary: Color,
@@ -732,22 +770,22 @@ private fun HeroVolumeCard(
             }
 
             // Mini stats
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MiniStat(p.gn, strings.workoutsLabel, "$totalSessions", textPrimary, textTertiary, Modifier.weight(1f), p)
                 MiniStat(p.bl, strings.duration, String.format("%.1f", totalMinutes / 60.0), textPrimary, textTertiary, Modifier.weight(1f), p)
-                MiniStat(p.pu, strings.sets, "$totalSets", textPrimary, textTertiary, Modifier.weight(1f), p)
+                MiniStat(p.pu, strings.exercises, "$totalExercises", textPrimary, textTertiary, Modifier.weight(1f), p)
             }
 
             // Sparkline
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
             val sparkValues = currentChart?.values?.map { it } ?: emptyList()
             Canvas(modifier = Modifier.fillMaxWidth().height(52.dp)) {
                 val w = size.width
                 val h = size.height
                 if (sparkValues.size < 2 || sparkValues.maxOrNull() == 0.0) {
                     drawLine(
-                        color = textTertiary.copy(alpha = 0.3f),
+                        color = textSecondary.copy(alpha = 0.3f),
                         start = Offset(0f, h * 0.7f),
                         end = Offset(w, h * 0.7f),
                         strokeWidth = 2.dp.toPx()
@@ -789,6 +827,100 @@ private fun MiniStat(color: Color, label: String, value: String, textPrimary: Co
             Text(label, fontSize = 9.sp, letterSpacing = 0.5.sp, color = textTertiary)
             Text(value, fontFamily = JetBrainsMono, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = color)
         }
+    }
+}
+
+
+// ── Exercise Detail Row ─────────────────────────────────────
+@Composable
+private fun ExerciseDetailRow(
+    detail: ExerciseDetail,
+    cardBg: Color,
+    cardBorder: Color,
+    textPrimary: Color,
+    textSecondary: Color,
+    textTertiary: Color,
+    accent: Color,
+    p: AppPalette,
+    isLbs: Boolean
+) {
+    val volumeDisplay = if (isLbs) detail.totalVolume * 2.20462 else detail.totalVolume
+    val maxWeightDisplay = if (isLbs) detail.maxWeight * 2.20462 else detail.maxWeight
+    val unit = if (isLbs) "lbs" else "kg"
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color(0xFF1E1E24))
+            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(14.dp))
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            // Exercise name + volume
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = detail.name,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = "${String.format("%.0f", volumeDisplay)} $unit",
+                    fontFamily = JetBrainsMono,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = accent
+                )
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            // Detail row: reps, weight, sets
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                DetailChip(
+                    label = "${detail.totalReps} reps",
+                    color = p.gn,
+                    textTertiary = textTertiary
+                )
+                DetailChip(
+                    label = detail.weightProgression,
+                    color = p.bl,
+                    textTertiary = textTertiary
+                )
+                DetailChip(
+                    label = "${detail.setsCount} sets",
+                    color = p.pu,
+                    textTertiary = textTertiary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailChip(label: String, color: Color, textTertiary: Color) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(modifier = Modifier.size(5.dp).clip(CircleShape).background(color))
+        Text(
+            text = label,
+            fontFamily = JetBrainsMono,
+            fontSize = 11.sp,
+            color = Color.White.copy(alpha = 0.7f)
+        )
     }
 }
 
@@ -1009,7 +1141,7 @@ private fun RadarCard(
         cornerRadius = 18.dp
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             BoxWithConstraints(
@@ -1017,7 +1149,7 @@ private fun RadarCard(
                 contentAlignment = Alignment.Center
             ) {
                 // Radarul folosește toată lățimea cardului (limită rezonabilă pe tablete)
-                val radarSize = minOf(maxWidth, 360.dp)
+                val radarSize = minOf(maxWidth, 280.dp)
                 Box(
                     modifier = Modifier.size(radarSize).aspectRatio(1f),
                     contentAlignment = Alignment.Center

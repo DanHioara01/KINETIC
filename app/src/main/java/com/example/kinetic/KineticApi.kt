@@ -13,7 +13,7 @@ import com.google.firebase.auth.FirebaseAuth
 interface KineticApi {
     // Users
     @POST("users")
-    suspend fun upsertUser(@Body body: Map<String, String>): Map<String, Any>
+    suspend fun upsertUser(@Body body: Any): Map<String, Any>
 
     @GET("users/{id}")
     suspend fun getUser(@Path("id") id: String): Map<String, Any>
@@ -23,26 +23,26 @@ interface KineticApi {
 
     // Friendships
     @POST("friends/request")
-    suspend fun sendFriendRequest(@Body body: Map<String, String>): Map<String, Any>
+    suspend fun sendFriendRequest(@Body body: Any): Map<String, Any>
 
     @GET("friends/incoming/{userId}")
     suspend fun getIncomingRequests(@Path("userId") userId: String): List<FriendshipEntity>
 
     @POST("friends/accept")
-    suspend fun acceptFriendRequest(@Body body: Map<String, String>): Map<String, Any>
+    suspend fun acceptFriendRequest(@Body body: Any): Map<String, Any>
 
     @POST("friends/reject")
-    suspend fun rejectFriendRequest(@Body body: Map<String, String>): Map<String, Any>
+    suspend fun rejectFriendRequest(@Body body: Any): Map<String, Any>
 
     @POST("friends/remove")
-    suspend fun removeFriend(@Body body: Map<String, String>): Map<String, Any>
+    suspend fun removeFriend(@Body body: Any): Map<String, Any>
 
     @GET("friends/{userId}")
     suspend fun getFriends(@Path("userId") userId: String): List<FriendshipEntity>
 
     // Feed & Posts
     @POST("posts")
-    suspend fun createPost(@Body body: Map<String, String>): Map<String, Any>
+    suspend fun createPost(@Body body: Any): Map<String, Any>
 
     @GET("feed")
     suspend fun getFeed(@Query("limit") limit: Int): List<FeedPostEntity>
@@ -52,13 +52,13 @@ interface KineticApi {
 
     // Comments & Likes
     @POST("comments")
-    suspend fun comment(@Body body: Map<String, String>): Map<String, Any>
+    suspend fun comment(@Body body: Any): Map<String, Any>
 
     @GET("comments/{postId}")
     suspend fun getComments(@Path("postId") postId: Long): List<CommentEntity>
 
     @POST("posts/{postId}/like")
-    suspend fun likePost(@Path("postId") postId: Long, @Body body: Map<String, String>): Map<String, Any>
+    suspend fun likePost(@Path("postId") postId: Long, @Body body: Any): Map<String, Any>
 
     @DELETE("posts/{postId}/like")
     suspend fun unlikePost(@Path("postId") postId: Long, @Query("userId") userId: String): Map<String, Any>
@@ -71,14 +71,14 @@ interface KineticApi {
 
     // Leaderboard
     @POST("leaderboard")
-    suspend fun upsertLeaderboardEntry(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertLeaderboardEntry(@Body body: Any): Map<String, Any>
 
     @GET("leaderboard")
     suspend fun getLeaderboard(@Query("metric") metric: String, @Query("limit") limit: Int): LeaderboardResponse
 
     // Streaks & Workout Logging (Gamification)
     @POST("workouts/log")
-    suspend fun logWorkout(@Body body: Map<String, Any>): WorkoutLogResponse
+    suspend fun logWorkout(@Body body: Any): WorkoutLogResponse
 
     @GET("streaks/{userId}")
     suspend fun getStreak(@Path("userId") userId: String): StreakEntity
@@ -91,17 +91,17 @@ interface KineticApi {
     suspend fun getBadgesForUser(@Path("userId") userId: String): List<UserBadgeEntity>
 
     @POST("badges/award")
-    suspend fun awardBadge(@Body body: Map<String, String>): Map<String, Any>
+    suspend fun awardBadge(@Body body: Any): Map<String, Any>
 
     // === DATA SYNC ===
     @GET("sync/antrenamente/{userId}")
     suspend fun syncAntrenamente(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/antrenamente/upsert")
-    suspend fun upsertAntrenament(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertAntrenament(@Body body: Any): Map<String, Any>
 
     @POST("sync/antrenamente/bulk")
-    suspend fun bulkAntrenamente(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkAntrenamente(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/antrenamente/{uuid}")
     suspend fun deleteAntrenament(@Path("uuid") uuid: String): Map<String, Any>
@@ -110,10 +110,10 @@ interface KineticApi {
     suspend fun syncExercitii(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/exercitii/upsert")
-    suspend fun upsertExercitiu(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertExercitiu(@Body body: Any): Map<String, Any>
 
     @POST("sync/exercitii/bulk")
-    suspend fun bulkExercitii(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkExercitii(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/exercitii/{uuid}")
     suspend fun deleteExercitiu(@Path("uuid") uuid: String): Map<String, Any>
@@ -122,10 +122,10 @@ interface KineticApi {
     suspend fun syncExercises(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/exercises/upsert")
-    suspend fun upsertExercise(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertExercise(@Body body: Any): Map<String, Any>
 
     @POST("sync/exercises/bulk")
-    suspend fun bulkExercises(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkExercises(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/exercises/{uuid}")
     suspend fun deleteExercise(@Path("uuid") uuid: String): Map<String, Any>
@@ -134,10 +134,10 @@ interface KineticApi {
     suspend fun syncTemplates(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/templates/upsert")
-    suspend fun upsertTemplate(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertTemplate(@Body body: Any): Map<String, Any>
 
     @POST("sync/templates/bulk")
-    suspend fun bulkTemplates(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkTemplates(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/templates/{uuid}")
     suspend fun deleteTemplate(@Path("uuid") uuid: String): Map<String, Any>
@@ -146,10 +146,10 @@ interface KineticApi {
     suspend fun syncTemplateExercises(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/template_exercises/upsert")
-    suspend fun upsertTemplateExercise(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertTemplateExercise(@Body body: Any): Map<String, Any>
 
     @POST("sync/template_exercises/bulk")
-    suspend fun bulkTemplateExercises(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkTemplateExercises(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/template_exercises/{uuid}")
     suspend fun deleteTemplateExercise(@Path("uuid") uuid: String): Map<String, Any>
@@ -158,10 +158,10 @@ interface KineticApi {
     suspend fun syncPersonalRecords(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/personal_records/upsert")
-    suspend fun upsertPersonalRecord(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertPersonalRecord(@Body body: Any): Map<String, Any>
 
     @POST("sync/personal_records/bulk")
-    suspend fun bulkPersonalRecords(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkPersonalRecords(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/personal_records/{uuid}")
     suspend fun deletePersonalRecord(@Path("uuid") uuid: String): Map<String, Any>
@@ -170,10 +170,10 @@ interface KineticApi {
     suspend fun syncMuscleRecovery(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/muscle_recovery/upsert")
-    suspend fun upsertMuscleRecovery(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertMuscleRecovery(@Body body: Any): Map<String, Any>
 
     @POST("sync/muscle_recovery/bulk")
-    suspend fun bulkMuscleRecovery(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkMuscleRecovery(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/muscle_recovery/{uuid}")
     suspend fun deleteMuscleRecovery(@Path("uuid") uuid: String): Map<String, Any>
@@ -182,10 +182,10 @@ interface KineticApi {
     suspend fun syncExerciseMetadata(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/exercise_metadata/upsert")
-    suspend fun upsertExerciseMetadata(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertExerciseMetadata(@Body body: Any): Map<String, Any>
 
     @POST("sync/exercise_metadata/bulk")
-    suspend fun bulkExerciseMetadata(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkExerciseMetadata(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/exercise_metadata/{uuid}")
     suspend fun deleteExerciseMetadata(@Path("uuid") uuid: String): Map<String, Any>
@@ -194,10 +194,10 @@ interface KineticApi {
     suspend fun syncBiometricEntries(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/biometric_entries/upsert")
-    suspend fun upsertBiometricEntry(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertBiometricEntry(@Body body: Any): Map<String, Any>
 
     @POST("sync/biometric_entries/bulk")
-    suspend fun bulkBiometricEntries(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkBiometricEntries(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/biometric_entries/{uuid}")
     suspend fun deleteBiometricEntry(@Path("uuid") uuid: String): Map<String, Any>
@@ -206,10 +206,10 @@ interface KineticApi {
     suspend fun syncFoodEntries(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/food_entries/upsert")
-    suspend fun upsertFoodEntry(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertFoodEntry(@Body body: Any): Map<String, Any>
 
     @POST("sync/food_entries/bulk")
-    suspend fun bulkFoodEntries(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkFoodEntries(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/food_entries/{uuid}")
     suspend fun deleteFoodEntry(@Path("uuid") uuid: String): Map<String, Any>
@@ -218,10 +218,10 @@ interface KineticApi {
     suspend fun syncCardioRoutes(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/cardio_routes/upsert")
-    suspend fun upsertCardioRoute(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertCardioRoute(@Body body: Any): Map<String, Any>
 
     @POST("sync/cardio_routes/bulk")
-    suspend fun bulkCardioRoutes(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkCardioRoutes(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/cardio_routes/{uuid}")
     suspend fun deleteCardioRoute(@Path("uuid") uuid: String): Map<String, Any>
@@ -230,10 +230,10 @@ interface KineticApi {
     suspend fun syncRestDays(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/rest_days/upsert")
-    suspend fun upsertRestDay(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertRestDay(@Body body: Any): Map<String, Any>
 
     @POST("sync/rest_days/bulk")
-    suspend fun bulkRestDays(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkRestDays(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/rest_days/{uuid}")
     suspend fun deleteRestDay(@Path("uuid") uuid: String): Map<String, Any>
@@ -242,10 +242,10 @@ interface KineticApi {
     suspend fun syncAiChatHistory(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/ai_chat_history/upsert")
-    suspend fun upsertAiChatHistory(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertAiChatHistory(@Body body: Any): Map<String, Any>
 
     @POST("sync/ai_chat_history/bulk")
-    suspend fun bulkAiChatHistory(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkAiChatHistory(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/ai_chat_history/{uuid}")
     suspend fun deleteAiChatHistory(@Path("uuid") uuid: String): Map<String, Any>
@@ -254,10 +254,10 @@ interface KineticApi {
     suspend fun syncSubscriptions(@Path("userId") userId: String, @Query("since") since: Long = 0): List<Map<String, Any>>
 
     @POST("sync/subscriptions/upsert")
-    suspend fun upsertSubscription(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun upsertSubscription(@Body body: Any): Map<String, Any>
 
     @POST("sync/subscriptions/bulk")
-    suspend fun bulkSubscriptions(@Body body: Map<String, Any>): Map<String, Any>
+    suspend fun bulkSubscriptions(@Body body: Any): Map<String, Any>
 
     @DELETE("sync/subscriptions/{uuid}")
     suspend fun deleteSubscription(@Path("uuid") uuid: String): Map<String, Any>
