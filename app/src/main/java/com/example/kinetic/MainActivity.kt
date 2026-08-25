@@ -670,6 +670,9 @@ fun MuscleGroupList(
     var showWeightGoal by remember { mutableStateOf(false) }
     var showBodyFatCalculator by remember { mutableStateOf(false) }
     var showReadiness by remember { mutableStateOf(false) }
+    var showMessages by remember { mutableStateOf(false) }
+    val msgDao = AppDatabase.getDatabase(context).messageDao()
+    val unreadMessagesCount by msgDao.observeUnreadCount().collectAsState(initial = 0)
 
     // Open GPS Cardio when the tracking notification is tapped (service keeps running in background)
     val mainActivity = context as? MainActivity
@@ -1555,6 +1558,7 @@ fun MuscleGroupList(
                     badgeCount = badgeCount,
                     currentStreak = currentStreak,
                     pendingRequestsCount = pendingRequestsCount,
+                    unreadMessagesCount = unreadMessagesCount,
                     onNavigate = { page ->
                         currentPage = page
                         when (page) {
@@ -1573,6 +1577,7 @@ fun MuscleGroupList(
                             DrawerPage.WEIGHT_GOAL -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = true; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
                             DrawerPage.BODY_FAT_CALCULATOR -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = true; showReadiness = false; workoutNavController.popToWorkoutHome() }
                             DrawerPage.READINESS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = true; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.MESSAGES -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = false; showMessages = true; workoutNavController.popToWorkoutHome() }
                         }
                     },
                     onExportCsv = {
@@ -1927,6 +1932,23 @@ fun MuscleGroupList(
                             strings = strings,
                             modifier = Modifier.padding(pad)
                         )
+                    }
+                } else if (showMessages) {
+                    val msgDao = AppDatabase.getDatabase(context).messageDao()
+                    Scaffold(
+                        containerColor = surfaceBg,
+                        topBar = { KineticAppBar(onBack = { showMessages = false; currentPage = null }) }
+                    ) { pad ->
+                        Box(modifier = Modifier.padding(pad)) {
+                            MessagesScreen(
+                                messageDao = msgDao,
+                                accent = accent,
+                                textPrimary = textPrimary,
+                                textSecondary = textSecondary,
+                                cardBg = cardBg,
+                                isDark = isDark
+                            )
+                        }
                     }
                 } else if (showWorkoutAnalytics) {
                     if (subscription.hasAccess(PremiumFeature.WORKOUT_ANALYTICS, userEmail)) {

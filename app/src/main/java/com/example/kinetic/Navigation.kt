@@ -22,6 +22,7 @@ sealed class DrawerScreen(val route: String, val icon: ImageVector, val labelKey
     data object SavedExercises : DrawerScreen("drawer_saved_exercises", Icons.Default.Bookmark, "savedExercises")
     data object WeightGoal : DrawerScreen("drawer_weight_goal", Icons.Default.Flag, "weightGoal")
     data object BodyFatCalculator : DrawerScreen("drawer_body_fat_calculator", Icons.Default.MonitorWeight, "bodyFatCalculator")
+    data object Messages : DrawerScreen("drawer_messages", Icons.Default.MailOutline, "messages")
 }
 
 sealed class SubScreen(val route: String) {

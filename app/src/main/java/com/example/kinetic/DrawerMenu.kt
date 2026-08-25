@@ -50,7 +50,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 
-enum class DrawerPage { STATS, CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS, GPS_CARDIO, REST_DAYS, PLATE_CALCULATOR, ONE_RM_CALCULATOR, SAVED_EXERCISES, WEIGHT_GOAL, BODY_FAT_CALCULATOR, WORKOUT_ANALYTICS, READINESS }
+enum class DrawerPage { STATS, CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS, GPS_CARDIO, REST_DAYS, PLATE_CALCULATOR, ONE_RM_CALCULATOR, SAVED_EXERCISES, WEIGHT_GOAL, BODY_FAT_CALCULATOR, WORKOUT_ANALYTICS, READINESS, MESSAGES }
 
 fun DrawerPage.toDrawerScreen(): DrawerScreen = when (this) {
     DrawerPage.STATS -> DrawerScreen.Calendar
@@ -67,6 +67,7 @@ fun DrawerPage.toDrawerScreen(): DrawerScreen = when (this) {
     DrawerPage.BODY_FAT_CALCULATOR -> DrawerScreen.BodyFatCalculator
     DrawerPage.WORKOUT_ANALYTICS -> DrawerScreen.Calendar
     DrawerPage.READINESS -> DrawerScreen.Calendar
+    DrawerPage.MESSAGES -> DrawerScreen.Messages
 }
 
 fun DrawerScreen.toDrawerPage(): DrawerPage = when (this) {
@@ -79,6 +80,7 @@ fun DrawerScreen.toDrawerPage(): DrawerPage = when (this) {
     DrawerScreen.SavedExercises -> DrawerPage.SAVED_EXERCISES
     DrawerScreen.WeightGoal -> DrawerPage.WEIGHT_GOAL
     DrawerScreen.BodyFatCalculator -> DrawerPage.BODY_FAT_CALCULATOR
+    DrawerScreen.Messages -> DrawerPage.MESSAGES
 }
 
 data class LanguageOption(
@@ -115,6 +117,7 @@ fun DrawerMenu(
     badgeCount: Int = 0,
     currentStreak: Int = 0,
     pendingRequestsCount: Int = 0,
+    unreadMessagesCount: Int = 0,
     onNavigate: (DrawerPage) -> Unit,
     onExportCsv: () -> Unit,
     onImportCsv: () -> Unit,
@@ -420,6 +423,27 @@ fun DrawerMenu(
                     textSecondary = textSecondary,
                     iconBg = iconBg,
                     onClick = { onNavigate(DrawerPage.READINESS); onClose() }
+                )
+            }
+
+            // Messages section
+            GlassmorphismDrawerCard(
+                isDark = isDark,
+                headerLabel = "Messages",
+                textSecondary = textSecondary,
+                hazeState = hazeState
+            ) {
+                DrawerNavItem(
+                    icon = Icons.Default.MailOutline,
+                    label = "Messages",
+                    selected = currentPage == DrawerPage.MESSAGES,
+                    accent = accent,
+                    selectedBg = selectedBg,
+                    textPrimary = textPrimary,
+                    textSecondary = textSecondary,
+                    iconBg = iconBg,
+                    badge = unreadMessagesCount,
+                    onClick = { onNavigate(DrawerPage.MESSAGES); onClose() }
                 )
             }
 

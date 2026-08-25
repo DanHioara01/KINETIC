@@ -13,7 +13,7 @@ class StreakManager(private val db: AppDatabase) {
         val hoursSinceLast = TimeUnit.MILLISECONDS.toHours(now - existing.lastDate)
         val updated = when {
             hoursSinceLast < 24 -> existing
-            hoursSinceLast < 48 -> {
+            hoursSinceLast < 96 -> {
                 val newCurrent = existing.currentStreak + 1
                 existing.copy(
                     currentStreak = newCurrent,
@@ -24,5 +24,8 @@ class StreakManager(private val db: AppDatabase) {
             else -> existing.copy(currentStreak = 1, lastDate = now)
         }
         db.streakDao().upsert(updated)
+        if (updated.currentStreak > 1) {
+            MessagesHelper.addStreakMessage(db.messageDao(), updated.currentStreak)
+        }
     }
 }

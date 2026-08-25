@@ -77,18 +77,25 @@ class WelcomeSoundPlayer(context: Context, private val enabled: Boolean = true) 
         } catch (_: Exception) {}
     }
 
-    /** Gradually fade out the background over [durationMs] milliseconds */
-    fun fadeOut(durationMs: Long = 2000) {
-        val player = bgPlayer ?: return
-        val steps = 40
+    /** Gradually fade out the background over [durationMs] milliseconds, then call [onDone] */
+    fun fadeOut(durationMs: Long = 2000, onDone: (() -> Unit)? = null) {
+        val player = bgPlayer ?: run { onDone?.invoke(); return }
+        val steps = 60
         val stepDelay = durationMs / steps
         val startVol = 0.35f
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         for (i in 1..steps) {
             val factor = 1f - (i.toFloat() / steps)
-            val vol = startVol * factor * factor  // quadratic ease-out
+            val vol = startVol * factor * factor * factor  // cubic ease-out — smoother tail
             handler.postDelayed({
-                try { player.setVolume(vol, vol) } catch (_: Exception) {}
+                try {
+                    player.setVolume(vol, vol)
+                    if (i == steps) {
+                        // silence before release to avoid click
+                        player.setVolume(0f, 0f)
+                        onDone?.invoke()
+                    }
+                } catch (_: Exception) {}
             }, i * stepDelay)
         }
     }

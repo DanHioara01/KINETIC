@@ -118,8 +118,9 @@ fun WelcomeScreen(
             soundPlayer.playCardReveal()
             delay(1800)
             phase = 2
-            soundPlayer.fadeOut(2000)
-            delay(600)
+            var fadeDone = false
+            soundPlayer.fadeOut(2000) { fadeDone = true }
+            while (!fadeDone) delay(50)
             soundPlayer.release()
             onFinished()
         } else {
