@@ -80,6 +80,7 @@ data class DashboardUiState(
     val todayCardioDistance: Double,
     val todayCardioDuration: Long,
     val todayCardioCalories: Double,
+    val todayActiveDurationMs: Long,
     val totalSteps: Int
 )
 
@@ -225,7 +226,7 @@ fun DashboardScreen(
                         accent = p.ac,
                         iconBg = p.acs,
                         todayDistanceKm = state.todayCardioDistance,
-                        todayDurationMs = state.todayCardioDuration,
+                        todayDurationMs = state.todayActiveDurationMs,
                         todayCalories = state.todayCardioCalories,
                         stepsEstimate = state.totalSteps,
                         stepGoal = stepGoal,

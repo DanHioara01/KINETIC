@@ -10,6 +10,7 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.example.kinetic.MessagesHelper
 import java.util.Calendar
 
 class WaterReminderReceiver : BroadcastReceiver() {
@@ -65,6 +66,9 @@ class WaterReminderReceiver : BroadcastReceiver() {
 
         try {
             NotificationManagerCompat.from(context).notify(notificationIdForAlarm(alarm.id), notification)
+            // Also add to in-app messages
+            val db = AppDatabase.getDatabase(context)
+            MessagesHelper.addWaterReminder(db.messageDao())
         } catch (_: SecurityException) { }
     }
 

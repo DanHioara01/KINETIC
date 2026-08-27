@@ -208,7 +208,8 @@ fun AppBg(
 class KineticHeaderController(
     val isDark: Boolean,
     val onOpenMenu: () -> Unit,
-    val pendingRequestsCount: Int = 0
+    val pendingRequestsCount: Int = 0,
+    val hasUnreadMessages: Boolean = false
 )
 
 val LocalKineticHeader = staticCompositionLocalOf<KineticHeaderController?> { null }
@@ -274,6 +275,7 @@ fun KineticAppBar(
                 }
             } else {
                 val hasPending = (controller?.pendingRequestsCount ?: 0) > 0
+                val hasUnread = controller?.hasUnreadMessages == true
                 Box {
                     IconButton(onClick = controller?.onOpenMenu ?: {}) {
                         Icon(
@@ -288,10 +290,22 @@ fun KineticAppBar(
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .padding(top = 10.dp, end = 10.dp)
+                                .padding(top = 6.dp, end = 6.dp)
                                 .size(10.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFFEC0123))
+                                .border(2.dp, p.bg, CircleShape)
+                        )
+                    }
+                    // Dot verde pe hamburger când există mesaje necitite
+                    if (hasUnread) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = if (hasPending) 18.dp else 6.dp, end = 6.dp)
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF4CAF50))
                                 .border(2.dp, p.bg, CircleShape)
                         )
                     }

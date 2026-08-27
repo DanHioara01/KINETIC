@@ -936,6 +936,11 @@ fun MuscleGroupList(
         }
     }
 
+    // Active time tracking state (movement-based)
+    var todayActiveDurationMs by remember { mutableLongStateOf(0L) }
+    var isUserMoving by remember { mutableStateOf(false) }
+    var activeTimeStartMs by remember { mutableLongStateOf(0L) }
+
     // Android 10+ requires ACTIVITY_RECOGNITION to read the step counter.
     // Without it the sensor enable fails silently and steps stay at 0.
     var stepSensorPermissionGranted by remember {
@@ -967,6 +972,12 @@ fun MuscleGroupList(
 
         var lastPersistedSteps = -1
         var lastWidgetBroadcast = 0L
+        var lastStepChangeTimeMs = System.currentTimeMillis()
+        var lastMovementStepCount = -1
+        val MOVEMENT_TIMEOUT_MS = 5000L
+        // Load persisted active time for today
+        val todayActiveKey = "active_time_${todayKey()}"
+        todayActiveDurationMs = prefs.getLong(todayActiveKey, 0L)
         val listener = object : SensorEventListener {
             override fun onSensorChanged(event: SensorEvent) {
                 val totalSteps = event.values[0].toInt()
@@ -983,8 +994,30 @@ fun MuscleGroupList(
                 }
                 // Congratulation notification when the daily step goal is reached (once per day)
                 StepGoalNotifier.notifyIfGoalReached(context, pedometerSteps, stepGoal)
-                // Refresh the steps widget at most once a minute
+                // Active time: detect movement from step changes
                 val now = System.currentTimeMillis()
+                if (pedometerSteps > 0 && pedometerSteps != lastMovementStepCount) {
+                    lastMovementStepCount = pedometerSteps
+                    // Steps changed → user is moving
+                    if (!isUserMoving) {
+                        isUserMoving = true
+                        activeTimeStartMs = now
+                    }
+                    lastStepChangeTimeMs = now
+                } else if (isUserMoving && (now - lastStepChangeTimeMs > MOVEMENT_TIMEOUT_MS)) {
+                    // No steps for 5 seconds → user stopped moving
+                    isUserMoving = false
+                    val sessionMs = now - activeTimeStartMs
+                    if (sessionMs > 0) {
+                        val prev = prefs.getLong(todayActiveKey, 0L)
+                        prefs.edit().putLong(todayActiveKey, prev + sessionMs).apply()
+                        todayActiveDurationMs = prev + sessionMs
+                    }
+                } else if (!isUserMoving && pedometerSteps > 0) {
+                    // Update displayed active time even when paused (from persisted value)
+                    todayActiveDurationMs = prefs.getLong(todayActiveKey, 0L)
+                }
+                // Refresh the steps widget at most once a minute
                 if (now - lastWidgetBroadcast > 60_000L) {
                     lastWidgetBroadcast = now
                     refreshStepsWidget()
@@ -998,6 +1031,18 @@ fun MuscleGroupList(
         }
 
         onDispose {
+            // Persist active time when leaving
+            if (isUserMoving) {
+                val now = System.currentTimeMillis()
+                val sessionMs = now - activeTimeStartMs
+                if (sessionMs > 0) {
+                    val key = "active_time_${todayKey()}"
+                    val prev = prefs.getLong(key, 0L)
+                    prefs.edit().putLong(key, prev + sessionMs).apply()
+                    todayActiveDurationMs = prev + sessionMs
+                }
+                isUserMoving = false
+            }
             sensorManager.unregisterListener(listener)
         }
         }
@@ -1536,6 +1581,7 @@ fun MuscleGroupList(
             showWeightGoal -> { showWeightGoal = false; currentPage = null }
             showBodyFatCalculator -> { showBodyFatCalculator = false; currentPage = null }
             showReadiness -> { showReadiness = false; currentPage = null }
+            showMessages -> { showMessages = false; currentPage = null }
             currentPage != null -> currentPage = null
             currentDashboardTab != 0 -> currentDashboardTab = 0
             drawerState.isOpen -> { /* let drawer close itself */ }
@@ -1646,7 +1692,8 @@ fun MuscleGroupList(
             LocalKineticHeader provides KineticHeaderController(
                 isDark = isDark,
                 onOpenMenu = { scope.launch { drawerState.open() } },
-                pendingRequestsCount = pendingRequestsCount
+                pendingRequestsCount = pendingRequestsCount,
+                hasUnreadMessages = unreadMessagesCount > 0
             )
         ) {
         Scaffold(
@@ -1934,11 +1981,11 @@ fun MuscleGroupList(
                         )
                     }
                 } else if (showMessages) {
-                    val msgDao = AppDatabase.getDatabase(context).messageDao()
                     Scaffold(
                         containerColor = surfaceBg,
                         topBar = { KineticAppBar(onBack = { showMessages = false; currentPage = null }) }
                     ) { pad ->
+                    val msgDao = AppDatabase.getDatabase(context).messageDao()
                         Box(modifier = Modifier.padding(pad)) {
                             MessagesScreen(
                                 messageDao = msgDao,
@@ -2203,7 +2250,8 @@ fun MuscleGroupList(
                                     weeklyTopExercise = weeklyTopExercise,
                                     todayCardioDistance = todayCardioDistance,
                                     todayCardioDuration = todayCardioDuration,
-                                    todayCardioCalories = todayCardioCalories,
+                                    todayActiveDurationMs = todayActiveDurationMs + if (isUserMoving) (System.currentTimeMillis() - activeTimeStartMs) else 0L,
+                                    todayCardioCalories = todayCardioCalories + (totalSteps * 0.04).coerceAtLeast(0.0),
                                     totalSteps = totalSteps
                                 ),
                                 todayWorkout = todayWorkoutData.value,
@@ -3084,6 +3132,7 @@ fun MuscleGroupList(
                                                 showWeightGoal -> { showWeightGoal = false; currentPage = null }
                                                 showBodyFatCalculator -> { showBodyFatCalculator = false; currentPage = null }
                                                 showReadiness -> { showReadiness = false; currentPage = null }
+                                                showMessages -> { showMessages = false; currentPage = null }
                                                 currentPage != null -> currentPage = null
                                             }
                                         } else {

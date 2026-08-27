@@ -13,12 +13,12 @@ import androidx.core.app.NotificationManagerCompat
 import com.example.kinetic.MessagesHelper
 import java.util.Calendar
 
-class WorkoutReminderReceiver : BroadcastReceiver() {
+class GoalProgressReceiver : BroadcastReceiver() {
 
     companion object {
-        const val CHANNEL_ID = "workout_reminders"
-        const val NOTIFICATION_ID = 8800
-        const val REQUEST_CODE = 8800
+        const val CHANNEL_ID = "goal_progress"
+        const val NOTIFICATION_ID = 8803
+        const val REQUEST_CODE = 8803
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -29,25 +29,19 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
 
     private fun showNotification(context: Context) {
         val strings = LanguageManager.getStrings(context)
-
-        val userProfileManager = UserProfileManager(context)
-        val preferencesManager = PreferencesManager(context, userProfileManager)
-        val profile = preferencesManager.getOnboardingProfile()
-        val startDate = preferencesManager.getWorkoutStartDate()
-        val workout = WorkoutCycleGenerator.buildTodayWorkout(profile, startDate)
-
-        val contentText = if (workout.dayType == com.example.kinetic.GymDayType.TRAINING && workout.muscleGroups.isNotEmpty()) {
-            val groups = workout.muscleGroups.joinToString(", ") {
-                WorkoutCycleGenerator.formatGroupName(it, strings)
-            }
-            strings.workoutReminderBody.replace("__GROUPS__", groups)
-        } else {
-            strings.restDayMessage
-        }
+        val upm = UserProfileManager(context)
+        val prefs = PreferencesManager(context, upm)
+        val currentSteps = prefs.getTodaySteps()
+        val goal = prefs.getStepGoal().coerceAtLeast(1)
+        val percent = (currentSteps * 100f / goal).toInt().coerceAtMost(100)
+        val contentText = strings.goalProgressText
+            .replace("__PERCENT__", percent.toString())
+            .replace("__CURRENT__", currentSteps.toString())
+            .replace("__GOAL__", goal.toString())
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("open_today_workout", true)
+            putExtra("open_dashboard", true)
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
@@ -58,7 +52,7 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(strings.workoutReminderTitle)
+            .setContentTitle(strings.goalProgressTitle)
             .setContentText(contentText)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
@@ -70,7 +64,7 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
             // Also add to in-app messages
             val db = AppDatabase.getDatabase(context)
-            MessagesHelper.addWorkoutReminder(db.messageDao())
+            MessagesHelper.addGeneric(db.messageDao(), "Goal progress", contentText, "SUCCESS")
         } catch (_: SecurityException) { }
     }
 
@@ -78,10 +72,10 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                LanguageManager.getStrings(context).workoutChannelName,
+                LanguageManager.getStrings(context).goalProgressChannelName,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Daily reminder for today's workout"
+                description = "Daily notification to check step goal progress"
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 300, 200, 300)
             }
@@ -91,7 +85,7 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
 
     fun scheduleDaily(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, WorkoutReminderReceiver::class.java)
+        val intent = Intent(context, GoalProgressReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             REQUEST_CODE,
@@ -100,7 +94,7 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
         )
 
         val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 8)
+            set(Calendar.HOUR_OF_DAY, 18)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
@@ -134,7 +128,7 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
 
     fun cancelAlarm(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, WorkoutReminderReceiver::class.java)
+        val intent = Intent(context, GoalProgressReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             REQUEST_CODE,

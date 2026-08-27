@@ -13,12 +13,12 @@ import androidx.core.app.NotificationManagerCompat
 import com.example.kinetic.MessagesHelper
 import java.util.Calendar
 
-class WorkoutReminderReceiver : BroadcastReceiver() {
+class StreakReminderReceiver : BroadcastReceiver() {
 
     companion object {
-        const val CHANNEL_ID = "workout_reminders"
-        const val NOTIFICATION_ID = 8800
-        const val REQUEST_CODE = 8800
+        const val CHANNEL_ID = "streak_reminders"
+        const val NOTIFICATION_ID = 8802
+        const val REQUEST_CODE = 8802
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -30,24 +30,19 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
     private fun showNotification(context: Context) {
         val strings = LanguageManager.getStrings(context)
 
-        val userProfileManager = UserProfileManager(context)
-        val preferencesManager = PreferencesManager(context, userProfileManager)
-        val profile = preferencesManager.getOnboardingProfile()
-        val startDate = preferencesManager.getWorkoutStartDate()
-        val workout = WorkoutCycleGenerator.buildTodayWorkout(profile, startDate)
-
-        val contentText = if (workout.dayType == com.example.kinetic.GymDayType.TRAINING && workout.muscleGroups.isNotEmpty()) {
-            val groups = workout.muscleGroups.joinToString(", ") {
-                WorkoutCycleGenerator.formatGroupName(it, strings)
-            }
-            strings.workoutReminderBody.replace("__GROUPS__", groups)
-        } else {
-            strings.restDayMessage
-        }
+        val upm = UserProfileManager(context)
+        val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""
+        val currentStreak = if (userId.isNotEmpty()) {
+            try {
+                val db = AppDatabase.getDatabase(context)
+                kotlinx.coroutines.runBlocking { db.streakDao().getForUser(userId) }?.currentStreak ?: 0
+            } catch (_: Exception) { 0 }
+        } else 0
+        val contentText = strings.streakReminderText.replace("__STREAK__", currentStreak.toString())
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("open_today_workout", true)
+            putExtra("open_dashboard", true)
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
@@ -58,7 +53,7 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(strings.workoutReminderTitle)
+            .setContentTitle(strings.streakReminderTitle)
             .setContentText(contentText)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
@@ -70,7 +65,7 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
             // Also add to in-app messages
             val db = AppDatabase.getDatabase(context)
-            MessagesHelper.addWorkoutReminder(db.messageDao())
+            MessagesHelper.addStreakMessage(db.messageDao(), currentStreak)
         } catch (_: SecurityException) { }
     }
 
@@ -78,10 +73,10 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                LanguageManager.getStrings(context).workoutChannelName,
+                LanguageManager.getStrings(context).streakChannelName,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Daily reminder for today's workout"
+                description = "Daily reminder to train and maintain your streak"
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 300, 200, 300)
             }
@@ -91,7 +86,7 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
 
     fun scheduleDaily(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, WorkoutReminderReceiver::class.java)
+        val intent = Intent(context, StreakReminderReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             REQUEST_CODE,
@@ -100,7 +95,7 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
         )
 
         val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 8)
+            set(Calendar.HOUR_OF_DAY, 19)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
@@ -134,7 +129,7 @@ class WorkoutReminderReceiver : BroadcastReceiver() {
 
     fun cancelAlarm(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, WorkoutReminderReceiver::class.java)
+        val intent = Intent(context, StreakReminderReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             REQUEST_CODE,

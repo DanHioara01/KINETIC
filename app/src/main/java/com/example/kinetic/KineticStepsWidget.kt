@@ -178,8 +178,11 @@ private fun loadStepsData(context: Context): StepsWidgetData {
     val liveSteps = if (sessionActive) GpsTrackingState.estimatedSteps else 0
     val liveCal = liveDist * cardioCalPerKm(GpsTrackingState.activityType)
 
-    val totalDurationMs = routeDurationMs + liveDur
-    val totalCalories = routeCalories + liveCal
+    // Use movement-based active time (pedometer-based, not GPS duration)
+    val pedoPrefs = context.getSharedPreferences("pedometer_prefs", android.content.Context.MODE_PRIVATE)
+    val todayKey = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+    val movementActiveMs = pedoPrefs.getLong("active_time_$todayKey", 0L)
+    val totalDurationMs = movementActiveMs + liveDur
     // Same as MainActivity.totalSteps: while GPS is on, take the max (the session's
     // steps are estimated from distance, so adding the pedometer would double-count);
     // otherwise saved routes + pedometer.
@@ -187,6 +190,7 @@ private fun loadStepsData(context: Context): StepsWidgetData {
         if (sessionActive) maxOf(routeSteps + liveSteps, pedometerSteps)
         else routeSteps + pedometerSteps
     ).coerceIn(0, 99999)
+    val totalCalories = routeCalories + liveCal + (steps * 0.04)
 
     return StepsWidgetData(
         steps = steps,
@@ -291,10 +295,10 @@ private fun StepsWidgetContent() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     WidgetMetricRow(
-                        dotColor = Color(0xFF0A84FF),
-                        label = data.caloriesLabel.uppercase(),
-                        valueText = data.calories.toInt().toString(),
-                        goalText = "/ ${data.calorieGoal}"
+                        dotColor = Color(0xFFFF3B30),
+                        label = data.stepsLabel.uppercase(),
+                        valueText = formatSteps(data.steps),
+                        goalText = "/ ${formatStepGoalShort(data.stepGoal)}"
                     )
                     Spacer(GlanceModifier.height(6.dp))
                     WidgetMetricRow(
@@ -306,10 +310,10 @@ private fun StepsWidgetContent() {
                     )
                     Spacer(GlanceModifier.height(6.dp))
                     WidgetMetricRow(
-                        dotColor = Color(0xFFFF3B30),
-                        label = data.stepsLabel.uppercase(),
-                        valueText = formatSteps(data.steps),
-                        goalText = "/ ${formatStepGoalShort(data.stepGoal)}"
+                        dotColor = Color(0xFF0A84FF),
+                        label = data.caloriesLabel.uppercase(),
+                        valueText = data.calories.toInt().toString(),
+                        goalText = "/ ${data.calorieGoal}"
                     )
                 }
             }
