@@ -1,0 +1,93 @@
+---
+---
+
+/* Override Primer theme defaults for better contrast */
+
+/* Links: add underline + stronger color for WCAG */
+a {
+  color: #0969da;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: #0550ae;
+  text-decoration-thickness: 2px;
+}
+
+/* Make links distinguishable without relying solely on color */
+.markdown-body a {
+  color: #0969da;
+  text-decoration: underline;
+  text-decoration-color: #0969da;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.markdown-body a:hover {
+  color: #0550ae;
+}
+
+.markdown-body a:focus {
+  outline: 2px solid #0969da;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Increase contrast for body text */
+.markdown-body {
+  color: #1f2328;
+}
+
+/* Header links - ensure they're distinguishable */
+.markdown-body h1 a,
+.markdown-body h2 a,
+.markdown-body h3 a,
+.markdown-body h4 a,
+.markdown-body h5 a,
+.markdown-body h6 a {
+  color: #0969da;
+  text-decoration: underline;
+}
+
+/* Footer text contrast */
+.footer,
+.footer a {
+  color: #656d76;
+}
+
+.footer a:hover {
+  color: #0969da;
+}
+
+/* Skip to content link (screen reader only) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only.focus\:not-sr-only:focus {
+  position: absolute;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 1rem;
+  margin: 0.5rem;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Focus styles for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid #0969da;
+  outline-offset: 2px;
+  border-radius: 2px;
+}

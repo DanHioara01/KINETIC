@@ -1,0 +1,46 @@
+title: KINETIC
+description: Kinetic — all-in-one Android fitness tracker
+theme: jekyll-theme-primer
+
+plugins:
+  - jekyll-seo-tag
+
+exclude:
+  - app/
+  - backend/
+  - functions/
+  - ai_server/
+  - scripts/
+  - docker/
+  - gradle/
+  - build/
+  - .gradle/
+  - .idea/
+  - .kotlin/
+  - .vscode/
+  - node_modules/
+  - "*.gradle.kts"
+  - gradlew
+  - gradlew.bat
+  - settings.gradle.kts
+  - docker-compose.yml
+  - Dockerfile.backend
+  - AGENTS.md
+  - IDEA.md
+  - MIGRATION_NOTES.md
+  - UNUSED_STRINGS.md
+  - LICENSE
+  - backend-deploy.sh
+  - ci-cd-deploy.sh
+  - brace_log.txt
+  - build_output.txt
+  - build_err.txt
+  - kinetic_main.db
+  - kinetic_main.db-shm
+  - kinetic_main.db-wal
+  - mockup_dashboard.html
+  - .gitignore
+  - .freebuff/
+  - .qoder/
+  - package.json
+  - package-lock.json

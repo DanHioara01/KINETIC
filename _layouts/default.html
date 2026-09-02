@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page.title | default: site.title }}</title>
+    <meta name="description" content="{{ site.description }}">
+    {% seo %}
+    <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+  </head>
+  <body>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-blue-600 text-white px-4 py-2 rounded z-50">
+      Skip to main content
+    </a>
+    <main id="main-content" class="container-lg px-3 my-5 markdown-body" role="main">
+      {{ content }}
+      <footer class="border-top border-gray-light mt-5 pt-3 text-right text-gray" role="contentinfo">
+        <p>This site is open source. <a href="https://github.com/DanHioara01/KINETIC/edit/main/README.md">Improve this page</a>.</p>
+      </footer>
+    </main>
+  </body>
+</html>
