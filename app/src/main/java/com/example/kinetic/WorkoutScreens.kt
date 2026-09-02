@@ -699,7 +699,7 @@ fun ExerciseInputScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        StatItem(label = LanguageManager.getStrings(context).volume, value = String.format("%.0f", totalVolume), unit = "kg", accent = accentColor())
+                        StatItem(label = LanguageManager.getStrings(context).volume, value = String.format(java.util.Locale.ROOT, "%.0f", totalVolume), unit = "kg", accent = accentColor())
                         StatItem(label = LanguageManager.getStrings(context).sets, value = "$totalSets", unit = "", accent = accentColor())
                         StatItem(label = LanguageManager.getStrings(context).reps, value = "$totalReps", unit = "", accent = accentColor())
                     }
@@ -708,7 +708,7 @@ fun ExerciseInputScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        StatItem(label = LanguageManager.getStrings(context).maxWeight, value = String.format("%.1f", maxWeight), unit = "kg", accent = accentColor())
+                        StatItem(label = LanguageManager.getStrings(context).maxWeight, value = String.format(java.util.Locale.ROOT, "%.1f", maxWeight), unit = "kg", accent = accentColor())
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -1521,7 +1521,7 @@ fun EditSetDialog(
 ) {
     val strings = LanguageManager.getStrings(LocalContext.current)
     val displayWeight = convertWeight(set.greutateKg, isLbs)
-    var kgText by remember(set.id) { mutableStateOf(String.format("%.1f", displayWeight)) }
+    var kgText by remember(set.id) { mutableStateOf(String.format(java.util.Locale.ROOT, "%.1f", displayWeight)) }
     var repsText by remember(set.id) { mutableStateOf(set.repetari.toString()) }
     var noteText by remember(set.id) { mutableStateOf(set.notes) }
 

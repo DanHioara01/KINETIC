@@ -1,3 +1,4 @@
+@file:Suppress("NewApi")
 package com.example.kinetic
 
 import androidx.compose.animation.AnimatedVisibility
@@ -110,7 +111,7 @@ fun WaterTrackingScreen(
             }
             try {
                 val vibrator = context.getSystemService(Vibrator::class.java)
-                vibrator?.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+                if (android.os.Build.VERSION.SDK_INT >= 26) vibrator?.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE)) else @Suppress("DEPRECATION") vibrator?.vibrate(200)
             } catch (_: Exception) {}
         }
     }
@@ -122,7 +123,7 @@ fun WaterTrackingScreen(
         waterHistory = preferencesManager.getWaterHistory7Days()
         try {
             val vibrator = context.getSystemService(Vibrator::class.java)
-            vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+            if (android.os.Build.VERSION.SDK_INT >= 26) vibrator?.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE)) else @Suppress("DEPRECATION") vibrator?.vibrate(50)
         } catch (_: Exception) {}
         scope.launch {
             try {

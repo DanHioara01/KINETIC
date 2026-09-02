@@ -35,13 +35,13 @@ fun BiometricInputScreen(
 ) {
     val p = appPalette(isDark)
 
-    var weight by remember { mutableStateOf(latestEntry?.weightKg?.let { if (it == it.toLong().toDouble()) it.toLong().toString() else String.format("%.1f", it) } ?: "") }
-    var bodyFat by remember { mutableStateOf(latestEntry?.bodyFatPercent?.let { if (it > 0) String.format("%.1f", it) else "" } ?: "") }
-    var waist by remember { mutableStateOf(latestEntry?.waistCm?.let { if (it > 0) String.format("%.1f", it) else "" } ?: "") }
-    var hips by remember { mutableStateOf(latestEntry?.hipsCm?.let { if (it > 0) String.format("%.1f", it) else "" } ?: "") }
-    var thighs by remember { mutableStateOf(latestEntry?.thighsCm?.let { if (it > 0) String.format("%.1f", it) else "" } ?: "") }
-    var chest by remember { mutableStateOf(latestEntry?.chestCm?.let { if (it > 0) String.format("%.1f", it) else "" } ?: "") }
-    var arms by remember { mutableStateOf(latestEntry?.armsCm?.let { if (it > 0) String.format("%.1f", it) else "" } ?: "") }
+    var weight by remember { mutableStateOf(latestEntry?.weightKg?.let { if (it == it.toLong().toDouble()) it.toLong().toString() else String.format(java.util.Locale.ROOT, "%.1f", it) } ?: "") }
+    var bodyFat by remember { mutableStateOf(latestEntry?.bodyFatPercent?.let { if (it > 0) String.format(java.util.Locale.ROOT, "%.1f", it) else "" } ?: "") }
+    var waist by remember { mutableStateOf(latestEntry?.waistCm?.let { if (it > 0) String.format(java.util.Locale.ROOT, "%.1f", it) else "" } ?: "") }
+    var hips by remember { mutableStateOf(latestEntry?.hipsCm?.let { if (it > 0) String.format(java.util.Locale.ROOT, "%.1f", it) else "" } ?: "") }
+    var thighs by remember { mutableStateOf(latestEntry?.thighsCm?.let { if (it > 0) String.format(java.util.Locale.ROOT, "%.1f", it) else "" } ?: "") }
+    var chest by remember { mutableStateOf(latestEntry?.chestCm?.let { if (it > 0) String.format(java.util.Locale.ROOT, "%.1f", it) else "" } ?: "") }
+    var arms by remember { mutableStateOf(latestEntry?.armsCm?.let { if (it > 0) String.format(java.util.Locale.ROOT, "%.1f", it) else "" } ?: "") }
 
     Scaffold(
         topBar = {

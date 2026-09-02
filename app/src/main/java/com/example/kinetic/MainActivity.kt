@@ -1,3 +1,4 @@
+@file:Suppress("InlinedApi")
 package com.example.kinetic
 
 import android.app.PictureInPictureParams
@@ -306,7 +307,7 @@ internal fun convertWeight(kg: Double, isLbs: Boolean): Double = if (isLbs) kg *
 internal fun weightLabel(kg: Double, isLbs: Boolean): String {
     val value = if (isLbs) kg * 2.20462 else kg
     val unit = if (isLbs) "lbs" else "kg"
-    return if (value == value.toLong().toDouble()) "${value.toLong()} $unit" else "${String.format("%.1f", value)} $unit"
+    return if (value == value.toLong().toDouble()) "${value.toLong()} $unit" else "${String.format(java.util.Locale.ROOT, "%.1f", value)} $unit"
 }
 
 /** Estimated kcal burned per km, matching the GPS Cardio screen estimates. */

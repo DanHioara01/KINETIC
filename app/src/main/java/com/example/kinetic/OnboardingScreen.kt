@@ -492,7 +492,7 @@ private fun BodyStep(
                 .border(1.dp, border, RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text(String.format("%.1f kg", weight), fontSize = 24.sp, color = accent, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
+            Text(String.format(java.util.Locale.ROOT, "%.1f kg", weight), fontSize = 24.sp, color = accent, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
         }
         IconButton(onClick = { if (weight < 200f) onWeightChange(weight + 1f) }) {
             Icon(Icons.Default.Add, contentDescription = strings.increase, tint = textPrimary)
@@ -519,7 +519,7 @@ private fun BodyStep(
                 .border(1.dp, border, RoundedCornerShape(14.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text(String.format("%.0f cm", height), fontSize = 24.sp, color = accent, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
+            Text(String.format(java.util.Locale.ROOT, "%.0f cm", height), fontSize = 24.sp, color = accent, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
         }
         IconButton(onClick = { if (height < 230f) onHeightChange(height + 1f) }) {
             Icon(Icons.Default.Add, contentDescription = strings.increase, tint = textPrimary)

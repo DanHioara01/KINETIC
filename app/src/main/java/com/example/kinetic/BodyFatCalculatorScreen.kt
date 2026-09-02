@@ -94,8 +94,8 @@ fun BodyFatCalculatorScreen(
 
     var gender by remember { mutableStateOf("male") }
     var age by remember { mutableStateOf("") }
-    var height by remember { mutableStateOf(if (heightCm > 0) String.format("%.0f", heightCm) else "") }
-    var weight by remember { mutableStateOf(if (latestWeight > 0) String.format("%.1f", latestWeight) else "") }
+    var height by remember { mutableStateOf(if (heightCm > 0) String.format(java.util.Locale.ROOT, "%.0f", heightCm) else "") }
+    var weight by remember { mutableStateOf(if (latestWeight > 0) String.format(java.util.Locale.ROOT, "%.1f", latestWeight) else "") }
     var waist by remember { mutableStateOf("") }
     var neck by remember { mutableStateOf("") }
     var hips by remember { mutableStateOf("") }
@@ -362,7 +362,7 @@ fun BodyFatCalculatorScreen(
                         Text(strings.estimatedBodyFat ?: "Estimated Body Fat", color = p.tp, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "${String.format("%.1f", result)}%",
+                            "${String.format(java.util.Locale.ROOT, "%.1f", result)}%",
                             color = p.ac,
                             fontWeight = FontWeight.Bold,
                             fontSize = 32.sp

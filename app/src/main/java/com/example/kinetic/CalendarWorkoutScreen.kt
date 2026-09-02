@@ -356,7 +356,7 @@ fun CalendarWorkoutScreen(
                                         fontSize = 15.sp
                                     )
                                     Text(
-                                        text = "${String.format("%.0f", workout.totalWeight)} kg total",
+                                        text = "${String.format(java.util.Locale.ROOT, "%.0f", workout.totalWeight)} kg total",
                                         color = p.ts,
                                         fontSize = 13.sp,
                                         fontFamily = JetBrainsMono
@@ -365,7 +365,7 @@ fun CalendarWorkoutScreen(
                                         val durationMin = workout.durationMs / 60000
                                         val durationSec = (workout.durationMs % 60000) / 1000
                                         Text(
-                                            text = "${durationMin}:${String.format("%02d", durationSec)}",
+                                            text = "${durationMin}:${String.format(java.util.Locale.ROOT, "%02d", durationSec)}",
                                             color = p.ts,
                                             fontSize = 12.sp,
                                             fontFamily = JetBrainsMono
@@ -408,7 +408,7 @@ fun CalendarWorkoutScreen(
                                             modifier = Modifier.weight(1f)
                                         )
                                         Text(
-                                            text = "${ex.setIndex + 1}x${ex.repetari} @ ${String.format("%.0f", ex.greutateKg)}kg",
+                                            text = "${ex.setIndex + 1}x${ex.repetari} @ ${String.format(java.util.Locale.ROOT, "%.0f", ex.greutateKg)}kg",
                                             fontSize = 12.sp,
                                             color = AccentRed,
                                             fontWeight = FontWeight.Bold

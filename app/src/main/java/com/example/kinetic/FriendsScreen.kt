@@ -371,7 +371,7 @@ fun FriendsScreen(
                             )
                             Spacer(Modifier.height(2.dp))
                             Text(
-                                "${String.format("%.0f", if (isLbs) vol * 2.20462 else vol)} ${if (isLbs) "lbs" else "kg"} · $wc ${strings.workoutsLabel.lowercase()}",
+                                "${String.format(java.util.Locale.ROOT, "%.0f", if (isLbs) vol * 2.20462 else vol)} ${if (isLbs) "lbs" else "kg"} · $wc ${strings.workoutsLabel.lowercase()}",
                                 color = p.ts,
                                 fontSize = 12.sp
                             )

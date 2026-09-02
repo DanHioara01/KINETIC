@@ -109,7 +109,7 @@ fun WeightGoalScreen(
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Text(
-                            "${String.format("%.1f", latestWeight)} kg",
+                            "${String.format(java.util.Locale.ROOT, "%.1f", latestWeight)} kg",
                             color = p.tp,
                             fontWeight = FontWeight.Bold,
                             fontSize = 32.sp,
@@ -119,7 +119,7 @@ fun WeightGoalScreen(
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(strings.heightCm ?: "Height", color = p.ts, fontSize = 12.sp)
                                 Text(
-                                    "${String.format("%.0f", heightCm)} cm",
+                                    "${String.format(java.util.Locale.ROOT, "%.0f", heightCm)} cm",
                                     color = p.tp,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 18.sp,
@@ -136,7 +136,7 @@ fun WeightGoalScreen(
                         Column {
                             Text(strings.bmi, color = p.ts, fontSize = 12.sp)
                             Text(
-                                if (bmi > 0) "${String.format("%.1f", bmi)}" else "--",
+                                if (bmi > 0) "${String.format(java.util.Locale.ROOT, "%.1f", bmi)}" else "--",
                                 color = p.tp,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
@@ -146,7 +146,7 @@ fun WeightGoalScreen(
                         Column {
                             Text(strings.bodyFat ?: "Body fat", color = p.ts, fontSize = 12.sp)
                             Text(
-                                if (bodyFatPercent > 0) "${String.format("%.1f", bodyFatPercent)}%" else "--",
+                                if (bodyFatPercent > 0) "${String.format(java.util.Locale.ROOT, "%.1f", bodyFatPercent)}%" else "--",
                                 color = p.tp,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
@@ -192,12 +192,12 @@ fun WeightGoalScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "${String.format("%.1f", weightHistory.first().second)} kg",
+                                "${String.format(java.util.Locale.ROOT, "%.1f", weightHistory.first().second)} kg",
                                 color = p.ts,
                                 fontSize = 12.sp
                             )
                             Text(
-                                "${String.format("%.1f", weightHistory.last().second)} kg",
+                                "${String.format(java.util.Locale.ROOT, "%.1f", weightHistory.last().second)} kg",
                                 color = p.tp,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
@@ -230,13 +230,13 @@ fun WeightGoalScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "${strings.startWeight ?: "Start"} ${String.format("%.1f", goal.startWeightKg)} kg",
+                                "${strings.startWeight ?: "Start"} ${String.format(java.util.Locale.ROOT, "%.1f", goal.startWeightKg)} kg",
                                 color = p.ts,
                                 fontSize = 13.sp,
                                 fontFamily = JetBrainsMono
                             )
                             Text(
-                                "${strings.targetWeight ?: "Target"} ${String.format("%.1f", goal.targetWeightKg)} kg",
+                                "${strings.targetWeight ?: "Target"} ${String.format(java.util.Locale.ROOT, "%.1f", goal.targetWeightKg)} kg",
                                 color = p.ts,
                                 fontSize = 13.sp,
                                 fontFamily = JetBrainsMono
@@ -266,7 +266,7 @@ fun WeightGoalScreen(
                             Column {
                                 Text(strings.currentWeight ?: "Progress", color = p.ts, fontSize = 12.sp)
                                 Text(
-                                    "${String.format("%.1f", latestWeight)} kg",
+                                    "${String.format(java.util.Locale.ROOT, "%.1f", latestWeight)} kg",
                                     color = p.tp,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
@@ -276,7 +276,7 @@ fun WeightGoalScreen(
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(strings.remaining ?: "Remaining", color = p.ts, fontSize = 12.sp)
                                 Text(
-                                    "${String.format("%.1f", kotlin.math.abs(remainingWeight))} kg",
+                                    "${String.format(java.util.Locale.ROOT, "%.1f", kotlin.math.abs(remainingWeight))} kg",
                                     color = p.ac,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
@@ -391,7 +391,7 @@ fun WeightGoalScreen(
                         ) {
                             Column {
                                 Text(
-                                    "${String.format("%.1f", goal.startWeightKg)} → ${String.format("%.1f", goal.targetWeightKg)} kg",
+                                    "${String.format(java.util.Locale.ROOT, "%.1f", goal.startWeightKg)} → ${String.format(java.util.Locale.ROOT, "%.1f", goal.targetWeightKg)} kg",
                                     color = p.tp,
                                     fontWeight = FontWeight.Medium
                                 )
@@ -463,7 +463,7 @@ fun SetGoalDialog(
     val textSecondary = p.ts
     val accent = p.ac
 
-    var targetWeight by remember { mutableStateOf(existingGoal?.targetWeightKg?.let { String.format("%.1f", it) } ?: String.format("%.1f", currentWeight)) }
+    var targetWeight by remember { mutableStateOf(existingGoal?.targetWeightKg?.let { String.format(java.util.Locale.ROOT, "%.1f", it) } ?: String.format(java.util.Locale.ROOT, "%.1f", currentWeight)) }
     var days by remember { mutableStateOf("30") }
 
     AlertDialog(
@@ -479,7 +479,7 @@ fun SetGoalDialog(
                     Column {
                         Text(strings.currentWeight ?: "Current Weight", color = textSecondary, fontSize = 13.sp)
                         Text(
-                            "${String.format("%.1f", currentWeight)} kg",
+                            "${String.format(java.util.Locale.ROOT, "%.1f", currentWeight)} kg",
                             color = textPrimary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
@@ -488,11 +488,11 @@ fun SetGoalDialog(
                     Column(horizontalAlignment = Alignment.End) {
                         if (heightCm > 0) {
                             Text(strings.heightCm ?: "Height", color = textSecondary, fontSize = 12.sp)
-                            Text("${String.format("%.0f", heightCm)} cm", color = textPrimary, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
+                            Text("${String.format(java.util.Locale.ROOT, "%.0f", heightCm)} cm", color = textPrimary, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
                         }
                         if (bmi > 0) {
                             Text(strings.bmi, color = textSecondary, fontSize = 12.sp)
-                            Text("${String.format("%.1f", bmi)}", color = textPrimary, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
+                            Text("${String.format(java.util.Locale.ROOT, "%.1f", bmi)}", color = textPrimary, fontWeight = FontWeight.Bold, fontFamily = JetBrainsMono)
                         }
                     }
                 }

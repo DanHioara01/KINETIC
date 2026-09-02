@@ -66,14 +66,14 @@ class AiTrainerManager(private val db: AppDatabase) {
             appendLine()
             appendLine("=== THIS WEEK ===")
             appendLine("Workouts this week: ${weekWorkouts.size}/${profile.sessionsPerWeek}")
-            appendLine("Weekly volume: ${String.format("%.0f", weekVolume)} kg")
+            appendLine("Weekly volume: ${String.format(java.util.Locale.ROOT, "%.0f", weekVolume)} kg")
             if (topExercise != null) {
                 appendLine("Most trained exercise: ${topExercise.numeExercitiu} (${topExercise.cnt}x)")
             }
             appendLine()
             appendLine("=== LAST 30 DAYS ===")
             appendLine("Total workouts: ${recentWorkouts.size}")
-            appendLine("Monthly volume: ${String.format("%.0f", monthVolume)} kg")
+            appendLine("Monthly volume: ${String.format(java.util.Locale.ROOT, "%.0f", monthVolume)} kg")
             val groups = recentWorkouts.groupBy { it.grupaMusculara }
             appendLine("Muscle groups trained: ${groups.keys.joinToString(", ")}")
             appendLine()
@@ -85,7 +85,7 @@ class AiTrainerManager(private val db: AppDatabase) {
                     level < 0.8 -> "Tired"
                     else -> "Needs rest"
                 }
-                appendLine("$group: ${String.format("%.0f", level * 100)}% - $status")
+                appendLine("$group: ${String.format(java.util.Locale.ROOT, "%.0f", level * 100)}% - $status")
             }
             appendLine()
             if (prs.isNotEmpty()) {
@@ -99,7 +99,7 @@ class AiTrainerManager(private val db: AppDatabase) {
                 appendLine("=== RECENT WORKOUTS ===")
                 recentWorkouts.take(5).forEach { workout ->
                     val exercises = db.exercitiuDao().getForAntrenament(workout.id)
-                    appendLine("${dateFormat.format(Date(workout.data))} - ${workout.grupaMusculara}: ${exercises.size} exercises, ${String.format("%.0f", workout.totalWeight)} kg total")
+                    appendLine("${dateFormat.format(Date(workout.data))} - ${workout.grupaMusculara}: ${exercises.size} exercises, ${String.format(java.util.Locale.ROOT, "%.0f", workout.totalWeight)} kg total")
                 }
             }
         }.toString()

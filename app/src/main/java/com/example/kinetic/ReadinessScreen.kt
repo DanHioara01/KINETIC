@@ -299,7 +299,7 @@ fun ReadinessScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(strings.readinessSleepHours, fontSize = 12.sp, color = p.ts, modifier = Modifier.weight(1f))
                     Text(
-                        String.format("%.1f h", sleepHours),
+                        String.format(java.util.Locale.ROOT, "%.1f h", sleepHours),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = JetBrainsMono,

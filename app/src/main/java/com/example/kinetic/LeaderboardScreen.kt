@@ -203,7 +203,7 @@ fun LeaderboardScreen(
                                 val displayVol = if (isLbs) entry.totalVolume * 2.20462 else entry.totalVolume
                                 val unit = if (isLbs) "lbs" else "kg"
                                 Text(
-                                    "${String.format("%.0f", displayVol)} $unit",
+                                    "${String.format(java.util.Locale.ROOT, "%.0f", displayVol)} $unit",
                                     color = if (isSelf) p.ac else p.tp,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,

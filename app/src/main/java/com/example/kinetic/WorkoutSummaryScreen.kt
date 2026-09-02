@@ -96,7 +96,7 @@ fun WorkoutSummaryScreen(
                 isDark = isDark,
                 icon = Icons.Default.Timer,
                 label = strings.duration ?: "Duration",
-                value = if (workout.durationMs > 0) "${durationMin}:${String.format("%02d", durationSec)}" else "-",
+                value = if (workout.durationMs > 0) "${durationMin}:${String.format(java.util.Locale.ROOT, "%02d", durationSec)}" else "-",
                 accent = accent,
                 modifier = Modifier.weight(1f)
             )
@@ -104,7 +104,7 @@ fun WorkoutSummaryScreen(
                 isDark = isDark,
                 icon = Icons.Default.FitnessCenter,
                 label = strings.volume ?: "Volume",
-                value = "${String.format("%.0f", totalVolume)} kg",
+                value = "${String.format(java.util.Locale.ROOT, "%.0f", totalVolume)} kg",
                 accent = accent,
                 modifier = Modifier.weight(1f)
             )
@@ -140,7 +140,7 @@ fun WorkoutSummaryScreen(
                 isDark = isDark,
                 icon = Icons.Default.ArrowUpward,
                 label = strings.maxWeight ?: "Max Weight",
-                value = "${String.format("%.1f", maxWeight)} kg",
+                value = "${String.format(java.util.Locale.ROOT, "%.1f", maxWeight)} kg",
                 accent = accent,
                 modifier = Modifier.weight(1f)
             )
@@ -187,7 +187,7 @@ fun WorkoutSummaryScreen(
                     ) {
                         Text(pr.exerciseName, color = p.tp, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                         Text(
-                            "${String.format("%.1f", pr.weight)} kg x ${pr.reps}",
+                            "${String.format(java.util.Locale.ROOT, "%.1f", pr.weight)} kg x ${pr.reps}",
                             color = Color(0xFFFFC107),
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
@@ -218,14 +218,14 @@ fun WorkoutSummaryScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(name, color = p.tp, fontWeight = FontWeight.Medium, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
-                            "${sets.size} ${strings.sets ?: "sets"} | ${String.format("%.0f", exerciseVolume)} kg vol",
+                            "${sets.size} ${strings.sets ?: "sets"} | ${String.format(java.util.Locale.ROOT, "%.0f", exerciseVolume)} kg vol",
                             color = p.ts,
                             fontSize = 12.sp,
                             fontFamily = JetBrainsMono
                         )
                     }
                     Text(
-                        "${String.format("%.1f", exerciseMax)} kg",
+                        "${String.format(java.util.Locale.ROOT, "%.1f", exerciseMax)} kg",
                         color = accent,
                         fontWeight = FontWeight.Bold,
                         fontFamily = JetBrainsMono

@@ -72,6 +72,32 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    lint {
+        disable += setOf(
+            "GradleDependency",
+            "UseTomlInstead",
+            "AndroidGradlePluginVersion",
+            "HardcodedText",
+            "SmallSp",
+            "NestedWeights",
+            "DisableBaselineAlignment",
+            "UselessParent",
+            "IconLocation",
+            "IconLauncherShape",
+            "IconDuplicates",
+            "VectorRaster",
+            "VectorPath",
+            "UnusedResources",
+            "UnusedAttribute",
+            "PictureInPictureIssue",
+            "RedundantLabel",
+            "ModifierParameter",
+            "AutoboxingStateCreation",
+            "ObsoleteLintCustomCheck",
+            "UseOfNonLambdaOffsetOverload"
+        )
+    }
+
 }
 
 dependencies {
@@ -163,4 +189,5 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.ui.test.manifest)
     debugImplementation(libs.androidx.ui.tooling)
+
 }

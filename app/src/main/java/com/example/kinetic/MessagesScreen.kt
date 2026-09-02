@@ -1,3 +1,4 @@
+@file:Suppress("NewApi")
 package com.example.kinetic
 
 import androidx.compose.animation.animateContentSize
@@ -54,6 +55,7 @@ fun MessagesScreen(
 
     LaunchedEffect(Unit) { messageDao.deleteOlderThan(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000) }
 
+    @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = if (isDark) Color(0xFF0E0E12) else Color(0xFFF5F5F5)) { _ ->
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.statusBarsPadding())
@@ -103,7 +105,7 @@ fun MessagesScreen(
                 items(messages, key = { it.id }) { msg ->
                     var expanded by remember { mutableStateOf(false) }
                     val dismissState = rememberSwipeToDismissBoxState(confirmValueChange = { v ->
-                        if (v == SwipeToDismissBoxValue.EndToStart) { scope.launch { scope.launch { val ctx = kotlinx.coroutines.currentCoroutineContext(); val vib = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator; vib?.vibrate(android.os.VibrationEffect.createOneShot(30, android.os.VibrationEffect.DEFAULT_AMPLITUDE)) }; messageDao.deleteById(msg.id); snackbarHostState.showSnackbar(strings.notificationDeleted) }; true } else false
+                        if (v == SwipeToDismissBoxValue.EndToStart) { scope.launch { if (android.os.Build.VERSION.SDK_INT >= 26) { val vib = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator; vib?.vibrate(android.os.VibrationEffect.createOneShot(30, android.os.VibrationEffect.DEFAULT_AMPLITUDE)) }; messageDao.deleteById(msg.id); snackbarHostState.showSnackbar(strings.notificationDeleted) }; true } else false
                     })
                     SwipeToDismissBox(state = dismissState,
                         backgroundContent = { Box(modifier = Modifier.fillMaxSize().background(Color(0xFFCC3333), RoundedCornerShape(12.dp)).padding(horizontal = 20.dp), contentAlignment = Alignment.CenterEnd) { Icon(Icons.Default.Delete, "Delete", tint = Color.White) } },

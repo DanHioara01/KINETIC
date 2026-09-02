@@ -59,7 +59,7 @@ fun WeeklySummaryCard(
 
     // Durată totală săptămânală (ore cu 1 zecimală)
     val totalHours = weekWorkoutDurationMs / 3600000.0
-    val hoursText = if (totalHours >= 10) String.format("%.0f", totalHours) else String.format("%.1f", totalHours)
+    val hoursText = if (totalHours >= 10) String.format(java.util.Locale.ROOT, "%.0f", totalHours) else String.format(java.util.Locale.ROOT, "%.1f", totalHours)
 
     // Progresuri relative (semnificative, nu statice)
     val workoutProgress = if (workoutGoal > 0) {
@@ -142,7 +142,7 @@ fun WeeklySummaryCard(
                     iconTint = volumeColor,
                     iconBg = volumeColor.copy(alpha = 0.15f),
                     label = strings.volumeLabel.uppercase(),
-                    value = String.format("%,.0f", volumeNum),
+                    value = String.format(java.util.Locale.ROOT, "%,.0f", volumeNum),
                     unit = volumeUnit,
                     progress = volumeProgress,
                     progressColor = volumeColor,

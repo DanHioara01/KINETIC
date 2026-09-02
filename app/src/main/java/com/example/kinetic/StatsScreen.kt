@@ -773,7 +773,7 @@ private fun HeroVolumeCard(
             Spacer(Modifier.height(24.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MiniStat(p.gn, strings.workoutsLabel, "$totalSessions", textPrimary, textTertiary, Modifier.weight(1f), p)
-                MiniStat(p.bl, strings.duration, String.format("%.1f", totalMinutes / 60.0), textPrimary, textTertiary, Modifier.weight(1f), p)
+                MiniStat(p.bl, strings.duration, String.format(java.util.Locale.ROOT, "%.1f", totalMinutes / 60.0), textPrimary, textTertiary, Modifier.weight(1f), p)
                 MiniStat(p.pu, strings.exercises, "$totalExercises", textPrimary, textTertiary, Modifier.weight(1f), p)
             }
 
@@ -873,7 +873,7 @@ private fun ExerciseDetailRow(
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = "${String.format("%.0f", volumeDisplay)} $unit",
+                    text = "${String.format(java.util.Locale.ROOT, "%.0f", volumeDisplay)} $unit",
                     fontFamily = JetBrainsMono,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
@@ -1450,5 +1450,5 @@ private fun formatKg(value: Double): String {
 }
 
 private fun formatChartValue(value: Double): String {
-    return if (value == value.toLong().toDouble()) value.toLong().toString() else String.format("%.1f", value)
+    return if (value == value.toLong().toDouble()) value.toLong().toString() else String.format(java.util.Locale.ROOT, "%.1f", value)
 }

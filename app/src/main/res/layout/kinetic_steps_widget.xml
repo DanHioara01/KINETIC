@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/steps_widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -8,7 +9,8 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:background="@drawable/widget_bg"
-        android:padding="12dp">
+        android:padding="12dp"
+        tools:ignore="UselessParent">
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -23,7 +25,8 @@
             android:layout_weight="1"
             android:layout_marginTop="8dp"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+                android:baselineAligned="false">
             <FrameLayout
                 android:layout_width="88dp"
                 android:layout_height="88dp"
@@ -59,34 +62,38 @@
                 android:layout_weight="1"
                 android:layout_marginStart="10dp"
                 android:orientation="vertical"
-                android:gravity="center_vertical">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="6dp">
-                    <ImageView android:layout_width="8dp" android:layout_height="8dp" android:layout_marginEnd="6dp" android:src="@drawable/widget_dot_blue" />
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CALORIES" android:textColor="#99FFFFFF" android:textSize="8sp" />
+                android:gravity="center_vertical"
+                android:baselineAligned="false">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical"
+                android:baselineAligned="false" android:layout_marginBottom="6dp">
+                    <ImageView android:layout_width="8dp" android:layout_height="8dp" android:layout_marginEnd="6dp" android:src="@drawable/widget_dot_blue" android:contentDescription="Calories" />
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" tools:ignore="NestedWeights">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CALORIES" android:textColor="#99FFFFFF" android:textSize="8sp"  tools:ignore="HardcodedText,SmallSp" />
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
                             <TextView android:id="@+id/steps_calories" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" />
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" / 500" android:textColor="#66FFFFFF" android:textSize="10sp" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" / 500" android:textColor="#66FFFFFF" android:textSize="10sp"  tools:ignore="HardcodedText,SmallSp" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="6dp">
-                    <ImageView android:layout_width="8dp" android:layout_height="8dp" android:layout_marginEnd="6dp" android:src="@drawable/widget_dot_green" />
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ACTIVE TIME" android:textColor="#99FFFFFF" android:textSize="8sp" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical"
+                android:baselineAligned="false" android:layout_marginBottom="6dp">
+                    <ImageView android:layout_width="8dp" android:layout_height="8dp" android:layout_marginEnd="6dp" android:src="@drawable/widget_dot_green" android:contentDescription="Active time" />
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" tools:ignore="NestedWeights">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ACTIVE TIME" android:textColor="#99FFFFFF" android:textSize="8sp"  tools:ignore="HardcodedText,SmallSp" />
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
                             <TextView android:id="@+id/steps_active_time" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" />
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" min / 90" android:textColor="#66FFFFFF" android:textSize="10sp" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" min / 90" android:textColor="#66FFFFFF" android:textSize="10sp"  tools:ignore="HardcodedText,SmallSp" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-                    <ImageView android:layout_width="8dp" android:layout_height="8dp" android:layout_marginEnd="6dp" android:src="@drawable/widget_dot_red" />
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="STEPS" android:textColor="#99FFFFFF" android:textSize="8sp" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical"
+                android:baselineAligned="false">
+                    <ImageView android:layout_width="8dp" android:layout_height="8dp" android:layout_marginEnd="6dp" android:src="@drawable/widget_dot_red" android:contentDescription="Steps" />
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" tools:ignore="NestedWeights">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="STEPS" android:textColor="#99FFFFFF" android:textSize="8sp"  tools:ignore="HardcodedText,SmallSp" />
                         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal">
                             <TextView android:id="@+id/steps_value" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:textColor="#FFFFFF" android:textSize="14sp" android:textStyle="bold" />
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" / 7K" android:textColor="#66FFFFFF" android:textSize="10sp" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" / 7K" android:textColor="#66FFFFFF" android:textSize="10sp"  tools:ignore="HardcodedText,SmallSp" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>

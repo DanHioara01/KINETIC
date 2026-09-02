@@ -233,7 +233,7 @@ private fun MacrosOverviewCard(
 
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        String.format("%.0f", macros.calories),
+                        String.format(java.util.Locale.ROOT, "%.0f", macros.calories),
                         color = primaryText,
                         fontSize = 36.sp,
                         fontWeight = FontWeight.Bold,
@@ -251,7 +251,7 @@ private fun MacrosOverviewCard(
 
                 if (hasTargets) {
                     Text(
-                        "${String.format("%.1f", remainingCalories)} ${strings.remaining}",
+                        "${String.format(java.util.Locale.ROOT, "%.1f", remainingCalories)} ${strings.remaining}",
                         color = p.ts,
                         fontSize = 12.sp,
                         fontFamily = JetBrainsMono
@@ -264,8 +264,8 @@ private fun MacrosOverviewCard(
                     isDark = isDark,
                     icon = R.drawable.ic_calories_macro,
                     label = strings.caloriesLabel,
-                    value = String.format("%.0f", macros.calories),
-                    target = if (hasTargets) String.format("%d", targets.calories) else "",
+                    value = String.format(java.util.Locale.ROOT, "%.0f", macros.calories),
+                    target = if (hasTargets) String.format(java.util.Locale.ROOT, "%d", targets.calories) else "",
                     progress = if (hasTargets && targets.calories > 0) (macros.calories / targets.calories).coerceIn(0.0, 1.0) else 0.0,
                     barColor = p.ac
                 )
@@ -276,8 +276,8 @@ private fun MacrosOverviewCard(
                     isDark = isDark,
                     icon = R.drawable.ic_protein_macro,
                     label = strings.proteinLabel,
-                    value = String.format("%.0f", macros.protein),
-                    target = if (hasTargets) String.format("%.0f", targets.proteinG) else "",
+                    value = String.format(java.util.Locale.ROOT, "%.0f", macros.protein),
+                    target = if (hasTargets) String.format(java.util.Locale.ROOT, "%.0f", targets.proteinG) else "",
                     progress = if (hasTargets && targets.proteinG > 0) (macros.protein / targets.proteinG).coerceIn(0.0, 1.0) else 0.0,
                     // Cafeniu deschis — aceeași culoare în dark și light mode
                     barColor = Color(0xFFC29A6D)
@@ -289,8 +289,8 @@ private fun MacrosOverviewCard(
                     isDark = isDark,
                     icon = R.drawable.ic_carbs_macro,
                     label = strings.carbsLabel,
-                    value = String.format("%.0f", macros.carbs),
-                    target = if (hasTargets) String.format("%.0f", targets.carbsG) else "",
+                    value = String.format(java.util.Locale.ROOT, "%.0f", macros.carbs),
+                    target = if (hasTargets) String.format(java.util.Locale.ROOT, "%.0f", targets.carbsG) else "",
                     progress = if (hasTargets && targets.carbsG > 0) (macros.carbs / targets.carbsG).coerceIn(0.0, 1.0) else 0.0,
                     barColor = Color(0xFFFF9800)
                 )
@@ -301,8 +301,8 @@ private fun MacrosOverviewCard(
                     isDark = isDark,
                     icon = R.drawable.ic_fat_macro,
                     label = strings.fatLabel,
-                    value = String.format("%.0f", macros.fat),
-                    target = if (hasTargets) String.format("%.0f", targets.fatG) else "",
+                    value = String.format(java.util.Locale.ROOT, "%.0f", macros.fat),
+                    target = if (hasTargets) String.format(java.util.Locale.ROOT, "%.0f", targets.fatG) else "",
                     progress = if (hasTargets && targets.fatG > 0) (macros.fat / targets.fatG).coerceIn(0.0, 1.0) else 0.0,
                     barColor = Color(0xFFFFD600)
                 )
@@ -455,7 +455,7 @@ private fun MealSection(
                             Text(entry.brand, color = p.ts, style = MaterialTheme.typography.bodySmall)
                         }
                         Text(
-                            "${timeFormat.format(Date(entry.timestamp))} · ${String.format("%.0f", entry.calories)} kcal · P:${String.format("%.1f", entry.proteinG)} · C:${String.format("%.1f", entry.carbsG)} · F:${String.format("%.1f", entry.fatG)}",
+                            "${timeFormat.format(Date(entry.timestamp))} · ${String.format(java.util.Locale.ROOT, "%.0f", entry.calories)} kcal · P:${String.format(java.util.Locale.ROOT, "%.1f", entry.proteinG)} · C:${String.format(java.util.Locale.ROOT, "%.1f", entry.carbsG)} · F:${String.format(java.util.Locale.ROOT, "%.1f", entry.fatG)}",
                             color = p.ts,
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = JetBrainsMono
