@@ -946,9 +946,9 @@ app.post('/workouts/log', enforceAuth, asyncRoute(async (req, res) => {
   if (streak) {
     const last = streak.lastdate;
     const diffHours = (now - last) / (1000 * 60 * 60);
-    if (diffHours >= 24 && diffHours <= 48) {
+    if (diffHours >= 24 && diffHours <= 96) {
       currentStreak = streak.currentstreak + 1;
-    } else if (diffHours > 48) {
+    } else if (diffHours > 96) {
       currentStreak = 1;
     } else {
       currentStreak = streak.currentstreak;

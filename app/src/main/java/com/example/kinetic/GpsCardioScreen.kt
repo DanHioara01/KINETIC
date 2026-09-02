@@ -1075,20 +1075,15 @@ private fun RouteCanvas(
                 ctx,
                 ctx.getSharedPreferences("osmdroid", android.content.Context.MODE_PRIVATE)
             )
-            org.osmdroid.config.Configuration.getInstance().userAgentValue = ctx.packageName
+            org.osmdroid.config.Configuration.getInstance().userAgentValue = "Kinetic/3.7 (Android gym tracker; dan.hioara@gmail.com)"
             org.osmdroid.config.Configuration.getInstance().apply {
                 cacheMapTileCount = 500
             }
 
-            val tileStyle = if (isDark) "dark_all" else "light_all"
             val tileSource = object : org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase(
-                "CartoDB",
-                1, 20, 256, ".png",
-                arrayOf(
-                    "https://a.basemaps.cartocdn.com/${tileStyle}/",
-                    "https://b.basemaps.cartocdn.com/${tileStyle}/",
-                    "https://c.basemaps.cartocdn.com/${tileStyle}/"
-                )
+                "OpenTopoMap",
+                1, 17, 256, ".png",
+                arrayOf("https://a.tile.opentopomap.org/")
             ) {
                 override fun getTileURLString(pMapTileIndex: Long): String {
                     val zoom = org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex)

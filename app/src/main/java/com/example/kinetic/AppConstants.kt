@@ -10,7 +10,7 @@ object AppConstants {
     const val GOOGLE_USER_NAME = "Google User"
     const val FACEBOOK_USER_NAME = "Facebook User"
 
-    val BOTTOM_NAV_PADDING = 88.dp
+    val BOTTOM_NAV_PADDING = 116.dp
 
     // Supabase Storage (profile photos) — bucket public "profile_photos".
     // Anon key e public din design; accesul e limitat de policy-urile din SQL.

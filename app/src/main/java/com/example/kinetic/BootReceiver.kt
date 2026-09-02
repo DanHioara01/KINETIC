@@ -12,6 +12,11 @@ class BootReceiver : BroadcastReceiver() {
 
             WaterReminderReceiver().scheduleAllEnabledAlarms(context)
             BiometricReminderReceiver().scheduleIfEnabled(context)
+            WorkoutReminderReceiver().scheduleIfEnabled(context)
+            WeeklySummaryReceiver().scheduleIfEnabled(context)
+            StreakReminderReceiver().scheduleIfEnabled(context)
+            GoalProgressReceiver().scheduleIfEnabled(context)
+            AchievementReceiver().scheduleIfEnabled(context)
         }
     }
 }

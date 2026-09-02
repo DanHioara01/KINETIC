@@ -252,6 +252,12 @@ class FirestoreHelper {
         } catch (_: Exception) { null }
     }
 
+    suspend fun getSettings(userId: String): Map<String, Any>? {
+        return try {
+            db.collection("users").document(userId).collection("settings").document("settings").get().await().data
+        } catch (_: Exception) { null }
+    }
+
     suspend fun syncUserStats(userId: String, totalVolume: Double, workoutCount: Int) {
         try {
             db.collection("users").document(userId)

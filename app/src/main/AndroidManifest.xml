@@ -115,6 +115,26 @@
             android:name=".BiometricReminderReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".WorkoutReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".WeeklySummaryReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".StreakReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".GoalProgressReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".AchievementReceiver"
+            android:exported="false" />
+
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="false">

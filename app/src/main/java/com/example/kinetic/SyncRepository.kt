@@ -726,7 +726,6 @@ class SyncRepository(
                 syncFoodFromServer(userId)
                 syncCardioFromServer(userId)
                 syncRestDaysFromServer(userId)
-                MessagesHelper.addSyncSuccess(db.messageDao())
             } catch (e: Exception) {
                 MessagesHelper.addSyncFailed(db.messageDao())
                 e.printStackTrace()
