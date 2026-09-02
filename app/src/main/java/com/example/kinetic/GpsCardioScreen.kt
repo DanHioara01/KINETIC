@@ -1076,29 +1076,13 @@ private fun RouteCanvas(
                 ctx.getSharedPreferences("osmdroid", android.content.Context.MODE_PRIVATE)
             )
             org.osmdroid.config.Configuration.getInstance().userAgentValue = "Kinetic/3.7 (Android gym tracker; dan.hioara@gmail.com)"
-            org.osmdroid.config.Configuration.getInstance().apply {
-                cacheMapTileCount = 500
-            }
-
-            val tileSource = object : org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase(
-                "OpenTopoMap",
-                1, 17, 256, ".png",
-                arrayOf("https://a.tile.opentopomap.org/")
-            ) {
-                override fun getTileURLString(pMapTileIndex: Long): String {
-                    val zoom = org.osmdroid.util.MapTileIndex.getZoom(pMapTileIndex)
-                    val x = org.osmdroid.util.MapTileIndex.getX(pMapTileIndex)
-                    val y = org.osmdroid.util.MapTileIndex.getY(pMapTileIndex)
-                    return "${baseUrl}${zoom}/${x}/${y}${mImageFilenameEnding}"
-                }
-            }
 
             org.osmdroid.views.MapView(ctx).apply {
                 setMultiTouchControls(true)
                 setBuiltInZoomControls(false)
                 minZoomLevel = 3.0
                 maxZoomLevel = 20.0
-                setTileSource(tileSource)
+                setTileSource(org.osmdroid.tileprovider.tilesource.TileSourceFactory.MAPNIK)
 
                 val defaultGeoPoint = org.osmdroid.util.GeoPoint(44.4268, 26.1025)
                 controller.setZoom(15.0)

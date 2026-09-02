@@ -3150,6 +3150,7 @@ fun MuscleGroupList(
                                             showWorkoutAnalytics = false; showSavedExercises = false
                                             showWeightGoal = false; showBodyFatCalculator = false
                                             showReadiness = false
+                                            showMessages = false
                                             currentPage = null
                                         }
                                     },
@@ -3238,6 +3239,7 @@ fun MuscleGroupList(
                                             showWorkoutAnalytics = false; showSavedExercises = false
                                             showWeightGoal = false; showBodyFatCalculator = false
                                             showReadiness = false
+                                            showMessages = false
                                             currentPage = null
                                         }
                                     },

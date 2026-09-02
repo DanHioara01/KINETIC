@@ -5,6 +5,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -26,6 +27,9 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.ui.platform.LocalContext
 import com.example.kinetic.LanguageManager
+import com.example.kinetic.ui.theme.DarkBackground
+import com.example.kinetic.ui.theme.LightBackground
+import com.example.kinetic.ui.theme.DarkCard
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -56,7 +60,7 @@ fun MessagesScreen(
     LaunchedEffect(Unit) { messageDao.deleteOlderThan(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000) }
 
     @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = if (isDark) Color(0xFF0E0E12) else Color(0xFFF5F5F5)) { _ ->
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }, containerColor = if (isDark) DarkBackground else LightBackground) { _ ->
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.statusBarsPadding())
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -110,7 +114,7 @@ fun MessagesScreen(
                     SwipeToDismissBox(state = dismissState,
                         backgroundContent = { Box(modifier = Modifier.fillMaxSize().background(Color(0xFFCC3333), RoundedCornerShape(12.dp)).padding(horizontal = 20.dp), contentAlignment = Alignment.CenterEnd) { Icon(Icons.Default.Delete, "Delete", tint = Color.White) } },
                         enableDismissFromStartToEnd = false) {
-                        MsgCard(msg, accent, textPrimary, textSecondary, if (isDark) Color(0xFF1E1E24) else Color.White, expanded, { expanded = !expanded }) {
+                        MsgCard(msg, accent, textPrimary, textSecondary, expanded, { expanded = !expanded }) {
                             if (!msg.isRead) scope.launch { messageDao.markAsRead(msg.id) }
                         }
                     }
@@ -122,14 +126,20 @@ fun MessagesScreen(
 }
 
 @Composable
-private fun MsgCard(msg: MessageEntity, accent: Color, textPrimary: Color, textSecondary: Color, bg: Color, expanded: Boolean, onToggleExpand: () -> Unit, onMarkRead: () -> Unit) {
+private fun MsgCard(msg: MessageEntity, accent: Color, textPrimary: Color, textSecondary: Color, expanded: Boolean, onToggleExpand: () -> Unit, onMarkRead: () -> Unit) {
     val (ico, icoBg) = when (msg.type) {
         "SUCCESS" -> Icons.Default.CheckCircle to Color(0xFF4CAF50)
         "WARNING" -> Icons.Default.Warning to Color(0xFFFF9800)
         "REMINDER" -> Icons.Default.Alarm to Color(0xFF2196F3)
         else -> Icons.Default.Info to accent
     }
-    Card(modifier = Modifier.fillMaxWidth().animateContentSize(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = bg)) {
+    Card(
+        modifier = Modifier.fillMaxWidth().animateContentSize(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSystemInDarkTheme()) Color(0xFF1C1416) else Color.White
+        )
+    ) {
         Column(modifier = Modifier.padding(14.dp).clickable { onToggleExpand() }) {
         Row(verticalAlignment = Alignment.Top) {
             Box(modifier = Modifier.size(38.dp).clip(CircleShape).background(icoBg.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {

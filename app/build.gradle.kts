@@ -35,8 +35,8 @@ android {
         applicationId = "com.example.kinetic"
         minSdk = 24
         targetSdk = 35
-        versionCode = 38
-        versionName = "3.8"
+        versionCode = 39
+        versionName = "3.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
