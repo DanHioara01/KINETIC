@@ -58,7 +58,7 @@ fun BiometricInputScreen(
                         val ar = arms.toDoubleOrNull() ?: 0.0
                         onSave(w, bf, wa, hi, th, ch, ar)
                     }) {
-                        Icon(Icons.Default.Check, contentDescription = null, tint = p.ac)
+                        Icon(Icons.Default.Check, contentDescription = null, tint = p.ac, modifier = Modifier.size(28.dp))
                     }
                 }
             )

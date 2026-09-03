@@ -64,10 +64,7 @@ fun MessagesScreen(
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Spacer(Modifier.statusBarsPadding())
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Column {
-                Text("Messages", fontSize = 28.sp, fontWeight = FontWeight.Black, color = textPrimary)
-                if (unreadCount > 0) Text("$unreadCount unread", fontSize = 13.sp, color = accent)
-            }
+            if (unreadCount > 0) Text("$unreadCount unread", fontSize = 13.sp, color = accent)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (unreadCount > 0) {
                     TextButton(onClick = { scope.launch { messageDao.markAllAsRead() } }) {
@@ -114,7 +111,7 @@ fun MessagesScreen(
                     SwipeToDismissBox(state = dismissState,
                         backgroundContent = { Box(modifier = Modifier.fillMaxSize().background(Color(0xFFCC3333), RoundedCornerShape(12.dp)).padding(horizontal = 20.dp), contentAlignment = Alignment.CenterEnd) { Icon(Icons.Default.Delete, "Delete", tint = Color.White) } },
                         enableDismissFromStartToEnd = false) {
-                        MsgCard(msg, accent, textPrimary, textSecondary, expanded, { expanded = !expanded }) {
+                        MsgCard(msg, accent, textPrimary, textSecondary, cardBg, expanded, { expanded = !expanded }) {
                             if (!msg.isRead) scope.launch { messageDao.markAsRead(msg.id) }
                         }
                     }
@@ -126,7 +123,7 @@ fun MessagesScreen(
 }
 
 @Composable
-private fun MsgCard(msg: MessageEntity, accent: Color, textPrimary: Color, textSecondary: Color, expanded: Boolean, onToggleExpand: () -> Unit, onMarkRead: () -> Unit) {
+private fun MsgCard(msg: MessageEntity, accent: Color, textPrimary: Color, textSecondary: Color, cardBg: Color, expanded: Boolean, onToggleExpand: () -> Unit, onMarkRead: () -> Unit) {
     val (ico, icoBg) = when (msg.type) {
         "SUCCESS" -> Icons.Default.CheckCircle to Color(0xFF4CAF50)
         "WARNING" -> Icons.Default.Warning to Color(0xFFFF9800)
@@ -137,7 +134,7 @@ private fun MsgCard(msg: MessageEntity, accent: Color, textPrimary: Color, textS
         modifier = Modifier.fillMaxWidth().animateContentSize(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSystemInDarkTheme()) Color(0xFF1C1416) else Color.White
+            containerColor = cardBg
         )
     ) {
         Column(modifier = Modifier.padding(14.dp).clickable { onToggleExpand() }) {

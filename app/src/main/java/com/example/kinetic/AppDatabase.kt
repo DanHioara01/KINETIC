@@ -8,6 +8,52 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@Entity(tableName = "workout_plans")
+data class WorkoutPlanEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val userId: String,
+    val name: String,
+    val description: String = "",
+    val daysPerWeek: Int = 3,
+    val createdAt: Long = System.currentTimeMillis(),
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "workout_plan_exercises", foreignKeys = [ForeignKey(
+    entity = WorkoutPlanEntity::class,
+    parentColumns = ["id"],
+    childColumns = ["planId"],
+    onDelete = ForeignKey.CASCADE
+)], indices = [Index(value = ["planId"])])
+data class WorkoutPlanExerciseEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val planId: Long,
+    val exerciseName: String,
+    val muscleGroup: String = "",
+    val equipment: String = "",
+    val setType: String = "working",
+    val targetReps: Int = 10,
+    val targetWeight: Double = 0.0,
+    val sets: Int = 3,
+    val orderIndex: Int = 0,
+    val notes: String = "",
+    val syncUuid: String = "",
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "shared_plans")
+data class SharedPlanEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val planId: Long,
+    val planName: String,
+    val fromUserId: String,
+    val fromUserName: String,
+    val toUserId: String,
+    val status: String = "pending",
+    val sharedAt: Long = System.currentTimeMillis()
+)
+
 @Entity(tableName = "antrenamente")
 data class AntrenamentEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -599,6 +645,63 @@ interface TemplateExerciseDao {
 }
 
 @Dao
+interface WorkoutPlanDao {
+    @Insert
+    suspend fun insert(plan: WorkoutPlanEntity): Long
+
+    @Update
+    suspend fun update(plan: WorkoutPlanEntity)
+
+    @Delete
+    suspend fun delete(plan: WorkoutPlanEntity)
+
+    @Query("SELECT * FROM workout_plans WHERE userId = :userId ORDER BY createdAt DESC")
+    suspend fun getAllForUser(userId: String): List<WorkoutPlanEntity>
+
+    @Query("SELECT * FROM workout_plans WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Long): WorkoutPlanEntity?
+}
+
+@Dao
+interface WorkoutPlanExerciseDao {
+    @Insert
+    suspend fun insert(exercise: WorkoutPlanExerciseEntity): Long
+
+    @Insert
+    suspend fun insertAll(exercises: List<WorkoutPlanExerciseEntity>)
+
+    @Update
+    suspend fun update(exercise: WorkoutPlanExerciseEntity)
+
+    @Delete
+    suspend fun delete(exercise: WorkoutPlanExerciseEntity)
+
+    @Query("SELECT * FROM workout_plan_exercises WHERE planId = :planId ORDER BY orderIndex")
+    suspend fun getForPlan(planId: Long): List<WorkoutPlanExerciseEntity>
+
+    @Query("DELETE FROM workout_plan_exercises WHERE planId = :planId")
+    suspend fun deleteAllForPlan(planId: Long)
+}
+
+@Dao
+interface SharedPlanDao {
+    @Insert
+    suspend fun insert(shared: SharedPlanEntity): Long
+
+    @Query("SELECT * FROM shared_plans WHERE toUserId = :userId ORDER BY sharedAt DESC")
+    suspend fun getReceived(userId: String): List<SharedPlanEntity>
+
+    @Query("SELECT * FROM shared_plans WHERE planId = :planId AND toUserId = :userId LIMIT 1")
+    suspend fun getForPlanAndUser(planId: Long, userId: String): SharedPlanEntity?
+
+    @Query("UPDATE shared_plans SET status = :status WHERE id = :id")
+    suspend fun updateStatus(id: Long, status: String)
+
+    @Delete
+    suspend fun delete(shared: SharedPlanEntity)
+}
+
+@Dao
 interface PersonalRecordDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(pr: PersonalRecordEntity)
@@ -1012,9 +1115,12 @@ interface InjuryRiskDao {
         DeloadWeekEntity::class,
         WeightGoalEntity::class,
         InjuryRiskEntity::class,
-        MessageEntity::class
+        MessageEntity::class,
+        WorkoutPlanEntity::class,
+        WorkoutPlanExerciseEntity::class,
+        SharedPlanEntity::class
     ],
-    version = 29,
+    version = 30,
     exportSchema = false
 )
 @TypeConverters(FoodUnitTypeConverter::class)
@@ -1050,6 +1156,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun weightGoalDao(): WeightGoalDao
     abstract fun injuryRiskDao(): InjuryRiskDao
     abstract fun messageDao(): MessageDao
+    abstract fun workoutPlanDao(): WorkoutPlanDao
+    abstract fun workoutPlanExerciseDao(): WorkoutPlanExerciseDao
+    abstract fun sharedPlanDao(): SharedPlanDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -1471,6 +1580,54 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_29_30 = object : Migration(29, 30) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS workout_plans (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        userId TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        description TEXT NOT NULL DEFAULT '',
+                        daysPerWeek INTEGER NOT NULL DEFAULT 3,
+                        createdAt INTEGER NOT NULL,
+                        syncUuid TEXT NOT NULL DEFAULT '',
+                        updatedAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS workout_plan_exercises (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        planId INTEGER NOT NULL,
+                        exerciseName TEXT NOT NULL,
+                        muscleGroup TEXT NOT NULL DEFAULT '',
+                        equipment TEXT NOT NULL DEFAULT '',
+                        setType TEXT NOT NULL DEFAULT 'working',
+                        targetReps INTEGER NOT NULL DEFAULT 10,
+                        targetWeight REAL NOT NULL DEFAULT 0,
+                        sets INTEGER NOT NULL DEFAULT 3,
+                        orderIndex INTEGER NOT NULL DEFAULT 0,
+                        notes TEXT NOT NULL DEFAULT '',
+                        syncUuid TEXT NOT NULL DEFAULT '',
+                        updatedAt INTEGER NOT NULL,
+                        FOREIGN KEY (planId) REFERENCES workout_plans(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_workout_plan_exercises_planId ON workout_plan_exercises(planId)")
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS shared_plans (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        planId INTEGER NOT NULL,
+                        planName TEXT NOT NULL,
+                        fromUserId TEXT NOT NULL,
+                        fromUserName TEXT NOT NULL,
+                        toUserId TEXT NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'pending',
+                        sharedAt INTEGER NOT NULL
+                    )
+                """.trimIndent())
+            }
+        }
+
                 private fun seedDemoMessages(db: AppDatabase) {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
@@ -1494,7 +1651,7 @@ abstract class AppDatabase : RoomDatabase() {
                     // Migrații sigure: lanțul complet 1→28 e acoperit, deci NU folosim
                     // fallbackToDestructiveMigration — dacă o migrare lipsește, app-ul
                     // eșuează controlat în loc să șteargă datele utilizatorilor.
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20, MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30)
                     .build()
                 startExerciseIdBackfill(instance)
                 INSTANCE = instance

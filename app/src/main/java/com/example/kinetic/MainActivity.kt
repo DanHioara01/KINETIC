@@ -672,6 +672,8 @@ fun MuscleGroupList(
     var showBodyFatCalculator by remember { mutableStateOf(false) }
     var showReadiness by remember { mutableStateOf(false) }
     var showMessages by remember { mutableStateOf(false) }
+    var showWorkoutPlans by remember { mutableStateOf(false) }
+    var addPlanTrigger by remember { mutableIntStateOf(0) }
     val msgDao = AppDatabase.getDatabase(context).messageDao()
     val unreadMessagesCount by msgDao.observeUnreadCount().collectAsState(initial = 0)
 
@@ -1124,6 +1126,60 @@ fun MuscleGroupList(
                         pendingRequestsCount = requests.size
                     } catch (_: Exception) {}
                     kotlinx.coroutines.delay(30000)
+                }
+            }
+        }
+    }
+
+    // Sync Workout Plans from Firestore (created on web)
+    LaunchedEffect(isLoggedIn, userId) {
+        if (isLoggedIn && userId != "local_user") {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    val doc = firestore.collection("users").document(userId).get().await()
+                    if (doc.exists()) {
+                        @Suppress("UNCHECKED_CAST")
+                        val plansData = doc.get("plans") as? List<Map<String, Any>> ?: emptyList()
+                        val planDao = AppDatabase.getDatabase(context).workoutPlanDao()
+                        val exerciseDao = AppDatabase.getDatabase(context).workoutPlanExerciseDao()
+                        val existingPlans = planDao.getAllForUser(userId)
+                        val existingNames = existingPlans.map { it.name }.toSet()
+
+                        for (planMap in plansData) {
+                            val planName = planMap["name"] as? String ?: continue
+                            if (planName in existingNames) continue // already exists locally
+
+                            val newPlanId = planDao.insert(
+                                WorkoutPlanEntity(
+                                    userId = userId,
+                                    name = planName,
+                                    description = planMap["description"] as? String ?: "",
+                                    daysPerWeek = (planMap["days"] as? Number)?.toInt() ?: 3
+                                )
+                            )
+
+                            @Suppress("UNCHECKED_CAST")
+                            val exercises = planMap["exercises"] as? List<Map<String, Any>> ?: emptyList()
+                            val exerciseEntities = exercises.mapIndexed { idx, ex ->
+                                WorkoutPlanExerciseEntity(
+                                    planId = newPlanId,
+                                    exerciseName = ex["name"] as? String ?: "",
+                                    muscleGroup = ex["muscle"] as? String ?: "",
+                                    equipment = ex["equipment"] as? String ?: "",
+                                    sets = (ex["sets"] as? Number)?.toInt() ?: 3,
+                                    targetReps = (ex["reps"] as? Number)?.toInt() ?: 10,
+                                    targetWeight = (ex["weight"] as? Number)?.toDouble() ?: 0.0,
+                                    orderIndex = idx
+                                )
+                            }
+                            if (exerciseEntities.isNotEmpty()) {
+                                exerciseDao.insertAll(exerciseEntities)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("KINETIC", "Firestore plans sync failed: ${e.message}")
                 }
             }
         }
@@ -1583,6 +1639,7 @@ fun MuscleGroupList(
             showBodyFatCalculator -> { showBodyFatCalculator = false; currentPage = null }
             showReadiness -> { showReadiness = false; currentPage = null }
             showMessages -> { showMessages = false; currentPage = null }
+            showWorkoutPlans -> { showWorkoutPlans = false; currentPage = null }
             currentPage != null -> currentPage = null
             currentDashboardTab != 0 -> currentDashboardTab = 0
             drawerState.isOpen -> { /* let drawer close itself */ }
@@ -1609,22 +1666,23 @@ fun MuscleGroupList(
                     onNavigate = { page ->
                         currentPage = page
                         when (page) {
-                            null -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.STATS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.CALENDAR -> { showCalendar = true; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.FOOD_JOURNAL -> { showCalendar = false; showTemplates = false; showFoodJournal = true; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.AI_TRAINER -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = true; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.FRIENDS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = true; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.GPS_CARDIO -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.REST_DAYS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.PLATE_CALCULATOR -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = true; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.ONE_RM_CALCULATOR -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = true; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.WORKOUT_ANALYTICS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = true; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.SAVED_EXERCISES -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = true; showWeightGoal = false; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.WEIGHT_GOAL -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = true; showBodyFatCalculator = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.BODY_FAT_CALCULATOR -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = true; showReadiness = false; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.READINESS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = true; workoutNavController.popToWorkoutHome() }
-                            DrawerPage.MESSAGES -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = false; showMessages = true; workoutNavController.popToWorkoutHome() }
+                            null -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.STATS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.CALENDAR -> { showCalendar = true; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.FOOD_JOURNAL -> { showCalendar = false; showTemplates = false; showFoodJournal = true; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.AI_TRAINER -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = true; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.FRIENDS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = true; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.GPS_CARDIO -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.REST_DAYS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.PLATE_CALCULATOR -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = true; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.ONE_RM_CALCULATOR -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = true; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.WORKOUT_ANALYTICS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = true; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.SAVED_EXERCISES -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = true; showWeightGoal = false; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.WEIGHT_GOAL -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = true; showBodyFatCalculator = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.BODY_FAT_CALCULATOR -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = true; showReadiness = false; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.READINESS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = true; showWorkoutPlans = false; showMessages = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.MESSAGES -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = false; showMessages = true; showWorkoutPlans = false; workoutNavController.popToWorkoutHome() }
+                            DrawerPage.WORKOUT_PLANS -> { showCalendar = false; showTemplates = false; showFoodJournal = false; showBarcodeScanner = false; showAddFood = false; showAiTrainer = false; showFriends = false; showLeaderboard = false; showPlateCalculator = false; showOneRMCalculator = false; showWorkoutAnalytics = false; showSavedExercises = false; showWeightGoal = false; showBodyFatCalculator = false; showReadiness = false; showMessages = false; showWorkoutPlans = true; workoutNavController.popToWorkoutHome() }
                         }
                     },
                     onExportCsv = {
@@ -1995,6 +2053,29 @@ fun MuscleGroupList(
                                 textSecondary = textSecondary,
                                 cardBg = cardBg,
                                 isDark = isDark
+                            )
+                        }
+                    }
+                } else if (showWorkoutPlans) {
+                    Scaffold(
+                        containerColor = surfaceBg,
+                        topBar = {
+                            KineticAppBar(
+                                onBack = { showWorkoutPlans = false; currentPage = null },
+                                actions = {
+                                    IconButton(onClick = { addPlanTrigger++ }) {
+                                        Icon(painterResource(R.drawable.ic_plus_plan), contentDescription = "New Plan", tint = Color.Unspecified, modifier = Modifier.size(28.dp))
+                                    }
+                                }
+                            )
+                        }
+                    ) { pad ->
+                        Box(modifier = Modifier.padding(pad)) {
+                            WorkoutPlansScreen(
+                                isDark = isDark,
+                                userId = userId,
+                                onBack = { showWorkoutPlans = false; currentPage = null },
+                                addPlanTrigger = addPlanTrigger
                             )
                         }
                     }
@@ -3134,6 +3215,7 @@ fun MuscleGroupList(
                                                 showBodyFatCalculator -> { showBodyFatCalculator = false; currentPage = null }
                                                 showReadiness -> { showReadiness = false; currentPage = null }
                                                 showMessages -> { showMessages = false; currentPage = null }
+                                                showWorkoutPlans -> { showWorkoutPlans = false; currentPage = null }
                                                 currentPage != null -> currentPage = null
                                             }
                                         } else {
@@ -3151,6 +3233,7 @@ fun MuscleGroupList(
                                             showWeightGoal = false; showBodyFatCalculator = false
                                             showReadiness = false
                                             showMessages = false
+                                            showWorkoutPlans = false
                                             currentPage = null
                                         }
                                     },
@@ -3223,6 +3306,8 @@ fun MuscleGroupList(
                                                 showWeightGoal -> { showWeightGoal = false; currentPage = null }
                                                 showBodyFatCalculator -> { showBodyFatCalculator = false; currentPage = null }
                                                 showReadiness -> { showReadiness = false; currentPage = null }
+                                                showMessages -> { showMessages = false; currentPage = null }
+                                                showWorkoutPlans -> { showWorkoutPlans = false; currentPage = null }
                                                 currentPage != null -> currentPage = null
                                             }
                                         } else {
@@ -3240,6 +3325,7 @@ fun MuscleGroupList(
                                             showWeightGoal = false; showBodyFatCalculator = false
                                             showReadiness = false
                                             showMessages = false
+                                            showWorkoutPlans = false
                                             currentPage = null
                                         }
                                     },

@@ -167,7 +167,7 @@ fun AddFoodScreen(
                     IconButton(onClick = {
                         if (mode == EntryMode.SEARCH && selectedFood != null) saveFromDatabase() else saveManual()
                     }) {
-                        Icon(Icons.Default.Check, contentDescription = null, tint = p.ac)
+                        Icon(Icons.Default.Check, contentDescription = null, tint = p.ac, modifier = Modifier.size(28.dp))
                     }
                 }
             )

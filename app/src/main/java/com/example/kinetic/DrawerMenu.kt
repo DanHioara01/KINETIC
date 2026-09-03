@@ -50,7 +50,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 
-enum class DrawerPage { STATS, CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS, GPS_CARDIO, REST_DAYS, PLATE_CALCULATOR, ONE_RM_CALCULATOR, SAVED_EXERCISES, WEIGHT_GOAL, BODY_FAT_CALCULATOR, WORKOUT_ANALYTICS, READINESS, MESSAGES }
+enum class DrawerPage { STATS, CALENDAR, FOOD_JOURNAL, AI_TRAINER, FRIENDS, GPS_CARDIO, REST_DAYS, PLATE_CALCULATOR, ONE_RM_CALCULATOR, SAVED_EXERCISES, WEIGHT_GOAL, BODY_FAT_CALCULATOR, WORKOUT_ANALYTICS, READINESS, MESSAGES, WORKOUT_PLANS }
 
 fun DrawerPage.toDrawerScreen(): DrawerScreen = when (this) {
     DrawerPage.STATS -> DrawerScreen.Calendar
@@ -68,6 +68,7 @@ fun DrawerPage.toDrawerScreen(): DrawerScreen = when (this) {
     DrawerPage.WORKOUT_ANALYTICS -> DrawerScreen.Calendar
     DrawerPage.READINESS -> DrawerScreen.Calendar
     DrawerPage.MESSAGES -> DrawerScreen.Messages
+    DrawerPage.WORKOUT_PLANS -> DrawerScreen.WorkoutPlans
 }
 
 fun DrawerScreen.toDrawerPage(): DrawerPage = when (this) {
@@ -81,6 +82,7 @@ fun DrawerScreen.toDrawerPage(): DrawerPage = when (this) {
     DrawerScreen.WeightGoal -> DrawerPage.WEIGHT_GOAL
     DrawerScreen.BodyFatCalculator -> DrawerPage.BODY_FAT_CALCULATOR
     DrawerScreen.Messages -> DrawerPage.MESSAGES
+    DrawerScreen.WorkoutPlans -> DrawerPage.WORKOUT_PLANS
 }
 
 data class LanguageOption(
@@ -423,6 +425,26 @@ fun DrawerMenu(
                     textSecondary = textSecondary,
                     iconBg = iconBg,
                     onClick = { onNavigate(DrawerPage.READINESS); onClose() }
+                )
+            }
+
+            // Workout Plans section
+            GlassmorphismDrawerCard(
+                isDark = isDark,
+                headerLabel = "Training",
+                textSecondary = textSecondary,
+                hazeState = hazeState
+            ) {
+                DrawerNavItem(
+                    icon = Icons.Default.FitnessCenter,
+                    label = strings.workoutPlans.ifBlank { "Workout Plans" },
+                    selected = currentPage == DrawerPage.WORKOUT_PLANS,
+                    accent = accent,
+                    selectedBg = selectedBg,
+                    textPrimary = textPrimary,
+                    textSecondary = textSecondary,
+                    iconBg = iconBg,
+                    onClick = { onNavigate(DrawerPage.WORKOUT_PLANS); onClose() }
                 )
             }
 
